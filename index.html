@@ -2,50 +2,112 @@
 <html>
 <head>
     <title>Landslide MVP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; }
         #map { height: 100vh; width: 100%; }
+        
+        /* Floating "Find Me" Button */
+        .gps-btn {
+            position: absolute; bottom: 100px; right: 20px;
+            background: white; padding: 10px; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1000; cursor: pointer; font-size: 20px;
+            width: 40px; height: 40px; text-align: center; line-height: 40px;
+        }
+
+        /* Property Info Card */
+        .info-card {
+            position: absolute; bottom: 20px; left: 20px; right: 20px;
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000; display: none; /* Hidden initially */
+            font-family: sans-serif;
+        }
+        .info-card h3 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
+        .info-card p { margin: 0; color: #666; font-size: 14px; }
     </style>
 </head>
 <body>
+
     <div id="map"></div>
+    
+    <!-- GPS Button -->
+    <div class="gps-btn" onclick="locateUser()">📍</div>
+
+    <!-- Info Card -->
+    <div class="info-card" id="card">
+        <h3 id="owner">Owner Name</h3>
+        <p id="address">Address info...</p>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Initialize Map
-        const map = L.map('map').setView([40.764356, -73.973057], 15); // Central Park
+        // 1. Initialize Map
+        const map = L.map('map').setView([40.764356, -73.973057], 15);
 
-        // Add Satellite Layer
+        // 2. Add Satellite Layer
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         }).addTo(map);
 
-        // Add Click Event
+        // 3. Handle Property Clicks
+        let currentLayer = null;
+
         map.on('click', async (e) => {
             const { lat, lng } = e.latlng;
-            console.log("Clicked:", lat, lng);
             
             try {
-                // Fetch data from OUR backend
+                // Call your Backend
                 const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const data = await response.json();
                 
                 if(data.length > 0) {
                     const parcel = data[0];
-                    alert("Owner: " + parcel.owner_name + "\nAddress: " + parcel.address);
                     
-                    // Draw the shape
-                    L.geoJSON(JSON.parse(parcel.geometry), {
-                        style: { color: "#ffff00", weight: 3, fillOpacity: 0.2 }
+                    // Show Card
+                    document.getElementById('card').style.display = 'block';
+                    document.getElementById('owner').innerText = parcel.owner_name;
+                    document.getElementById('address').innerText = parcel.address;
+
+                    // Remove old yellow line if exists
+                    if (currentLayer) map.removeLayer(currentLayer);
+
+                    // Draw new yellow line
+                    const geoJson = JSON.parse(parcel.geometry);
+                    currentLayer = L.geoJSON(geoJson, {
+                        style: { color: "#ffcc00", weight: 3, fillOpacity: 0.1 }
                     }).addTo(map);
                 } else {
-                    alert("No property data found here.");
+                    console.log("No parcel found here");
                 }
             } catch (err) {
                 console.error(err);
             }
         });
+
+        // 4. GPS Functionality
+        function locateUser() {
+            map.locate({setView: true, maxZoom: 18});
+        }
+
+        map.on('locationfound', (e) => {
+            // Draw a Blue Dot for the user
+            L.circleMarker(e.latlng, {
+                radius: 8,
+                fillColor: "#3388ff",
+                color: "#fff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 1
+            }).addTo(map);
+        });
+
+        map.on('locationerror', (e) => {
+            alert("Could not access your location. Please enable GPS.");
+        });
+
     </script>
 </body>
 </html>
