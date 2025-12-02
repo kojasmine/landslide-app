@@ -12,7 +12,12 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
+ // Allow the server to read the index.html file
+const path = require('path');
+
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '/index.html'));
+});=> {
     res.send('Landslide App is Running!');
 });
 

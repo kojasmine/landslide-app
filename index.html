@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Landslide MVP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; width: 100%; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize Map
+        const map = L.map('map').setView([40.764356, -73.973057], 15); // Central Park
+
+        // Add Satellite Layer
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(map);
+
+        // Add Click Event
+        map.on('click', async (e) => {
+            const { lat, lng } = e.latlng;
+            console.log("Clicked:", lat, lng);
+            
+            try {
+                // Fetch data from OUR backend
+                const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
+                const data = await response.json();
+                
+                if(data.length > 0) {
+                    const parcel = data[0];
+                    alert("Owner: " + parcel.owner_name + "\nAddress: " + parcel.address);
+                    
+                    // Draw the shape
+                    L.geoJSON(JSON.parse(parcel.geometry), {
+                        style: { color: "#ffff00", weight: 3, fillOpacity: 0.2 }
+                    }).addTo(map);
+                } else {
+                    alert("No property data found here.");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
