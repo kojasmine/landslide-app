@@ -180,6 +180,7 @@
         const searchInput = document.querySelector('.search-input');
 
         async function executeSearch() {
+	    alert("Button Clicked!"); // <--- ADD THIS LINE FOR 		
             const text = searchInput.value;
             if(text.length < 2) return;
             
