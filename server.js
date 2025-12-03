@@ -2,7 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 require('dotenv').config();
-const path = require('path'); // Move this up
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -23,10 +23,13 @@ app.get('/', (req, res) => {
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
-    // Find the parcel closest to the click (or containing it)
+    // UPDATED QUERY FOR REAL DATA
     const query = `
-        SELECT id, owner_name, address, ST_AsGeoJSON(geom) as geometry
-        FROM parcels
+        SELECT id, 
+               "PIN" as owner_name,        
+               "PARCEL_TYP" as address,    
+               ST_AsGeoJSON(geom) as geometry
+        FROM "Parcels_real"                
         ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
@@ -37,7 +40,7 @@ app.get('/api/parcels', async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server Error");
+        res.status(500).send("Server Error: " + err.message);
     }
 });
 
