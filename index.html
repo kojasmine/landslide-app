@@ -11,22 +11,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- GENERAL STYLES --- */
+        /* --- GENERAL --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100%; z-index: 1; }
 
-        /* --- SEARCH BAR --- */
+        /* --- MENU BUTTON (Top Left) --- */
+        .menu-btn {
+            position: absolute; top: 20px; left: 20px;
+            width: 50px; height: 50px;
+            background: white; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; z-index: 1002;
+            transition: background 0.2s;
+        }
+        .menu-btn:active { background: #f0f0f0; }
+
+        /* --- SEARCH BAR (Moved slightly right) --- */
         .search-container {
-            position: absolute; top: 50px; left: 20px; right: 20px;
+            position: absolute; top: 20px; left: 85px; right: 20px;
             z-index: 1000;
-            background: white; border-radius: 8px;
+            background: white; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
         }
         .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* --- SIDE BUTTONS --- */
+        /* --- SIDEBAR MENU --- */
+        .sidebar {
+            position: fixed; top: 0; left: -280px; /* Hidden by default */
+            width: 280px; height: 100%;
+            background: white; z-index: 2000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            transition: left 0.3s ease-out;
+            display: flex; flex-direction: column;
+        }
+        .sidebar.active { left: 0; }
+        
+        .sidebar-header {
+            padding: 30px 20px; background: #f8f9fa; border-bottom: 1px solid #eee;
+        }
+        .app-title { font-size: 22px; font-weight: 700; color: #333; }
+        .app-subtitle { font-size: 14px; color: #666; margin-top: 5px; }
+
+        .menu-items { padding: 20px 0; }
+        .menu-item {
+            padding: 15px 25px; display: flex; align-items: center; gap: 15px;
+            color: #333; text-decoration: none; font-size: 16px; font-weight: 500;
+            cursor: pointer; transition: background 0.1s;
+        }
+        .menu-item:hover { background: #f5f5f5; }
+        .menu-icon { font-size: 20px; width: 25px; text-align: center; }
+
+        /* Overlay (Dark background when menu opens) */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1999;
+            display: none;
+        }
+        .overlay.active { display: block; }
+
+        /* --- CONTROLS (Bottom Right) --- */
         .controls-container {
             position: absolute; bottom: 220px; right: 20px;
             display: flex; flex-direction: column; gap: 15px; z-index: 1000;
@@ -37,7 +83,7 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; cursor: pointer; transition: transform 0.1s;
         }
-        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
+        .fab-btn:active { transform: scale(0.95); }
 
         /* --- INFO CARD --- */
         .info-card {
@@ -53,17 +99,16 @@
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
         .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
+        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; }
         .action-row { display: flex; gap: 10px; margin-top: 15px; }
         .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        /* --- BLUE DOT ANIMATION --- */
+        /* Blue Dot Pulse */
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-            animation: pulse-blue 2s infinite;
-            border-radius: 50%;
+            animation: pulse-blue 2s infinite; border-radius: 50%;
         }
         @keyframes pulse-blue {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
@@ -74,7 +119,32 @@
 </head>
 <body>
 
-    <!-- SEARCH -->
+    <!-- OVERLAY (Clicks here close the menu) -->
+    <div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+    <!-- SIDEBAR MENU -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="app-title">Landslide</div>
+            <div class="app-subtitle">Property & Parcel Data</div>
+        </div>
+        <div class="menu-items">
+            <div class="menu-item" onclick="openAccount()">
+                <span class="menu-icon">👤</span> My Account
+            </div>
+            <div class="menu-item" onclick="openSettings()">
+                <span class="menu-icon">⚙️</span> Settings
+            </div>
+            <div class="menu-item" onclick="shareApp()">
+                <span class="menu-icon">📤</span> Share with Friends
+            </div>
+        </div>
+    </div>
+
+    <!-- HAMBURGER BUTTON -->
+    <div class="menu-btn" onclick="openMenu()">☰</div>
+
+    <!-- SEARCH BAR -->
     <div class="search-container">
         <span class="search-icon">🔍</span>
         <input type="text" class="search-input" placeholder="Search PIN or Address...">
@@ -83,13 +153,13 @@
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- BUTTONS -->
+    <!-- CONTROLS -->
     <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
+        <div class="fab-btn" onclick="toggleLayer()" title="Switch View">🗺️</div>
         <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
     </div>
 
-    <!-- CARD -->
+    <!-- INFO CARD -->
     <div class="info-card" id="card">
         <div class="card-handle"></div>
         <div class="prop-label">OWNER / PIN</div>
@@ -104,7 +174,51 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- SETUP MAP ---
+        // --- SIDEBAR LOGIC ---
+        function openMenu() {
+            document.getElementById('sidebar').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+        function closeMenu() {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        // --- MENU ACTIONS ---
+        function openAccount() {
+            // Placeholder until we build login system
+            alert("Account System: Coming Soon!\n(This is where users will log in to see saved properties)");
+            closeMenu();
+        }
+
+        function openSettings() {
+            // Placeholder
+            alert("Settings: Map units (Acres/SqFt) and Map Style settings will go here.");
+            closeMenu();
+        }
+
+        async function shareApp() {
+            // Uses the phone's Native Share Sheet
+            const shareData = {
+                title: 'Landslide App',
+                text: 'Check out this property map app!',
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log('Share canceled');
+                }
+            } else {
+                // Fallback for desktop
+                alert("Link copied to clipboard: " + window.location.href);
+            }
+            closeMenu();
+        }
+
+        // --- MAP SETUP ---
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         });
@@ -112,55 +226,40 @@
             attribution: '&copy; OpenStreetMap'
         });
 
-        // Initialize Map
         const map = L.map('map', {
-            center: [40.764356, -73.973057], // Default to NY until GPS loads
-            zoom: 15,
-            layers: [satelliteLayer], 
-            zoomControl: false 
+            center: [40.764356, -73.973057], zoom: 15,
+            layers: [satelliteLayer], zoomControl: false 
         });
 
         let currentBaseLayer = "satellite";
         let currentGeoJSON = null;
 
-        // --- SEARCH LOGIC (NEW) ---
+        // --- SEARCH LOGIC ---
         const searchInput = document.querySelector('.search-input');
-        
         searchInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
                 const text = searchInput.value;
                 if(text.length < 2) return; 
-
-                // Close keyboard on mobile
                 searchInput.blur();
-
                 try {
                     const response = await fetch(`/api/search?q=${text}`);
                     const results = await response.json();
-
                     if (results.length > 0) {
                         const bestMatch = results[0];
-                        
-                        // Fly to location
                         map.flyTo([bestMatch.lat, bestMatch.lng], 18);
-                        
-                        // Simulate opening the card
                         setTimeout(() => {
                             document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
                             document.getElementById('address').innerText = bestMatch.address || "No Info";
                             document.getElementById('card').classList.add('active');
                         }, 1000);
-
                     } else {
-                        alert("No matches found for: " + text);
+                        alert("No matches found.");
                     }
-                } catch (err) {
-                    console.error("Search failed", err);
-                }
+                } catch (err) { console.error("Search failed", err); }
             }
         });
 
-        // --- LAYER TOGGLE ---
+        // --- TOGGLES ---
         function toggleLayer() {
             if (currentBaseLayer === "satellite") {
                 map.removeLayer(satelliteLayer);
@@ -173,14 +272,13 @@
             }
         }
 
-        // --- REAL-TIME GPS ---
+        // --- GPS LOGIC ---
         let userMarker = null;
         let isTracking = false;
-
         function toggleGPS() {
             if (!isTracking) {
                 map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 19 });
-                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
+                document.getElementById('gpsBtn').style.color = "#2196F3";
                 isTracking = true;
             } else {
                 map.stopLocate();
@@ -188,48 +286,34 @@
                 document.getElementById('gpsBtn').style.color = "black";
             }
         }
-
         map.on('locationfound', (e) => {
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse'
-                }).addTo(map);
-            }
+            if (userMarker) userMarker.setLatLng(e.latlng);
+            else userMarker = L.circleMarker(e.latlng, {
+                radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
+                fillOpacity: 1, className: 'gps-pulse'
+            }).addTo(map);
         });
+        map.on('locationerror', (e) => { alert("Check GPS settings."); });
 
-        map.on('locationerror', (e) => {
-            alert("Could not access GPS. Please check settings.");
-        });
-
-        // --- CLICK HANDLER ---
+        // --- CLICK LOGIC ---
         map.on('click', async (e) => {
             const { lat, lng } = e.latlng;
             try {
                 const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const data = await response.json();
-                
                 if(data.length > 0) {
                     const parcel = data[0];
                     document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
                     document.getElementById('address').innerText = parcel.address || "No Info";
                     document.getElementById('card').classList.add('active');
-
                     if (currentGeoJSON) map.removeLayer(currentGeoJSON);
                     const geoJsonData = JSON.parse(parcel.geometry);
                     currentGeoJSON = L.geoJSON(geoJsonData, {
                         style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
                     }).addTo(map);
-                } else {
-                    closeCard();
-                }
-            } catch (err) {
-                console.error("API Error:", err);
-            }
+                } else { closeCard(); }
+            } catch (err) { console.error("API Error:", err); }
         });
-
         function closeCard() {
             document.getElementById('card').classList.remove('active');
             if (currentGeoJSON) map.removeLayer(currentGeoJSON);
