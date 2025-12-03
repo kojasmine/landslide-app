@@ -14,27 +14,32 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// --- 1. SERVE THE APP (Frontend) ---
+// --- 1. SERVE THE APP ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (New!) ---
+// --- 2. SEARCH API (Updated) ---
 app.get('/api/search', async (req, res) => {
-    const { q } = req.query; // The user's search text
-    
+    const { q } = req.query; 
     if (!q || q.length < 1) return res.json([]);
 
-    // We search the 'PARCEL_TYP' column (Address placeholder) AND 'PIN' (Owner placeholder)
-    // The % symbols allow for partial matching (e.g. "0102" finds "0102 14...")
+    // This query joins the map to the address table
     const query = `
-        SELECT id, 
-               "PIN" as owner_name, 
-               "PARCEL_TYP" as address, 
-               ST_X(ST_Centroid(geom)) as lng, 
-               ST_Y(ST_Centroid(geom)) as lat
-        FROM "Parcels_real"
-        WHERE "PARCEL_TYP" ILIKE $1 OR "PIN" ILIKE $1
+        SELECT 
+            p.id, 
+            'Current Resident' as owner_name, 
+            
+            -- Combine: House Number + Street Name + Suffix (e.g., 7114 NORWALK ST)
+            CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address,
+            
+            ST_X(ST_Centroid(p.geom)) as lng, 
+            ST_Y(ST_Centroid(p.geom)) as lat
+        FROM "Parcels_real" p
+        LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
+        
+        -- Search by Street Name or PIN
+        WHERE t."ADRSTR" ILIKE $1 OR p."PIN" ILIKE $1
         LIMIT 5;
     `;
 
@@ -47,17 +52,23 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. GET PARCEL BY LOCATION (Clicking) ---
+// --- 3. CLICK API (Updated) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
     const query = `
-        SELECT id, 
-               "PIN" as owner_name,        
-               "PARCEL_TYP" as address,    
-               ST_AsGeoJSON(geom) as geometry
-        FROM "Parcels_real"                
-        ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
+        SELECT 
+            p.id, 
+            'Current Resident' as owner_name,
+            
+            -- Combine: House Number + Street Name + Suffix
+            CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address,
+            
+            ST_AsGeoJSON(p.geom) as geometry
+        FROM "Parcels_real" p
+        LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
+        
+        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
     
@@ -65,7 +76,7 @@ app.get('/api/parcels', async (req, res) => {
         const result = await pool.query(query, [lng, lat]);
         res.json(result.rows);
     } catch (err) {
-        console.error("Map Click Error:", err);
+        console.error("Click Error:", err);
         res.status(500).send("Server Error");
     }
 });
