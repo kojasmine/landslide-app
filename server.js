@@ -19,32 +19,31 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (Updated) ---
+// --- 2. SEARCH API (With The Fix) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
+    
     if (!q || q.length < 1) return res.json([]);
 
-    // This query joins the map to the address table
+    // We join 'Parcels_real' (p) with 'tax_info' (t)
+    // We match p."PIN" to t."PARID"
+    // We search the Street Name (ADRADD) or the ID (PARID)
+    
     const query = `
-        SELECT 
-            p.id, 
-            'Current Resident' as owner_name, 
-            
-            -- Combine: House Number + Street Name + Suffix (e.g., 7114 NORWALK ST)
-            CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address,
-            
-            ST_X(ST_Centroid(p.geom)) as lng, 
-            ST_Y(ST_Centroid(p.geom)) as lat
+        SELECT p.id, 
+               t."PARID" as owner_name,  -- Using ID as owner for now (Update this if you find an OWNER column!)
+               CONCAT(t."ADRNO", ' ', t."ADRADD") as address, -- Combines "123" + "Main St"
+               ST_X(ST_Centroid(p.geom)) as lng, 
+               ST_Y(ST_Centroid(p.geom)) as lat
         FROM "Parcels_real" p
-        LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
-        
-        -- Search by Street Name or PIN
-        WHERE t."ADRSTR" ILIKE $1 OR p."PIN" ILIKE $1
+        JOIN "tax_info" t ON p."PIN" = t."PARID"
+        WHERE t."ADRADD" ILIKE $1 OR t."PARID" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
+        console.log("Search found:", result.rows.length);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err);
@@ -52,22 +51,18 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. CLICK API (Updated) ---
+// --- 3. CLICK API (With The Fix) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
+    // Same Logic: Join PIN to PARID to get the address when clicking
     const query = `
-        SELECT 
-            p.id, 
-            'Current Resident' as owner_name,
-            
-            -- Combine: House Number + Street Name + Suffix
-            CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address,
-            
-            ST_AsGeoJSON(p.geom) as geometry
+        SELECT p.id, 
+               t."PARID" as owner_name,        
+               CONCAT(t."ADRNO", ' ', t."ADRADD") as address,    
+               ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
-        
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
