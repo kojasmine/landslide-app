@@ -19,53 +19,47 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (Bulletproof Version) ---
+// --- 2. SEARCH API (Updated) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
-    // Debug Log: Check Render Logs to see if this prints
-    console.log("Search requested for:", q);
-
     if (!q || q.length < 1) return res.json([]);
 
-    // We search the Street Name OR the Number OR the ID
-    // We use CAST(ADRNO as TEXT) to prevent errors if the number is an Integer
+    // Search by PIN or Street Name
     const query = `
         SELECT p.id, 
-               t."PARID" as owner_name,  
-               CONCAT(t."ADRNO", ' ', t."ADRADD") as address,
+               p."PIN" as owner_name, 
+               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address, 
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat
         FROM "Parcels_real" p
-        JOIN "tax_info" t ON p."PIN" = t."PARID"
-        WHERE t."ADRADD" ILIKE $1 
-           OR CAST(t."ADRNO" AS TEXT) ILIKE $1 
-           OR t."PARID" ILIKE $1
+        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
+        WHERE t."ADRSTR" ILIKE $1 OR p."PIN" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
-        console.log(`Found ${result.rows.length} results`);
         res.json(result.rows);
     } catch (err) {
-        console.error("Search SQL Error:", err);
-        res.status(500).send("Database Error");
+        console.error("Search Error:", err);
+        res.status(500).send("Search Error");
     }
 });
 
-// --- 3. CLICK API (Fail-Safe) ---
+// --- 3. GET PARCEL BY LOCATION (Address Join) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
-    // Tries to find Linked Data, but falls back to Map Data if missing
+    // SAFE QUERY: Real Address, PIN as Owner
     const query = `
         SELECT p.id, 
-               COALESCE(t."PARID", p."PIN") as owner_name,        
-               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRADD"), 'Address Not Linked') as address,    
+               p."PIN" as owner_name,            -- Using PIN to be safe
+               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address, -- Real Address!
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
-        LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
+        LEFT JOIN "tax_administration_s_real_estate" t 
+        ON p."PIN" = t."PARID"                   -- Joining the tables
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
@@ -74,8 +68,8 @@ app.get('/api/parcels', async (req, res) => {
         const result = await pool.query(query, [lng, lat]);
         res.json(result.rows);
     } catch (err) {
-        console.error("Click Error:", err);
-        res.status(500).send("Server Error");
+        console.error("Map Click Error:", err);
+        res.status(500).send("Database Error: " + err.message); 
     }
 });
 
