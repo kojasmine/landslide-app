@@ -19,15 +19,17 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (Fixed to search Full Address) ---
+// --- 2. SEARCH API (Bulletproof Version) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
+    // Debug Log: Check Render Logs to see if this prints
+    console.log("Search requested for:", q);
+
     if (!q || q.length < 1) return res.json([]);
 
-    // We search:
-    // 1. The Full Address (Number + Space + Street)
-    // 2. The PIN / PARID
+    // We search the Street Name OR the Number OR the ID
+    // We use CAST(ADRNO as TEXT) to prevent errors if the number is an Integer
     const query = `
         SELECT p.id, 
                t."PARID" as owner_name,  
@@ -36,18 +38,19 @@ app.get('/api/search', async (req, res) => {
                ST_Y(ST_Centroid(p.geom)) as lat
         FROM "Parcels_real" p
         JOIN "tax_info" t ON p."PIN" = t."PARID"
-        WHERE CONCAT(t."ADRNO", ' ', t."ADRADD") ILIKE $1 
+        WHERE t."ADRADD" ILIKE $1 
+           OR CAST(t."ADRNO" AS TEXT) ILIKE $1 
            OR t."PARID" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
-        console.log(`Search for "${q}" found ${result.rows.length} results.`);
+        console.log(`Found ${result.rows.length} results`);
         res.json(result.rows);
     } catch (err) {
-        console.error("Search Error:", err);
-        res.status(500).send("Search Error");
+        console.error("Search SQL Error:", err);
+        res.status(500).send("Database Error");
     }
 });
 
