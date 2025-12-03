@@ -19,31 +19,31 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (With The Fix) ---
+// --- 2. SEARCH API (Fixed to search Full Address) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
     if (!q || q.length < 1) return res.json([]);
 
-    // We join 'Parcels_real' (p) with 'tax_info' (t)
-    // We match p."PIN" to t."PARID"
-    // We search the Street Name (ADRADD) or the ID (PARID)
-    
+    // We search:
+    // 1. The Full Address (Number + Space + Street)
+    // 2. The PIN / PARID
     const query = `
         SELECT p.id, 
-               t."PARID" as owner_name,  -- Using ID as owner for now (Update this if you find an OWNER column!)
-               CONCAT(t."ADRNO", ' ', t."ADRADD") as address, -- Combines "123" + "Main St"
+               t."PARID" as owner_name,  
+               CONCAT(t."ADRNO", ' ', t."ADRADD") as address,
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat
         FROM "Parcels_real" p
         JOIN "tax_info" t ON p."PIN" = t."PARID"
-        WHERE t."ADRADD" ILIKE $1 OR t."PARID" ILIKE $1
+        WHERE CONCAT(t."ADRNO", ' ', t."ADRADD") ILIKE $1 
+           OR t."PARID" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
-        console.log("Search found:", result.rows.length);
+        console.log(`Search for "${q}" found ${result.rows.length} results.`);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err);
@@ -51,15 +51,15 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. CLICK API (With The Fix) ---
+// --- 3. CLICK API (Fail-Safe) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
-    // Same Logic: Join PIN to PARID to get the address when clicking
+    // Tries to find Linked Data, but falls back to Map Data if missing
     const query = `
         SELECT p.id, 
-               t."PARID" as owner_name,        
-               CONCAT(t."ADRNO", ' ', t."ADRADD") as address,    
+               COALESCE(t."PARID", p."PIN") as owner_name,        
+               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRADD"), 'Address Not Linked') as address,    
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_info" t ON p."PIN" = t."PARID"
