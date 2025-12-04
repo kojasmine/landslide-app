@@ -8,7 +8,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database Connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
@@ -19,20 +18,25 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API ---
+// --- 2. SEARCH API (Updated with JOIN) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 1) return res.json([]);
 
-    // Search both PIN (Owner placeholder) and PARCEL_TYP (Address placeholder)
+    // We join the MAP (p) with the ADDRESS DATA (t)
+    // We combine Number + Street + Suffix into one searchable string
     const query = `
-        SELECT id, 
-               "PIN" as owner_name, 
-               "PARCEL_TYP" as address, 
-               ST_X(ST_Centroid(geom)) as lng, 
-               ST_Y(ST_Centroid(geom)) as lat
-        FROM "Parcels_real"
-        WHERE "PARCEL_TYP" ILIKE $1 OR "PIN" ILIKE $1
+        SELECT 
+            p.id, 
+            p."PIN" as owner_name, 
+            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) as address, 
+            ST_X(ST_Centroid(p.geom)) as lng, 
+            ST_Y(ST_Centroid(p.geom)) as lat
+        FROM "Parcels_real" p
+        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
+        WHERE 
+            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) ILIKE $1 
+            OR p."PIN" ILIKE $1
         LIMIT 5;
     `;
 
@@ -45,17 +49,20 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. CLICK API ---
+// --- 3. CLICK API (Updated with JOIN) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
+    // When clicking, also grab the address from the other table
     const query = `
-        SELECT id, 
-               "PIN" as owner_name,        
-               "PARCEL_TYP" as address,    
-               ST_AsGeoJSON(geom) as geometry
-        FROM "Parcels_real"                
-        ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
+        SELECT 
+            p.id, 
+            p."PIN" as owner_name,        
+            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) as address,    
+            ST_AsGeoJSON(p.geom) as geometry
+        FROM "Parcels_real" p
+        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"     
+        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
     
