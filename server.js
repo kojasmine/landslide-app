@@ -18,33 +18,38 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (FIXED SPACING) ---
+
+// --- 2. SEARCH API (SMARTER VERSION) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
+    
     if (!q || q.length < 1) return res.json([]);
 
-    // FIX: Use CONCAT_WS(' ', ...)
-    // This stands for "With Separator". It puts a space between fields,
-    // BUT it is smart enough to skip NULL fields so you don't get double spaces.
-    // We also cast "ADRNO"::text to make sure numbers act like text.
-    
+    // 1. Split user input into words (e.g., "123 Main" -> ["123", "Main"])
+    const words = q.trim().split(/\s+/);
+
+    // 2. Build a query that requires EVERY word to be present
+    // We create a confusing looking string like: "PARCEL_TYP" ILIKE $1 AND "PARCEL_TYP" ILIKE $2 ...
+    const conditions = words.map((_, index) => `"PARCEL_TYP" ILIKE $${index + 1}`).join(' AND ');
+
+    // 3. Add % symbols to every word (e.g., "%123%", "%Main%")
+    const searchTerms = words.map(w => `%${w}%`);
+
     const query = `
-        SELECT 
-            p.id, 
-            p."PIN" as owner_name, 
-            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) as address, 
-            ST_X(ST_Centroid(p.geom)) as lng, 
-            ST_Y(ST_Centroid(p.geom)) as lat
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
-        WHERE 
-            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) ILIKE $1 
-            OR p."PIN" ILIKE $1
+        SELECT id, 
+               "PIN" as owner_name, 
+               "PARCEL_TYP" as address, 
+               ST_X(ST_Centroid(geom)) as lng, 
+               ST_Y(ST_Centroid(geom)) as lat
+        FROM "Parcels_real"
+        WHERE (${conditions}) 
+           OR "PIN" ILIKE $1  -- Keep PIN search simple (just the first word/term)
         LIMIT 5;
     `;
 
     try {
-        const result = await pool.query(query, [`%${q}%`]);
+        // Pass the array of words to the database
+        const result = await pool.query(query, searchTerms);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err);
@@ -52,31 +57,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. CLICK API (FIXED SPACING) ---
-app.get('/api/parcels', async (req, res) => {
-    const { lat, lng } = req.query;
-    
-    // We apply the same CONCAT_WS fix here so the popup looks nice too
-    const query = `
-        SELECT 
-            p.id, 
-            p."PIN" as owner_name,        
-            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) as address,    
-            ST_AsGeoJSON(p.geom) as geometry
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"     
-        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
-        LIMIT 1;
-    `;
-    
-    try {
-        const result = await pool.query(query, [lng, lat]);
-        res.json(result.rows);
-    } catch (err) {
-        console.error("Click Error:", err);
-        res.status(500).send("Server Error");
-    }
-});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
