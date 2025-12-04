@@ -19,17 +19,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API ---
+// --- 2. SEARCH API (FIXED: Now includes Geometry) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
-    
-    // If search is empty, return nothing
     if (!q || q.length < 1) return res.json([]);
 
     const words = q.trim().split(/\s+/);
     
-    // We search the Tax Table columns (Number or Street) OR the Map PIN
-    // Note: We cast ADRNO to text because it is an integer in your database
+    // Search Tax Table columns OR Map PIN
     const conditions = words.map((_, index) => 
         `(t."ADRNO"::text ILIKE $${index + 1} OR t."ADRSTR" ILIKE $${index + 1} OR p."PIN" ILIKE $${index + 1})`
     ).join(' AND ');
@@ -39,13 +36,13 @@ app.get('/api/search', async (req, res) => {
     const query = `
         SELECT p.id, 
                p."PIN" as owner_name, 
-               -- GLUE THE ADDRESS TOGETHER: Number + Street + Suffix + City
                CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME") as address,
                ST_X(ST_Centroid(p.geom)) as lng, 
-               ST_Y(ST_Centroid(p.geom)) as lat
+               ST_Y(ST_Centroid(p.geom)) as lat,
+               ST_AsGeoJSON(p.geom) as geometry   -- <--- THIS WAS MISSING!
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"  -- <--- THE FIX: Matching PIN to PARID
+        ON p."PIN" = t."PARID" 
         WHERE (${conditions})
         LIMIT 5;
     `;
@@ -59,7 +56,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. GET PARCEL BY LOCATION (Clicking) ---
+// --- 3. GET PARCEL BY CLICK ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
@@ -70,7 +67,7 @@ app.get('/api/parcels', async (req, res) => {
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID" -- <--- THE FIX: Matching PIN to PARID
+        ON p."PIN" = t."PARID"
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
