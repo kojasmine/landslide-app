@@ -18,24 +18,27 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (Updated with JOIN) ---
+// --- 2. SEARCH API (FIXED SPACING) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 1) return res.json([]);
 
-    // We join the MAP (p) with the ADDRESS DATA (t)
-    // We combine Number + Street + Suffix into one searchable string
+    // FIX: Use CONCAT_WS(' ', ...)
+    // This stands for "With Separator". It puts a space between fields,
+    // BUT it is smart enough to skip NULL fields so you don't get double spaces.
+    // We also cast "ADRNO"::text to make sure numbers act like text.
+    
     const query = `
         SELECT 
             p.id, 
             p."PIN" as owner_name, 
-            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) as address, 
+            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) as address, 
             ST_X(ST_Centroid(p.geom)) as lng, 
             ST_Y(ST_Centroid(p.geom)) as lat
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
         WHERE 
-            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) ILIKE $1 
+            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) ILIKE $1 
             OR p."PIN" ILIKE $1
         LIMIT 5;
     `;
@@ -49,16 +52,16 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. CLICK API (Updated with JOIN) ---
+// --- 3. CLICK API (FIXED SPACING) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
-    // When clicking, also grab the address from the other table
+    // We apply the same CONCAT_WS fix here so the popup looks nice too
     const query = `
         SELECT 
             p.id, 
             p."PIN" as owner_name,        
-            TRIM(CONCAT(t."ADRNO", ' ', t."ADRDIR", ' ', t."ADRSTR", ' ', t."ADRSUF")) as address,    
+            TRIM(CONCAT_WS(' ', t."ADRNO"::text, t."ADRDIR", t."ADRSTR", t."ADRSUF")) as address,    
             ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"     
