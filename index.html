@@ -1,9 +1,11 @@
-<!DOCTYPE html>
+.<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="/manifest.json">
     
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,10 +25,11 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
         }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
+        /* FIXED: Added cursor pointer so you know it is clickable */
+        .search-icon { font-size: 20px; color: #666; margin-right: 10px; cursor: pointer; padding: 5px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* --- CONTROLS (Right Side) --- */
+        /* --- CONTROLS --- */
         .controls-container {
             position: absolute; bottom: 220px; right: 20px;
             display: flex; flex-direction: column; gap: 15px; z-index: 1000;
@@ -53,7 +56,7 @@
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
         .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word;}
+        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
         .action-row { display: flex; gap: 10px; margin-top: 15px; }
         .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
@@ -74,24 +77,20 @@
 </head>
 <body>
 
-    <!-- SEARCH -->
+    <!-- FIXED: Added onclick to the span -->
     <div class="search-container">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon" onclick="executeSearch()">🔍</span>
         <input type="text" class="search-input" placeholder="Search PIN or Address...">
     </div>
 
-    <!-- MAP -->
     <div id="map"></div>
 
-    <!-- BUTTONS -->
     <div class="controls-container">
         <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
         <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
-        <!-- NEW: Star Button -->
         <div class="fab-btn" onclick="showSavedList()" title="My Saved Places">⭐</div>
     </div>
 
-    <!-- CARD -->
     <div class="info-card" id="card">
         <div class="card-handle"></div>
         <div class="prop-label">OWNER / PIN</div>
@@ -100,7 +99,6 @@
         <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
         <div class="action-row">
             <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <!-- FIXED: Save Button now works -->
             <div class="action-btn btn-primary" onclick="saveProperty()">Save ⭐</div>
         </div>
     </div>
@@ -120,26 +118,46 @@
 
         let currentBaseLayer = "satellite";
         let currentGeoJSON = null;
-        let selectedParcelData = null; // Stores the current property data
+        let selectedParcelData = null;
 
-        // --- SEARCH ---
+        // --- NEW SEARCH LOGIC (Works on Click AND Enter) ---
         const searchInput = document.querySelector('.search-input');
-        searchInput.addEventListener('keypress', async (e) => {
+
+        // This is the shared function that actually does the work
+        async function executeSearch() {
+            const text = searchInput.value;
+            if(text.length < 2) {
+                alert("Please type at least 2 characters.");
+                return;
+            }
+            
+            // Hide keyboard
+            searchInput.blur();
+
+            try {
+                const response = await fetch(`/api/search?q=${text}`);
+                const results = await response.json();
+
+                if (results.length > 0) {
+                    const bestMatch = results[0];
+                    map.flyTo([bestMatch.lat, bestMatch.lng], 18);
+                    
+                    setTimeout(() => {
+                        openCard(bestMatch);
+                    }, 1000);
+                } else {
+                    alert("No matches found.");
+                }
+            } catch (err) {
+                console.error("Search failed", err);
+                alert("Search error (check backend connection).");
+            }
+        }
+        
+        // Listener for ENTER key
+        searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-                searchInput.blur();
-                try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 18);
-                        setTimeout(() => { openCard(bestMatch); }, 1000);
-                    } else {
-                        alert("No matches found.");
-                    }
-                } catch (err) { console.error(err); }
+                executeSearch();
             }
         });
 
@@ -185,9 +203,9 @@
             } catch (err) { console.error(err); }
         });
 
-        // --- UI HELPERS ---
+        // --- HELPERS ---
         function openCard(parcel) {
-            selectedParcelData = parcel; // STORE DATA FOR SAVING
+            selectedParcelData = parcel;
             document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
             document.getElementById('address').innerText = parcel.address || "No Info";
             document.getElementById('card').classList.add('active');
@@ -203,20 +221,13 @@
             selectedParcelData = null;
         }
 
-        // --- SAVE FUNCTIONALITY (New!) ---
         function saveProperty() {
             if (!selectedParcelData) return;
-
-            // Get existing list from phone memory
             let savedList = JSON.parse(localStorage.getItem('mySavedParcels') || "[]");
-
-            // Check if duplicate
             if (savedList.some(p => p.id === selectedParcelData.id)) {
                 alert("Already saved!");
                 return;
             }
-
-            // Add and Save
             savedList.push(selectedParcelData);
             localStorage.setItem('mySavedParcels', JSON.stringify(savedList));
             alert("Property Saved! ⭐");
@@ -229,7 +240,6 @@
             } else {
                 let msg = "Saved Places:\n\n";
                 savedList.forEach(p => {
-                    // Show Address if available, otherwise show Owner/PIN
                     let title = p.address || p.owner_name || "Unknown Property";
                     msg += "• " + title + "\n";
                 });
