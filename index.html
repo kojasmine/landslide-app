@@ -10,12 +10,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-
-
     <style>
-
-	
-
         /* --- GENERAL --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f0f0f0; }
         #map { height: 100vh; width: 100%; z-index: 1; }
@@ -26,10 +21,11 @@
             background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             display: flex; align-items: center; padding: 0 15px; height: 55px;
         }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
+        /* ADDED: cursor pointer to make it clickable */
+        .search-icon { font-size: 18px; color: #666; margin-right: 10px; cursor: pointer; padding: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* --- NAVIGATION HUD --- */
+        /* --- HUD --- */
         .nav-hud {
             position: absolute; top: 120px; left: 20px; right: 20px;
             background: #2196F3; color: white; padding: 15px; border-radius: 12px;
@@ -42,7 +38,7 @@
             padding: 6px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; font-weight: 600;
         }
 
-        /* --- BUTTONS --- */
+        /* --- CONTROLS --- */
         .controls-container {
             position: absolute; bottom: 40px; right: 20px;
             display: flex; flex-direction: column; gap: 15px; z-index: 1000;
@@ -57,7 +53,7 @@
         .active-btn { background-color: #2196F3 !important; color: white !important; }
         .menu-btn { background-color: #111; color: white; }
 
-        /* --- MENUS & MODALS --- */
+        /* --- MODALS --- */
         .modal-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 2000;
@@ -66,65 +62,38 @@
         .modal-overlay.open { display: flex; }
         
         .modal-panel {
-            background: #f9f9f9; width: 100%; height: 85vh; /* Take up most of screen */
+            background: #f9f9f9; width: 100%; height: 85vh; 
             border-top-left-radius: 25px; border-top-right-radius: 25px;
             padding: 0; overflow-y: auto;
             transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             display: flex; flex-direction: column;
         }
         .modal-overlay.open .modal-panel { transform: translateY(0); }
-
-        /* Modal Headers */
-        .modal-header {
-            padding: 25px 20px; background: white; border-bottom: 1px solid #eee;
-            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;
-        }
+        .modal-header { padding: 25px 20px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
         .modal-title { font-size: 22px; font-weight: 700; color: #111; }
         .close-icon { font-size: 24px; padding: 10px; cursor: pointer; color: #666; background: #f0f0f0; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-
-        /* Menu Items */
         .menu-list { padding: 20px; }
-        .menu-item {
-            background: white; padding: 18px; border-radius: 12px; margin-bottom: 15px;
-            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;
-        }
+        .menu-item { background: white; padding: 18px; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
         .menu-icon { font-size: 22px; margin-right: 15px; width: 30px; text-align: center; }
         .menu-text { flex: 1; font-size: 16px; font-weight: 500; color: #333; }
         .menu-arrow { color: #ccc; }
-
-        /* Settings Toggles */
-        .setting-row {
-            display: flex; align-items: center; justify-content: space-between;
-            background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
+        .setting-row { display: flex; align-items: center; justify-content: space-between; background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .setting-label { font-size: 16px; font-weight: 500; color: #333; }
-        
-        /* Toggle Switch CSS */
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #2196F3; }
         input:checked + .slider:before { transform: translateX(22px); }
-
-        /* Account Banner */
-        .account-banner {
-            background: linear-gradient(135deg, #111 0%, #333 100%); color: white;
-            padding: 30px; border-radius: 16px; margin-bottom: 25px; text-align: center;
-        }
+        .account-banner { background: linear-gradient(135deg, #111 0%, #333 100%); color: white; padding: 30px; border-radius: 16px; margin-bottom: 25px; text-align: center; }
         .avatar-large { width: 80px; height: 80px; background: #555; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; font-size: 35px; border: 3px solid white; }
-        .upgrade-btn {
-            background: #2196F3; color: white; border: none; padding: 12px 25px;
-            border-radius: 25px; font-weight: bold; margin-top: 15px; cursor: pointer;
-        }
+        .upgrade-btn { background: #2196F3; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; margin-top: 15px; cursor: pointer; }
         .danger-btn { color: red; text-align: center; padding: 20px; cursor: pointer; font-weight: 600; margin-top: 20px; }
 
-        /* --- PROPERTY CARD --- */
+        /* --- CARD --- */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 1001; transform: translateY(110%); transition: transform 0.3s ease-out;
+            position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); z-index: 1001; transform: translateY(110%); transition: transform 0.3s ease-out;
         }
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
@@ -138,13 +107,15 @@
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         .popup-btn { background: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; width: 100%; margin-top: 5px; cursor: pointer; font-weight: bold; }
+        .custom-div-icon div { background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
     <!-- SEARCH -->
     <div class="search-container">
-        <span class="search-icon">🔍</span>
+        <!-- ADDED ONCLICK HERE -->
+        <span class="search-icon" onclick="performSearch()">🔍</span>
         <input type="text" class="search-input" placeholder="Search Address or Owner...">
     </div>
 
@@ -175,24 +146,16 @@
             </div>
             <div class="menu-list">
                 <div class="menu-item" onclick="openModal('accountModal')">
-                    <div class="menu-icon">👤</div>
-                    <div class="menu-text">My Account</div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-icon">👤</div><div class="menu-text">My Account</div><div class="menu-arrow">›</div>
                 </div>
                 <div class="menu-item" onclick="openModal('settingsModal')">
-                    <div class="menu-icon">⚙️</div>
-                    <div class="menu-text">Settings</div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div>
                 </div>
                 <div class="menu-item" onclick="shareLocation()">
-                    <div class="menu-icon">📍</div>
-                    <div class="menu-text">Share My Location</div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div>
                 </div>
                 <div class="menu-item" onclick="inviteFriend()">
-                    <div class="menu-icon">✉️</div>
-                    <div class="menu-text">Invite a Friend</div>
-                    <div class="menu-arrow">›</div>
+                    <div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div>
                 </div>
             </div>
         </div>
@@ -204,14 +167,14 @@
             <div class="modal-header">
                 <div class="close-icon" onclick="closeModal('accountModal')">←</div>
                 <div class="modal-title">My Account</div>
-                <div style="width:40px"></div> <!-- Spacer -->
+                <div style="width:40px"></div>
             </div>
             <div class="menu-list">
                 <div class="account-banner">
                     <div class="avatar-large">👤</div>
                     <h2>Guest User</h2>
                     <p>Free Plan</p>
-                    <button class="upgrade-btn" onclick="alert('Payment Integration coming in Phase 2!')">Upgrade to Pro</button>
+                    <button class="upgrade-btn" onclick="alert('Payment Integration coming soon!')">Upgrade to Pro</button>
                 </div>
                 <div class="menu-item">
                     <div class="menu-text"><b>User ID:</b> <span id="userIdDisplay">Loading...</span></div>
@@ -230,24 +193,13 @@
                 <div style="width:40px"></div>
             </div>
             <div class="menu-list">
-                <!-- Unit Toggle -->
                 <div class="setting-row">
                     <div class="setting-label">Units (Feet / Meters)</div>
-                    <label class="switch">
-                        <input type="checkbox" id="unitToggle" onchange="saveSettings()">
-                        <span class="slider"></span>
-                    </label>
+                    <label class="switch"><input type="checkbox" id="unitToggle" onchange="saveSettings()"><span class="slider"></span></label>
                 </div>
-                <!-- Map Type Default -->
                 <div class="setting-row">
                     <div class="setting-label">Start in Satellite Mode</div>
-                    <label class="switch">
-                        <input type="checkbox" id="mapToggle" checked onchange="saveSettings()">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="padding: 20px; color:#666; font-size:14px; line-height:1.5">
-                    Settings are saved automatically to this device.
+                    <label class="switch"><input type="checkbox" id="mapToggle" checked onchange="saveSettings()"><span class="slider"></span></label>
                 </div>
             </div>
         </div>
@@ -268,7 +220,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- SETUP MAP ---
+        // --- MAP SETUP ---
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
         const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
 
@@ -276,7 +228,7 @@
             center: [40.764356, -73.973057], zoom: 15, layers: [satelliteLayer], zoomControl: false 
         });
 
-        // --- GLOBAL VARIABLES ---
+        // --- VARS ---
         let currentBaseLayer = "satellite";
         let currentGeoJSON = null;
         let stakes = []; 
@@ -287,118 +239,98 @@
         let accuracyCircle = null;
         let isTracking = false;
         
-        // --- SETTINGS LOGIC ---
-        // Load settings from phone memory
+        // --- SETTINGS ---
         let useMetric = localStorage.getItem('useMetric') === 'true';
         document.getElementById('unitToggle').checked = useMetric;
-        
-        // Generate a random User ID for the "Account" page
         let userId = localStorage.getItem('userId');
-        if(!userId) {
-            userId = 'User-' + Math.floor(Math.random() * 100000);
-            localStorage.setItem('userId', userId);
-        }
+        if(!userId) { userId = 'User-' + Math.floor(Math.random() * 100000); localStorage.setItem('userId', userId); }
         document.getElementById('userIdDisplay').innerText = userId;
 
         function saveSettings() {
             useMetric = document.getElementById('unitToggle').checked;
             localStorage.setItem('useMetric', useMetric);
-            // Reload page if map type changed? No, just save preference for next load
         }
 
         function clearAllData() {
-            if(confirm("Are you sure you want to delete all stakes? This cannot be undone.")) {
+            if(confirm("Delete all stakes?")) {
                 stakes.forEach(s => map.removeLayer(s.markerRef));
-                stakes = [];
-                localStorage.setItem('myStakes', '[]');
-                alert("All data cleared.");
-                closeModal('accountModal');
+                stakes = []; localStorage.setItem('myStakes', '[]');
+                alert("Cleared."); closeModal('accountModal');
             }
         }
 
-        // --- MODAL SYSTEM ---
-        function openModal(id) {
-            document.getElementById(id).classList.add('open');
-            // If opening a sub-modal (like Account), close Main Menu for cleaner look? 
-            // Optional, but let's keep Main Menu open behind it for "Back" feel if we wanted
-            if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open');
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('open');
-            // If closing a sub-modal, re-open Main Menu?
-            if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open');
-        }
+        // --- MODALS ---
+        function openModal(id) { document.getElementById(id).classList.add('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open'); }
 
-        // --- RESTORE STAKES ---
+        // --- RESTORE ---
         const savedStakes = JSON.parse(localStorage.getItem('myStakes') || '[]');
         savedStakes.forEach(s => addStakeToMap(s.lat, s.lng, false));
 
         // --- SHARE ---
         async function shareLocation() {
-            if (!userMarker) { alert("Please enable GPS (📍) first!"); return; }
+            if (!userMarker) { alert("Enable GPS (📍) first!"); return; }
             const { lat, lng } = userMarker.getLatLng();
             const link = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-            if (navigator.share) await navigator.share({ title: 'My Location', url: link });
-            else prompt("Copy link:", link);
+            if (navigator.share) await navigator.share({ title: 'Location', url: link }); else prompt("Copy link:", link);
         }
         async function inviteFriend() {
             const appUrl = window.location.href;
-            if (navigator.share) await navigator.share({ title: 'Landslide App', url: appUrl });
-            else prompt("Copy link:", appUrl);
+            if (navigator.share) await navigator.share({ title: 'Landslide', url: appUrl }); else prompt("Copy link:", appUrl);
         }
 
-        // --- SEARCH ---
+        // --- SEARCH (FIXED) ---
         const searchInput = document.querySelector('.search-input');
-        searchInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-                searchInput.blur();
-                try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 18);
-                        setTimeout(() => showParcelData(bestMatch), 1000);
-                    } else { alert("No matches found."); }
-                } catch (err) { console.error(err); }
-            }
+        
+        // Function to run search
+        async function performSearch() {
+            const text = searchInput.value;
+            if(text.length < 2) return; 
+            searchInput.blur();
+            try {
+                const response = await fetch(`/api/search?q=${text}`);
+                const results = await response.json();
+                if (results.length > 0) {
+                    const bestMatch = results[0];
+                    // Fly to location
+                    map.flyTo([bestMatch.lat, bestMatch.lng], 18);
+                    // Show data
+                    setTimeout(() => showParcelData(bestMatch), 1000);
+                } else { alert("No matches found."); }
+            } catch (err) { console.error(err); }
+        }
+
+        // Listen for Enter Key
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
         });
 
-        // --- MAP CONTROLS ---
+        // --- CONTROLS ---
         function toggleLayer() {
-            if (currentBaseLayer === "satellite") {
-                map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street";
-            } else {
-                map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite";
-            }
+            if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } 
+            else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; }
         }
 
         function toggleGPS() {
             if (!isTracking) {
                 map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 20 });
-                document.getElementById('gpsBtn').classList.add('active-btn');
-                isTracking = true;
+                document.getElementById('gpsBtn').classList.add('active-btn'); isTracking = true;
             } else {
-                map.stopLocate(); isTracking = false;
-                document.getElementById('gpsBtn').classList.remove('active-btn');
+                map.stopLocate(); isTracking = false; document.getElementById('gpsBtn').classList.remove('active-btn');
                 if(accuracyCircle) map.removeLayer(accuracyCircle);
             }
         }
 
         map.on('locationfound', (e) => {
             const radius = e.accuracy / 2;
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng); accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius);
-            } else {
+            if (userMarker) { userMarker.setLatLng(e.latlng); accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } 
+            else {
                 userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1, className: 'gps-pulse' }).addTo(map);
                 accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map);
             }
             if (navTarget) updateNavigation(e.latlng);
         });
 
-        // --- STAKE & NAV ---
         function toggleStakeMode() {
             isStakingMode = !isStakingMode;
             const btn = document.getElementById('stakeBtn');
@@ -418,24 +350,15 @@
 
         function startNavigation(targetLat, targetLng) {
             if (!isTracking) { alert("Enable GPS first!"); toggleGPS(); }
-            navTarget = L.latLng(targetLat, targetLng);
-            document.getElementById('navHud').style.display = 'block';
-            map.closePopup();
+            navTarget = L.latLng(targetLat, targetLng); document.getElementById('navHud').style.display = 'block'; map.closePopup();
             if (userMarker) updateNavigation(userMarker.getLatLng());
         }
 
         function updateNavigation(userLatLng) {
             const distanceMeters = userLatLng.distanceTo(navTarget);
             let displayDist = "";
-            
-            // USE SETTINGS FOR UNIT
-            if(useMetric) {
-                displayDist = Math.round(distanceMeters) + " m";
-            } else {
-                const feet = Math.round(distanceMeters * 3.28084);
-                displayDist = feet + " ft";
-            }
-            
+            if(useMetric) displayDist = Math.round(distanceMeters) + " m";
+            else { const feet = Math.round(distanceMeters * 3.28084); displayDist = feet + " ft"; }
             document.getElementById('distText').innerText = displayDist;
             if (navLine) map.removeLayer(navLine);
             navLine = L.polyline([userLatLng, navTarget], { color: 'white', weight: 4, dashArray: '10, 10', opacity: 0.8 }).addTo(map);
@@ -449,8 +372,7 @@
         function deleteStake(lat, lng) {
             const stake = stakes.find(s => s.lat === lat && s.lng === lng);
             if (stake && stake.markerRef) map.removeLayer(stake.markerRef);
-            stakes = stakes.filter(s => s.lat !== lat);
-            saveStakesToStorage();
+            stakes = stakes.filter(s => s.lat !== lat); saveStakesToStorage();
         }
 
         function saveStakesToStorage() {
@@ -458,7 +380,6 @@
             localStorage.setItem('myStakes', JSON.stringify(dataToSave));
         }
 
-        // --- CLICK HANDLER ---
         map.on('click', async (e) => {
             const { lat, lng } = e.latlng;
             if (isStakingMode) { addStakeToMap(lat, lng); return; }
