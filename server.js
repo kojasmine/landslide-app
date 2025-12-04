@@ -19,22 +19,20 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (Updated) ---
+// --- 2. SEARCH API ---
 app.get('/api/search', async (req, res) => {
-    const { q } = req.query; 
-    
+    const { q } = req.query;
     if (!q || q.length < 1) return res.json([]);
 
-    // Search by PIN or Street Name
+    // Search both PIN (Owner placeholder) and PARCEL_TYP (Address placeholder)
     const query = `
-        SELECT p.id, 
-               p."PIN" as owner_name, 
-               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address, 
-               ST_X(ST_Centroid(p.geom)) as lng, 
-               ST_Y(ST_Centroid(p.geom)) as lat
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
-        WHERE t."ADRSTR" ILIKE $1 OR p."PIN" ILIKE $1
+        SELECT id, 
+               "PIN" as owner_name, 
+               "PARCEL_TYP" as address, 
+               ST_X(ST_Centroid(geom)) as lng, 
+               ST_Y(ST_Centroid(geom)) as lat
+        FROM "Parcels_real"
+        WHERE "PARCEL_TYP" ILIKE $1 OR "PIN" ILIKE $1
         LIMIT 5;
     `;
 
@@ -47,20 +45,17 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. GET PARCEL BY LOCATION (Address Join) ---
+// --- 3. CLICK API ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
-    // SAFE QUERY: Real Address, PIN as Owner
     const query = `
-        SELECT p.id, 
-               p."PIN" as owner_name,            -- Using PIN to be safe
-               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF") as address, -- Real Address!
-               ST_AsGeoJSON(p.geom) as geometry
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"                   -- Joining the tables
-        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
+        SELECT id, 
+               "PIN" as owner_name,        
+               "PARCEL_TYP" as address,    
+               ST_AsGeoJSON(geom) as geometry
+        FROM "Parcels_real"                
+        ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
     
@@ -68,8 +63,8 @@ app.get('/api/parcels', async (req, res) => {
         const result = await pool.query(query, [lng, lat]);
         res.json(result.rows);
     } catch (err) {
-        console.error("Map Click Error:", err);
-        res.status(500).send("Database Error: " + err.message); 
+        console.error("Click Error:", err);
+        res.status(500).send("Server Error");
     }
 });
 
