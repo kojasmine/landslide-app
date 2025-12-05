@@ -10,6 +10,22 @@
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f0f0f0; }
         #map { height: 100vh; width: 100%; z-index: 1; }
 
+        /* --- THE GPS SUPER DOT (Pure CSS) --- */
+        /* This is no longer a map vector, it is a styled HTML Block */
+        .gps-pulse-marker {
+            background-color: #2196F3;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 15px rgba(33, 150, 243, 1);
+            animation: pulse-blue 2s infinite;
+        }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(33, 150, 243, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+        }
+
         /* CROSSHAIR */
         .center-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 900; pointer-events: none; display: none; }
         .ch-line { background: #ff0000; position: absolute; box-shadow: 0 0 2px black; }
@@ -37,7 +53,6 @@
         .fab-btn { width: 55px; height: 55px; background: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: transform 0.1s; position: relative; }
         .fab-btn:active { transform: scale(0.90); }
         .active-btn { background-color: #2196F3 !important; color: white !important; }
-        .searching-btn { background-color: #FFC107 !important; color: black !important; } /* Yellow for searching */
         .stake-active { background-color: #c30b82 !important; color: white !important; }
         .menu-btn { background-color: #111; color: white; }
         
@@ -90,16 +105,6 @@
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        /* ANIMATIONS */
-        .gps-pulse { 
-            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); 
-            animation: pulse-blue 2s infinite; 
-            border-radius: 50%; 
-            background: #2196F3; 
-            border: 3px solid white; 
-        }
-        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(33, 150, 243, 0); } 100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
-        
         .popup-btn { background: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; width: 100%; margin-top: 5px; cursor: pointer; font-weight: bold; }
         .custom-div-icon div { background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
     </style>
@@ -182,7 +187,7 @@
         try { savedProperties = JSON.parse(localStorage.getItem('savedProperties') || '[]'); } catch(e) { savedProperties = []; }
         
         let activeParcelData = null; 
-        let hasUnsavedChanges = false; // Only true when we add/delete stakes
+        let hasUnsavedChanges = false;
 
         let isStakingMode = false; let navTarget = null; let navLine = null; let userMarker = null; let accuracyCircle = null; let isTracking = false;
 
@@ -241,7 +246,7 @@
                 }
                 
                 document.getElementById('activePropName').innerText = "Active: " + prop.name;
-                hasUnsavedChanges = false; // Loading doesn't make it dirty
+                hasUnsavedChanges = false; 
                 saveCurrentStakesToStorage(); updateSaveBar(); closeModal('accountModal');
             }
         }
@@ -304,7 +309,7 @@
 
         function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
         
-        // --- BULLETPROOF GPS (USES CIRCLE MARKER ON CUSTOM PANE) ---
+        // --- BULLETPROOF GPS ---
         function toggleGPS() {
             const btn = document.getElementById('gpsBtn');
             const status = document.getElementById('gpsStatus');
@@ -326,15 +331,16 @@
             document.getElementById('gpsStatus').innerText = "LOCKED";
             const radius = e.accuracy / 2;
             
-            // WE USE CIRCLEMARKER IN 'gpsPane' (zIndex 3000) SO IT CAN'T BE HIDDEN
+            // WE SWITCHED TO 'L.marker' WITH A CSS ICON BECAUSE IT IS MORE STABLE THAN 'L.circleMarker'
+            // THIS ENSURES IT STAYS ON TOP OF SATELLITE TILES
             if (userMarker) { 
                 userMarker.setLatLng(e.latlng); 
-                userMarker.bringToFront(); 
             } else { 
-                userMarker = L.circleMarker(e.latlng, { 
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse', pane: 'gpsPane' 
-                }).addTo(map); 
+                // Define the CSS icon
+                var gpsIcon = L.divIcon({ className: 'gps-pulse-marker', iconSize: [24, 24], iconAnchor: [12, 12] });
+                
+                // Create marker on the custom 'gpsPane' (z-index 3000)
+                userMarker = L.marker(e.latlng, { icon: gpsIcon, pane: 'gpsPane' }).addTo(map);
             }
             
             if(accuracyCircle) { accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } 
@@ -349,9 +355,6 @@
             document.getElementById('gpsStatus').innerText = "ERROR";
             isTracking = false; 
         });
-
-        // Force dot visibility loop
-        setInterval(() => { if(userMarker) userMarker.bringToFront(); }, 2000);
 
         function toggleStakeMode() { isStakingMode = !isStakingMode; const btn = document.getElementById('stakeBtn'); const crosshair = document.getElementById('crosshair'); const dropBtn = document.getElementById('dropBtn'); if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; } }
         function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true, true); if(navigator.vibrate) navigator.vibrate(50); }
