@@ -8,26 +8,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database Connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// --- 1. SERVE THE APP ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (CHECKED: Includes Geometry & Address Glue) ---
+// --- SEARCH API ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 1) return res.json([]);
 
     const words = q.trim().split(/\s+/);
     
-    // Search logic: Checks Address Number OR Street Name OR Map PIN
-    // Note: Casts ADRNO to text to prevent type errors
+    // SAFE SEARCH: Cast numbers to text so they don't crash
     const conditions = words.map((_, index) => 
         `(t."ADRNO"::text ILIKE $${index + 1} OR t."ADRSTR" ILIKE $${index + 1} OR p."PIN" ILIKE $${index + 1})`
     ).join(' AND ');
@@ -37,14 +34,14 @@ app.get('/api/search', async (req, res) => {
     const query = `
         SELECT p.id, 
                p."PIN" as owner_name, 
-               -- GLUE ADDRESS: Number + Street + Suffix + City
-               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME") as address,
+               -- Handle NULL addresses gracefully
+               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME"), 'Address Unknown') as address,
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat,
-               ST_AsGeoJSON(p.geom) as geometry  -- CRITICAL: Needed for yellow line
+               ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"  -- JOIN: Matches Map PIN to Tax PARID
+        ON p."PIN" = t."PARID"
         WHERE (${conditions})
         LIMIT 5;
     `;
@@ -54,22 +51,23 @@ app.get('/api/search', async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err);
-        res.status(500).send("Search Error: " + err.message);
+        // Don't crash the server, just send empty list
+        res.json([]);
     }
 });
 
-// --- 3. GET PARCEL BY LOCATION (Clicking) ---
+// --- MAP CLICK API ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
     const query = `
         SELECT p.id, 
                p."PIN" as owner_name,        
-               CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME") as address,    
+               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME"), 'No Address Info') as address,    
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID" -- JOIN: Matches Map PIN to Tax PARID
+        ON p."PIN" = t."PARID"
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
