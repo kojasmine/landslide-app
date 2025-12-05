@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Prevent the browser from zooming the whole page -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
@@ -10,43 +9,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
+        /* BASE STYLES */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
         
-        #map { height: 100vh; width: 100%; z-index: 1; touch-action: none; }
+        /* MAP (Background Layer) */
+        #map { 
+            height: 100vh; width: 100%; 
+            z-index: 1 !important; /* Force Map to be at the bottom */
+            touch-action: none; 
+        }
 
-        /* SEARCH BAR */
+        /* --- UI ELEMENTS (Floating on Top) --- */
+        
+        /* 1. SEARCH BAR (MENU) */
         .search-container {
             position: absolute; top: 50px; left: 20px; right: 20px;
-            z-index: 1000;
+            z-index: 99999 !important; /* Force on Top */
             background: white; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
         }
         .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* CONTROLS */
+        /* 2. BUTTONS (Stack & GPS) */
         .controls-container {
             position: absolute; bottom: 220px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 15px; 
+            z-index: 99999 !important; /* Force on Top */
         }
         .fab-btn {
             width: 50px; height: 50px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
         .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
 
-        /* CARD */
+        /* 3. INFO CARD */
         .info-card {
             position: absolute; bottom: 0; left: 0; right: 0;
             background: white;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
             padding: 25px 20px 40px 20px;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 1001;
+            z-index: 99999 !important; /* Force on Top */
             transform: translateY(110%);
             transition: transform 0.3s ease-out;
         }
@@ -59,7 +67,7 @@
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        /* GPS PULSE */
+        /* ANIMATIONS */
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
             animation: pulse-blue 2s infinite;
@@ -74,19 +82,22 @@
 </head>
 <body>
 
+    <!-- SEARCH BAR -->
     <div class="search-container">
         <span class="search-icon">🔍</span>
         <input type="text" class="search-input" placeholder="Search PIN or Address...">
     </div>
 
+    <!-- MAP CONTAINER -->
     <div id="map"></div>
 
+    <!-- BUTTONS -->
     <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
-        <!-- Button is still here to re-center if you get lost, but starts active -->
-        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
+        <div class="fab-btn" onclick="toggleLayer()" title="Switch Layers">🗺️</div>
+        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Find Me">📍</div>
     </div>
 
+    <!-- INFO CARD -->
     <div class="info-card" id="card">
         <div class="card-handle"></div>
         <div class="prop-label">OWNER / PIN</div>
@@ -101,7 +112,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- MAP SETUP ---
+        // --- 1. MAP SETUP ---
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri',
             maxZoom: 19
@@ -111,6 +122,7 @@
             maxZoom: 19
         });
 
+        // Initialize Map
         const map = L.map('map', {
             center: [40.764356, -73.973057], 
             zoom: 18, 
@@ -122,7 +134,7 @@
         let currentBaseLayer = "satellite";
         let currentGeoJSON = null;
 
-        // --- GPS LOGIC ---
+        // --- 2. AUTO GPS LOGIC ---
         let userMarker = null;
         let isTracking = false;
         let followUser = false; 
@@ -135,7 +147,7 @@
                 isTracking = true;
                 followUser = true; 
             } else {
-                // If clicked while on, just re-center
+                // RE-CENTER
                 if (userMarker) {
                     map.flyTo(userMarker.getLatLng(), 18);
                     followUser = true;
@@ -145,7 +157,6 @@
         }
 
         map.on('locationfound', (e) => {
-            // Update Blue Dot Position
             if (userMarker) {
                 userMarker.setLatLng(e.latlng);
             } else {
@@ -154,24 +165,21 @@
                     fillOpacity: 1, className: 'gps-pulse'
                 }).addTo(map);
             }
-
-            // Move Camera if locked
             if (followUser) {
                 map.flyTo(e.latlng, map.getZoom(), { animate: false });
             }
         });
 
-        // Unlock camera if user drags
         map.on('dragstart', () => {
             followUser = false;
-            document.getElementById('gpsBtn').style.color = "#666"; // Turn Grey
+            document.getElementById('gpsBtn').style.color = "#666"; 
         });
 
         map.on('locationerror', (e) => {
             console.log("GPS Error", e);
         });
 
-        // --- SEARCH & CLICKS ---
+        // --- 3. SEARCH & CLICK HANDLERS ---
         const searchInput = document.querySelector('.search-input');
         searchInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
@@ -235,8 +243,7 @@
             if (currentGeoJSON) map.removeLayer(currentGeoJSON);
         }
 
-        // --- AUTO START GPS ---
-        // We trigger this immediately so the blue dot appears on load
+        // Start GPS automatically
         toggleGPS();
 
     </script>
