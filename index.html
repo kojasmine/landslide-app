@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f0f0f0; }
         #map { height: 100vh; width: 100%; z-index: 1; }
@@ -20,25 +18,26 @@
         .ch-circle { width: 20px; height: 20px; border: 2px solid #ff0000; border-radius: 50%; position: absolute; top: -11px; left: -11px; box-shadow: 0 0 2px black; }
 
         /* DROP BUTTON */
-        .drop-btn { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); background-color: #c30b82; color: white; padding: 15px 30px; border-radius: 30px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 2001; border: 2px solid white; cursor: pointer; display: none; }
+        .drop-btn { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); background-color: #c30b82; color: white; padding: 15px 30px; border-radius: 30px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000; border: 2px solid white; cursor: pointer; display: none; }
         .drop-btn:active { transform: translateX(-50%) scale(0.95); }
 
         /* SEARCH */
-        .search-container { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 2001; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 0 15px; height: 55px; }
+        .search-container { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 1000; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 0 15px; height: 55px; }
         .search-icon { font-size: 18px; color: #666; margin-right: 10px; cursor: pointer; padding: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
         /* HUD */
-        .nav-hud { position: absolute; top: 120px; left: 20px; right: 20px; background: #2196F3; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2001; display: none; text-align: center; }
+        .nav-hud { position: absolute; top: 120px; left: 20px; right: 20px; background: #2196F3; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; display: none; text-align: center; }
         .nav-distance { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
         .nav-label { font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
         .nav-stop { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
 
-        /* CONTROLS (Z-INDEX 2001 to stay on top) */
-        .controls-container { position: absolute; bottom: 40px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 2001; align-items: flex-end; }
+        /* CONTROLS */
+        .controls-container { position: absolute; bottom: 40px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end; }
         .fab-btn { width: 55px; height: 55px; background: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: transform 0.1s; position: relative; }
         .fab-btn:active { transform: scale(0.90); }
         .active-btn { background-color: #2196F3 !important; color: white !important; }
+        .searching-btn { background-color: #FFC107 !important; color: black !important; } /* Yellow for searching */
         .stake-active { background-color: #c30b82 !important; color: white !important; }
         .menu-btn { background-color: #111; color: white; }
         
@@ -91,12 +90,13 @@
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        /* GPS SUPER DOT (Forces High Z-Index) */
-        .gps-super-dot {
-            background-color: #2196F3; width: 16px; height: 16px; 
-            border-radius: 50%; border: 3px solid white;
-            box-shadow: 0 0 10px rgba(33, 150, 243, 0.8);
-            animation: pulse-blue 2s infinite;
+        /* ANIMATIONS */
+        .gps-pulse { 
+            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); 
+            animation: pulse-blue 2s infinite; 
+            border-radius: 50%; 
+            background: #2196F3; 
+            border: 3px solid white; 
         }
         @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(33, 150, 243, 0); } 100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         
@@ -172,8 +172,9 @@
         const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 25, maxNativeZoom: 19 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 15, layers: [satelliteLayer], zoomControl: false, maxZoom: 25 });
 
+        // FORCE GPS LAYER ON TOP
         map.createPane('gpsPane');
-        map.getPane('gpsPane').style.zIndex = 2000;
+        map.getPane('gpsPane').style.zIndex = 3000; // Above everything
 
         let currentBaseLayer = "satellite"; let currentGeoJSON = null; 
         let currentStakes = []; 
@@ -181,10 +182,11 @@
         try { savedProperties = JSON.parse(localStorage.getItem('savedProperties') || '[]'); } catch(e) { savedProperties = []; }
         
         let activeParcelData = null; 
-        let hasUnsavedChanges = false;
+        let hasUnsavedChanges = false; // Only true when we add/delete stakes
 
         let isStakingMode = false; let navTarget = null; let navLine = null; let userMarker = null; let accuracyCircle = null; let isTracking = false;
 
+        // LOAD SAVED STAKES
         try {
             const lastSessionStakes = JSON.parse(localStorage.getItem('currentStakes') || '[]');
             if(Array.isArray(lastSessionStakes)) {
@@ -192,7 +194,7 @@
                     if(s.lat && s.lng) addStakeToMap(s.lat, s.lng, false, false);
                 });
             }
-        } catch(e) { console.log("Resetting corrupted stakes"); localStorage.removeItem('currentStakes'); }
+        } catch(e) { console.log("Resetting stakes"); localStorage.removeItem('currentStakes'); }
         
         function updateSaveBar() {
             const bar = document.getElementById('saveBar');
@@ -239,7 +241,7 @@
                 }
                 
                 document.getElementById('activePropName').innerText = "Active: " + prop.name;
-                hasUnsavedChanges = false; 
+                hasUnsavedChanges = false; // Loading doesn't make it dirty
                 saveCurrentStakesToStorage(); updateSaveBar(); closeModal('accountModal');
             }
         }
@@ -302,7 +304,7 @@
 
         function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
         
-        // --- GPS LOGIC ---
+        // --- BULLETPROOF GPS (USES CIRCLE MARKER ON CUSTOM PANE) ---
         function toggleGPS() {
             const btn = document.getElementById('gpsBtn');
             const status = document.getElementById('gpsStatus');
@@ -324,24 +326,32 @@
             document.getElementById('gpsStatus').innerText = "LOCKED";
             const radius = e.accuracy / 2;
             
-            // USE SUPER PANE FOR VISIBILITY
+            // WE USE CIRCLEMARKER IN 'gpsPane' (zIndex 3000) SO IT CAN'T BE HIDDEN
             if (userMarker) { 
                 userMarker.setLatLng(e.latlng); 
+                userMarker.bringToFront(); 
             } else { 
-                const dotIcon = L.divIcon({ className: 'gps-super-dot', iconSize: [16, 16], iconAnchor: [8, 8] });
-                userMarker = L.marker(e.latlng, { icon: dotIcon, pane: 'gpsPane' }).addTo(map);
+                userMarker = L.circleMarker(e.latlng, { 
+                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
+                    fillOpacity: 1, className: 'gps-pulse', pane: 'gpsPane' 
+                }).addTo(map); 
             }
+            
             if(accuracyCircle) { accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } 
             else { accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map); }
+            
             if (navTarget) updateNavigation(e.latlng);
         });
 
         map.on('locationerror', (e) => { 
-            alert("GPS Error: " + e.message); 
+            alert("GPS Error: " + e.message + "\n\nMake sure location is enabled for this site!"); 
             document.getElementById('gpsBtn').classList.remove('active-btn');
             document.getElementById('gpsStatus').innerText = "ERROR";
             isTracking = false; 
         });
+
+        // Force dot visibility loop
+        setInterval(() => { if(userMarker) userMarker.bringToFront(); }, 2000);
 
         function toggleStakeMode() { isStakingMode = !isStakingMode; const btn = document.getElementById('stakeBtn'); const crosshair = document.getElementById('crosshair'); const dropBtn = document.getElementById('dropBtn'); if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; } }
         function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true, true); if(navigator.vibrate) navigator.vibrate(50); }
