@@ -20,10 +20,10 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             z-index: 900; pointer-events: none; display: none;
         }
-        .ch-line { background: red; position: absolute; }
+        .ch-line { background: #ff0000; position: absolute; box-shadow: 0 0 2px black; }
         .ch-h { width: 40px; height: 2px; left: -20px; top: 0; }
         .ch-v { width: 2px; height: 40px; left: 0; top: -20px; }
-        .ch-circle { width: 20px; height: 20px; border: 2px solid red; border-radius: 50%; position: absolute; top: -11px; left: -11px; }
+        .ch-circle { width: 20px; height: 20px; border: 2px solid #ff0000; border-radius: 50%; position: absolute; top: -11px; left: -11px; box-shadow: 0 0 2px black; }
 
         /* --- DROP BUTTON --- */
         .drop-btn {
@@ -64,7 +64,7 @@
         /* --- MODALS --- */
         .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: flex-end; align-items: flex-end; }
         .modal-overlay.open { display: flex; }
-        .modal-panel { background: #f9f9f9; width: 100%; height: 85vh; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 0; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
+        .modal-panel { background: #f9f9f9; width: 100%; height: 90vh; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 0; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
         .modal-overlay.open .modal-panel { transform: translateY(0); }
         .modal-header { padding: 25px 20px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
         .modal-title { font-size: 22px; font-weight: 700; color: #111; }
@@ -74,6 +74,14 @@
         .menu-icon { font-size: 22px; margin-right: 15px; width: 30px; text-align: center; }
         .menu-text { flex: 1; font-size: 16px; font-weight: 500; color: #333; }
         .menu-arrow { color: #ccc; }
+        
+        .property-list-item { background: white; border-radius: 12px; margin-bottom: 10px; padding: 15px; border: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+        .prop-name { font-weight: 700; color: #333; }
+        .prop-count { font-size: 12px; color: #888; margin-top: 4px; }
+        .prop-actions button { margin-left: 5px; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-load { background: #2196F3; color: white; }
+        .btn-del { background: #ffebee; color: #c62828; }
+
         .setting-row { display: flex; align-items: center; justify-content: space-between; background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .setting-label { font-size: 16px; font-weight: 500; color: #333; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
@@ -82,16 +90,16 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #2196F3; }
         input:checked + .slider:before { transform: translateX(22px); }
+        
         .account-banner { background: linear-gradient(135deg, #111 0%, #333 100%); color: white; padding: 30px; border-radius: 16px; margin-bottom: 25px; text-align: center; }
         .avatar-large { width: 80px; height: 80px; background: #555; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; font-size: 35px; border: 3px solid white; }
         .upgrade-btn { background: #2196F3; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; margin-top: 15px; cursor: pointer; }
-        .danger-btn { color: red; text-align: center; padding: 20px; cursor: pointer; font-weight: 600; margin-top: 20px; }
+        
+        .save-bar { background: #fff3cd; color: #856404; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none; }
+        .save-bar button { background: #856404; color: white; border: none; padding: 5px 15px; border-radius: 20px; margin-left: 10px; cursor: pointer; font-weight: bold; }
 
         /* --- CARD --- */
-        .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); z-index: 1001; transform: translateY(110%); transition: transform 0.3s ease-out;
-        }
+        .info-card { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); z-index: 1001; transform: translateY(110%); transition: transform 0.3s ease-out; }
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
         .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
@@ -118,6 +126,7 @@
 
     <!-- SEARCH -->
     <div class="search-container">
+        <!-- CHECKED: onclick triggers performSearch -->
         <span class="search-icon" onclick="performSearch()">🔍</span>
         <input type="text" class="search-input" placeholder="Search Address or Owner...">
     </div>
@@ -140,104 +149,158 @@
         <div class="fab-btn menu-btn" onclick="openModal('mainMenu')">☰</div>
     </div>
 
-    <!-- MODALS -->
-    <div class="modal-overlay" id="mainMenu" onclick="closeModal('mainMenu')"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="modal-title">Menu</div><div class="close-icon" onclick="closeModal('mainMenu')">✕</div></div><div class="menu-list"><div class="menu-item" onclick="openModal('accountModal')"><div class="menu-icon">👤</div><div class="menu-text">My Account</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="openModal('settingsModal')"><div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="shareLocation()"><div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="inviteFriend()"><div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div></div></div></div></div>
-    <div class="modal-overlay" id="accountModal"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="close-icon" onclick="closeModal('accountModal')">←</div><div class="modal-title">My Account</div><div style="width:40px"></div></div><div class="menu-list"><div class="account-banner"><div class="avatar-large">👤</div><h2>Guest User</h2><p>Free Plan</p><button class="upgrade-btn">Upgrade</button></div><div class="menu-item"><div class="menu-text"><b>User ID:</b> <span id="userIdDisplay">Loading...</span></div></div><div class="danger-btn" onclick="clearAllData()">🗑️ Delete All Stakes</div></div></div></div>
+    <!-- MENU MODALS -->
+    <div class="modal-overlay" id="mainMenu" onclick="closeModal('mainMenu')"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="modal-title">Menu</div><div class="close-icon" onclick="closeModal('mainMenu')">✕</div></div><div class="menu-list"><div class="menu-item" onclick="openModal('accountModal')"><div class="menu-icon">👤</div><div class="menu-text">My Account & Saved Properties</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="openModal('settingsModal')"><div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="shareLocation()"><div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="inviteFriend()"><div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div></div></div></div></div>
+    
+    <!-- ACCOUNT & PROPERTIES MODAL -->
+    <div class="modal-overlay" id="accountModal">
+        <div class="modal-panel" onclick="event.stopPropagation()">
+            <div class="modal-header"><div class="close-icon" onclick="closeModal('accountModal')">←</div><div class="modal-title">My Saved Properties</div><div style="width:40px"></div></div>
+            <div class="menu-list">
+                <div class="account-banner"><div class="avatar-large">👤</div><h2>Guest User</h2><p id="activePropName">No Property Loaded</p></div>
+                
+                <!-- SAVE STAKES (Hammer) -->
+                <div class="save-bar" id="saveBar">Unsaved Stakes on map! <button onclick="saveCurrentStakesAsProp()">Save to Account</button></div>
+                
+                <h3>Saved Properties</h3>
+                <div id="savedListContainer"></div>
+                <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+                <div class="menu-item" onclick="exportData()"><div class="menu-icon">💾</div><div class="menu-text">Download Backup File</div><div class="menu-arrow">↓</div></div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="settingsModal"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="close-icon" onclick="closeModal('settingsModal')">←</div><div class="modal-title">Settings</div><div style="width:40px"></div></div><div class="menu-list"><div class="setting-row"><div class="setting-label">Units (Feet / Meters)</div><label class="switch"><input type="checkbox" id="unitToggle" onchange="saveSettings()"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-label">Start in Satellite Mode</div><label class="switch"><input type="checkbox" id="mapToggle" checked onchange="saveSettings()"><span class="slider"></span></label></div></div></div></div>
 
     <!-- CARD -->
-    <div class="info-card" id="card"><div class="card-handle"></div><div class="prop-label">OWNER / PIN</div><div class="prop-value" id="owner">Loading...</div><div class="prop-label">ADDRESS / INFO</div><div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div><div class="action-row"><div class="action-btn btn-secondary" onclick="closeCard()">Close</div><div class="action-btn btn-primary" id="saveBtn">Save</div></div></div>
+    <div class="info-card" id="card">
+        <div class="card-handle"></div>
+        <div class="prop-label">OWNER / PIN</div><div class="prop-value" id="owner">Loading...</div>
+        <div class="prop-label">ADDRESS / INFO</div><div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
+        <div class="action-row">
+            <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
+            <!-- CHECKED: Calls saveActiveParcel -->
+            <div class="action-btn btn-primary" onclick="saveActiveParcel()">Save</div> 
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- MAP SETUP WITH ULTRA ZOOM ---
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
-            attribution: 'Tiles &copy; Esri',
-            maxZoom: 25,       // Allow zooming way past level 19
-            maxNativeZoom: 19  // Stop asking server for new tiles after 19, just stretch them
-        });
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            attribution: '&copy; OpenStreetMap',
-            maxZoom: 25, 
-            maxNativeZoom: 19 
-        });
-
-        const map = L.map('map', {
-            center: [40.764356, -73.973057], zoom: 15, 
-            layers: [satelliteLayer], zoomControl: false,
-            maxZoom: 25 // ALLOW DEEP ZOOM
-        });
+        // --- MAP SETUP (CHECKED: ULTRA ZOOM) ---
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 25, maxNativeZoom: 19 });
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 25, maxNativeZoom: 19 });
+        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 15, layers: [satelliteLayer], zoomControl: false, maxZoom: 25 });
 
         // --- VARS ---
-        let currentBaseLayer = "satellite"; let currentGeoJSON = null; let stakes = []; 
-        let isStakingMode = false; let navTarget = null; let navLine = null; 
-        let userMarker = null; let accuracyCircle = null; let isTracking = false;
-        
-        // --- SETTINGS ---
-        let useMetric = localStorage.getItem('useMetric') === 'true';
-        document.getElementById('unitToggle').checked = useMetric;
-        let userId = localStorage.getItem('userId');
-        if(!userId) { userId = 'User-' + Math.floor(Math.random() * 100000); localStorage.setItem('userId', userId); }
-        document.getElementById('userIdDisplay').innerText = userId;
-        function saveSettings() { useMetric = document.getElementById('unitToggle').checked; localStorage.setItem('useMetric', useMetric); }
-        function clearAllData() { if(confirm("Delete all stakes?")) { stakes.forEach(s => map.removeLayer(s.markerRef)); stakes = []; localStorage.setItem('myStakes', '[]'); alert("Cleared."); closeModal('accountModal'); } }
+        let currentBaseLayer = "satellite"; let currentGeoJSON = null; 
+        let currentStakes = []; 
+        let savedProperties = JSON.parse(localStorage.getItem('savedProperties') || '[]'); 
+        let activeParcelData = null; // Stores the yellow line data
 
-        // --- MODALS ---
-        function openModal(id) { document.getElementById(id).classList.add('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open'); }
-        const savedStakes = JSON.parse(localStorage.getItem('myStakes') || '[]'); savedStakes.forEach(s => addStakeToMap(s.lat, s.lng, false));
+        let isStakingMode = false; let navTarget = null; let navLine = null; let userMarker = null; let accuracyCircle = null; let isTracking = false;
 
-        async function shareLocation() { if (!userMarker) { alert("Enable GPS (📍) first!"); return; } const { lat, lng } = userMarker.getLatLng(); const link = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; if (navigator.share) await navigator.share({ title: 'Location', url: link }); else prompt("Copy link:", link); }
-        async function inviteFriend() { const appUrl = window.location.href; if (navigator.share) await navigator.share({ title: 'Landslide', url: appUrl }); else prompt("Copy link:", appUrl); }
+        // --- LOAD INITIAL ---
+        const lastSessionStakes = JSON.parse(localStorage.getItem('currentStakes') || '[]');
+        lastSessionStakes.forEach(s => addStakeToMap(s.lat, s.lng, false));
+        updateSaveBar();
 
-        // --- SEARCH ---
-        const searchInput = document.querySelector('.search-input');
-        async function performSearch() { const text = searchInput.value; if(text.length < 2) return; searchInput.blur(); try { const response = await fetch(`/api/search?q=${text}`); const results = await response.json(); if (results.length > 0) { const bestMatch = results[0]; map.flyTo([bestMatch.lat, bestMatch.lng], 19); setTimeout(() => showParcelData(bestMatch), 1000); } else { alert("No matches found."); } } catch (err) { console.error(err); } }
-        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-
-        // --- CONTROLS ---
-        function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
-        function toggleGPS() { if (!isTracking) { map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 22 }); document.getElementById('gpsBtn').classList.add('active-btn'); isTracking = true; } else { map.stopLocate(); isTracking = false; document.getElementById('gpsBtn').classList.remove('active-btn'); if(accuracyCircle) map.removeLayer(accuracyCircle); } }
-        map.on('locationfound', (e) => { const radius = e.accuracy / 2; if (userMarker) { userMarker.setLatLng(e.latlng); accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } else { userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1, className: 'gps-pulse' }).addTo(map); accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map); } if (navTarget) updateNavigation(e.latlng); });
-
-        // --- STAKE MODE ---
-        function toggleStakeMode() {
-            isStakingMode = !isStakingMode;
-            const btn = document.getElementById('stakeBtn');
-            const crosshair = document.getElementById('crosshair');
-            const dropBtn = document.getElementById('dropBtn');
-            if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } 
-            else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; }
+        // --- PROPERTY MANAGEMENT ---
+        function updateSaveBar() {
+            const bar = document.getElementById('saveBar');
+            if(currentStakes.length > 0) bar.style.display = 'block'; else bar.style.display = 'none';
         }
-        function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true); if(navigator.vibrate) navigator.vibrate(50); }
 
+        // 1. SAVE STAKES (Hammer tool)
+        function saveCurrentStakesAsProp() {
+            const name = prompt("Name this Stake Project (e.g. 'Fence Line'):");
+            if(!name) return;
+            const newProp = { id: Date.now(), type: 'stakes', name: name, stakes: currentStakes.map(s => ({lat: s.lat, lng: s.lng})), date: new Date().toLocaleDateString() };
+            savedProperties.push(newProp);
+            localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
+            renderSavedList(); alert("Project Saved!");
+        }
+
+        // 2. SAVE PARCEL (Yellow Box)
+        function saveActiveParcel() {
+            if(!activeParcelData) { alert("No property selected."); return; }
+            const name = prompt("Name this Property (e.g. 'My House'):", activeParcelData.address);
+            if(!name) return;
+            
+            const newProp = { 
+                id: Date.now(), 
+                type: 'parcel', 
+                name: name, 
+                data: activeParcelData, 
+                date: new Date().toLocaleDateString() 
+            };
+            savedProperties.push(newProp);
+            localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
+            renderSavedList();
+            alert("Property Saved to Account!");
+        }
+
+        function loadProperty(id) {
+            const prop = savedProperties.find(p => p.id === id);
+            if(!prop) return;
+
+            if(confirm(`Load "${prop.name}"?`)) {
+                currentStakes.forEach(s => map.removeLayer(s.markerRef));
+                currentStakes = [];
+                if(currentGeoJSON) map.removeLayer(currentGeoJSON);
+                
+                if(prop.type === 'stakes') {
+                    prop.stakes.forEach(s => addStakeToMap(s.lat, s.lng, false));
+                    if(prop.stakes.length > 0) map.flyTo([prop.stakes[0].lat, prop.stakes[0].lng], 19);
+                } else {
+                    showParcelData(prop.data);
+                    const layer = L.geoJSON(JSON.parse(prop.data.geometry));
+                    map.fitBounds(layer.getBounds());
+                }
+                
+                document.getElementById('activePropName').innerText = "Active: " + prop.name;
+                saveCurrentStakesToStorage();
+                closeModal('accountModal');
+            }
+        }
+
+        function deleteProperty(id) {
+            if(confirm("Delete this saved item?")) {
+                savedProperties = savedProperties.filter(p => p.id !== id);
+                localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
+                renderSavedList();
+            }
+        }
+
+        function renderSavedList() {
+            const container = document.getElementById('savedListContainer');
+            container.innerHTML = "";
+            if(savedProperties.length === 0) { container.innerHTML = "<p style='color:#999; text-align:center;'>No saved properties yet.</p>"; return; }
+
+            savedProperties.forEach(prop => {
+                const div = document.createElement('div');
+                div.className = 'property-list-item';
+                let desc = prop.type === 'stakes' ? `${prop.stakes.length} stakes` : 'Parcel Boundary';
+                div.innerHTML = `<div><div class="prop-name">${prop.name}</div><div class="prop-count">${desc} • ${prop.date}</div></div><div class="prop-actions"><button class="btn-load" onclick="loadProperty(${prop.id})">LOAD</button><button class="btn-del" onclick="deleteProperty(${prop.id})">✕</button></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedProperties));
+            const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", "landslide_backup.json"); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+        }
+
+        // --- MAP FUNCTIONS ---
         function addStakeToMap(lat, lng, save = true) {
             const stakeIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5);'></div>", iconSize: [15, 15], iconAnchor: [6, 6] });
             const marker = L.marker([lat, lng], {icon: stakeIcon}).addTo(map);
             const popupContent = `<div style="text-align:center"><b>Stake Point</b><br><small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small><br><button class="popup-btn" onclick="startNavigation(${lat}, ${lng})">GO TO</button><button style="margin-top:5px; color:red; border:none; background:none; cursor:pointer" onclick="deleteStake(${lat}, ${lng})">Delete</button></div>`;
             marker.bindPopup(popupContent);
             const stakeObj = { lat, lng, markerRef: marker };
-            if (save) { stakes.push(stakeObj); saveStakesToStorage(); } else { const existing = stakes.find(s => s.lat === lat && s.lng === lng); if(existing) existing.markerRef = marker; else stakes.push(stakeObj); }
+            if (save) { currentStakes.push(stakeObj); saveCurrentStakesToStorage(); updateSaveBar(); } else { const existing = currentStakes.find(s => s.lat === lat && s.lng === lng); if(existing) existing.markerRef = marker; else currentStakes.push(stakeObj); }
         }
-
-        function startNavigation(targetLat, targetLng) {
-            if (!isTracking) { alert("Enable GPS first!"); toggleGPS(); }
-            navTarget = L.latLng(targetLat, targetLng); document.getElementById('navHud').style.display = 'block'; map.closePopup();
-            if (userMarker) updateNavigation(userMarker.getLatLng());
-        }
-
-        function updateNavigation(userLatLng) {
-            const distanceMeters = userLatLng.distanceTo(navTarget);
-            let displayDist = "";
-            if(useMetric) displayDist = Math.round(distanceMeters) + " m"; else { const feet = Math.round(distanceMeters * 3.28084); displayDist = feet + " ft"; }
-            document.getElementById('distText').innerText = displayDist;
-            if (navLine) map.removeLayer(navLine);
-            navLine = L.polyline([userLatLng, navTarget], { color: 'white', weight: 4, dashArray: '10, 10', opacity: 0.8 }).addTo(map);
-        }
-
-        function stopNavigation() { navTarget = null; document.getElementById('navHud').style.display = 'none'; if (navLine) map.removeLayer(navLine); }
-        function deleteStake(lat, lng) { const stake = stakes.find(s => s.lat === lat && s.lng === lng); if (stake && stake.markerRef) map.removeLayer(stake.markerRef); stakes = stakes.filter(s => s.lat !== lat); saveStakesToStorage(); }
-        function saveStakesToStorage() { const dataToSave = stakes.map(s => ({ lat: s.lat, lng: s.lng })); localStorage.setItem('myStakes', JSON.stringify(dataToSave)); }
+        function deleteStake(lat, lng) { const index = currentStakes.findIndex(s => s.lat === lat && s.lng === lng); if (index > -1) { map.removeLayer(currentStakes[index].markerRef); currentStakes.splice(index, 1); saveCurrentStakesToStorage(); updateSaveBar(); } }
+        function saveCurrentStakesToStorage() { const simpleStakes = currentStakes.map(s => ({lat: s.lat, lng: s.lng})); localStorage.setItem('currentStakes', JSON.stringify(simpleStakes)); }
 
         // --- CLICK HANDLER ---
         map.on('click', async (e) => {
@@ -251,6 +314,7 @@
         });
 
         function showParcelData(parcel) {
+            activeParcelData = parcel; // STORE FOR SAVING
             document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
             document.getElementById('address').innerText = parcel.address || "No Info";
             document.getElementById('card').classList.add('active');
@@ -258,7 +322,32 @@
             const geoJsonData = JSON.parse(parcel.geometry);
             currentGeoJSON = L.geoJSON(geoJsonData, { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
         }
-        function closeCard() { document.getElementById('card').classList.remove('active'); }
+        function closeCard() { document.getElementById('card').classList.remove('active'); activeParcelData = null; }
+
+        // --- UTILS & SETTINGS ---
+        function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
+        
+        // CHECKED: GPS zIndex 1000
+        function toggleGPS() { if (!isTracking) { map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 22 }); document.getElementById('gpsBtn').classList.add('active-btn'); isTracking = true; } else { map.stopLocate(); isTracking = false; document.getElementById('gpsBtn').classList.remove('active-btn'); if(accuracyCircle) map.removeLayer(accuracyCircle); } }
+        map.on('locationfound', (e) => { const radius = e.accuracy / 2; if (userMarker) { userMarker.setLatLng(e.latlng); userMarker.setZIndexOffset(1000); } else { userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1, className: 'gps-pulse', zIndexOffset: 1000 }).addTo(map); } if(accuracyCircle) { accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } else { accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map); } if (navTarget) updateNavigation(e.latlng); });
+        map.on('locationerror', (e) => { alert("GPS Error: " + e.message); document.getElementById('gpsBtn').classList.remove('active-btn'); isTracking = false; });
+        
+        function toggleStakeMode() { isStakingMode = !isStakingMode; const btn = document.getElementById('stakeBtn'); const crosshair = document.getElementById('crosshair'); const dropBtn = document.getElementById('dropBtn'); if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; } }
+        function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true); if(navigator.vibrate) navigator.vibrate(50); }
+        function startNavigation(targetLat, targetLng) { if (!isTracking) { alert("Enable GPS first!"); toggleGPS(); } navTarget = L.latLng(targetLat, targetLng); document.getElementById('navHud').style.display = 'block'; map.closePopup(); if (userMarker) updateNavigation(userMarker.getLatLng()); }
+        function updateNavigation(userLatLng) { const distanceMeters = userLatLng.distanceTo(navTarget); let displayDist = ""; if(useMetric) displayDist = Math.round(distanceMeters) + " m"; else { const feet = Math.round(distanceMeters * 3.28084); displayDist = feet + " ft"; } document.getElementById('distText').innerText = displayDist; if (navLine) map.removeLayer(navLine); navLine = L.polyline([userLatLng, navTarget], { color: 'white', weight: 4, dashArray: '10, 10', opacity: 0.8 }).addTo(map); }
+        function stopNavigation() { navTarget = null; document.getElementById('navHud').style.display = 'none'; if (navLine) map.removeLayer(navLine); }
+        
+        const searchInput = document.querySelector('.search-input'); 
+        async function performSearch() { const text = searchInput.value; if(text.length < 2) return; searchInput.blur(); try { const response = await fetch(`/api/search?q=${text}`); const results = await response.json(); if (results.length > 0) { const bestMatch = results[0]; map.flyTo([bestMatch.lat, bestMatch.lng], 19); setTimeout(() => showParcelData(bestMatch), 1000); } else { alert("No matches found."); } } catch (err) { console.error(err); } } 
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        let useMetric = localStorage.getItem('useMetric') === 'true'; document.getElementById('unitToggle').checked = useMetric; let userId = localStorage.getItem('userId'); if(!userId) { userId = 'User-' + Math.floor(Math.random() * 100000); localStorage.setItem('userId', userId); } document.getElementById('userIdDisplay').innerText = userId;
+        function saveSettings() { useMetric = document.getElementById('unitToggle').checked; localStorage.setItem('useMetric', useMetric); }
+        function clearAllData() { if(confirm("Delete all?")) { stakes.forEach(s => map.removeLayer(s.markerRef)); stakes = []; localStorage.setItem('myStakes', '[]'); alert("Cleared."); closeModal('accountModal'); } }
+        function openModal(id) { if(id === 'accountModal') renderSavedList(); document.getElementById(id).classList.add('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open'); }
+        async function shareLocation() { if (!userMarker) { alert("Enable GPS first!"); return; } const { lat, lng } = userMarker.getLatLng(); const link = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; if (navigator.share) await navigator.share({ title: 'Location', url: link }); else prompt("Copy link:", link); }
+        async function inviteFriend() { const appUrl = window.location.href; if (navigator.share) await navigator.share({ title: 'Landslide', url: appUrl }); else prompt("Copy link:", appUrl); }
     </script>
 </body>
 </html>

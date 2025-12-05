@@ -19,14 +19,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- 2. SEARCH API (FIXED: Now includes Geometry) ---
+// --- 2. SEARCH API (CHECKED: Includes Geometry & Address Glue) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 1) return res.json([]);
 
     const words = q.trim().split(/\s+/);
     
-    // Search Tax Table columns OR Map PIN
+    // Search logic: Checks Address Number OR Street Name OR Map PIN
+    // Note: Casts ADRNO to text to prevent type errors
     const conditions = words.map((_, index) => 
         `(t."ADRNO"::text ILIKE $${index + 1} OR t."ADRSTR" ILIKE $${index + 1} OR p."PIN" ILIKE $${index + 1})`
     ).join(' AND ');
@@ -36,13 +37,14 @@ app.get('/api/search', async (req, res) => {
     const query = `
         SELECT p.id, 
                p."PIN" as owner_name, 
+               -- GLUE ADDRESS: Number + Street + Suffix + City
                CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME") as address,
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat,
-               ST_AsGeoJSON(p.geom) as geometry   -- <--- THIS WAS MISSING!
+               ST_AsGeoJSON(p.geom) as geometry  -- CRITICAL: Needed for yellow line
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID" 
+        ON p."PIN" = t."PARID"  -- JOIN: Matches Map PIN to Tax PARID
         WHERE (${conditions})
         LIMIT 5;
     `;
@@ -56,7 +58,7 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- 3. GET PARCEL BY CLICK ---
+// --- 3. GET PARCEL BY LOCATION (Clicking) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
@@ -67,7 +69,7 @@ app.get('/api/parcels', async (req, res) => {
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
         LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"
+        ON p."PIN" = t."PARID" -- JOIN: Matches Map PIN to Tax PARID
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
