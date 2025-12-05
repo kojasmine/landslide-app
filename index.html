@@ -2,100 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Prevent the browser from zooming the whole page -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background-color: #f0f0f0; }
-        #map { height: 100vh; width: 100%; z-index: 1; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
+        
+        #map { height: 100vh; width: 100%; z-index: 1; touch-action: none; }
 
-        /* --- THE GPS SUPER DOT (Pure CSS) --- */
-        /* This is no longer a map vector, it is a styled HTML Block */
-        .gps-pulse-marker {
-            background-color: #2196F3;
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 15px rgba(33, 150, 243, 1);
-            animation: pulse-blue 2s infinite;
+        /* SEARCH BAR */
+        .search-container {
+            position: absolute; top: 50px; left: 20px; right: 20px;
+            z-index: 1000;
+            background: white; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex; align-items: center; padding: 0 15px; height: 50px;
         }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(33, 150, 243, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
-        }
-
-        /* CROSSHAIR */
-        .center-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 900; pointer-events: none; display: none; }
-        .ch-line { background: #ff0000; position: absolute; box-shadow: 0 0 2px black; }
-        .ch-h { width: 40px; height: 2px; left: -20px; top: 0; }
-        .ch-v { width: 2px; height: 40px; left: 0; top: -20px; }
-        .ch-circle { width: 20px; height: 20px; border: 2px solid #ff0000; border-radius: 50%; position: absolute; top: -11px; left: -11px; box-shadow: 0 0 2px black; }
-
-        /* DROP BUTTON */
-        .drop-btn { position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); background-color: #c30b82; color: white; padding: 15px 30px; border-radius: 30px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000; border: 2px solid white; cursor: pointer; display: none; }
-        .drop-btn:active { transform: translateX(-50%) scale(0.95); }
-
-        /* SEARCH */
-        .search-container { position: absolute; top: 50px; left: 20px; right: 20px; z-index: 1000; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; align-items: center; padding: 0 15px; height: 55px; }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; cursor: pointer; padding: 10px; }
+        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* HUD */
-        .nav-hud { position: absolute; top: 120px; left: 20px; right: 20px; background: #2196F3; color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1000; display: none; text-align: center; }
-        .nav-distance { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
-        .nav-label { font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
-        .nav-stop { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
-
         /* CONTROLS */
-        .controls-container { position: absolute; bottom: 40px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; align-items: flex-end; }
-        .fab-btn { width: 55px; height: 55px; background: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: transform 0.1s; position: relative; }
-        .fab-btn:active { transform: scale(0.90); }
-        .active-btn { background-color: #2196F3 !important; color: white !important; }
-        .stake-active { background-color: #c30b82 !important; color: white !important; }
-        .menu-btn { background-color: #111; color: white; }
-        
-        .gps-status { background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; margin-bottom: 5px; display: none; pointer-events: none; }
-
-        /* SAVE BAR */
-        .save-bar { background: #fff3cd; color: #856404; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none; position: relative; }
-        .save-bar button { background: #856404; color: white; border: none; padding: 5px 15px; border-radius: 20px; margin-left: 10px; cursor: pointer; font-weight: bold; }
-        .save-close { position: absolute; top: 5px; right: 10px; font-size: 18px; cursor: pointer; opacity: 0.5; }
-
-        /* MODALS */
-        .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: flex-end; align-items: flex-end; }
-        .modal-overlay.open { display: flex; }
-        .modal-panel { background: #f9f9f9; width: 100%; height: 90vh; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 0; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
-        .modal-overlay.open .modal-panel { transform: translateY(0); }
-        .modal-header { padding: 25px 20px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
-        .modal-title { font-size: 22px; font-weight: 700; color: #111; }
-        .close-icon { font-size: 24px; padding: 10px; cursor: pointer; color: #666; background: #f0f0f0; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .menu-list { padding: 20px; }
-        .menu-item { background: white; padding: 18px; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; }
-        .menu-icon { font-size: 22px; margin-right: 15px; width: 30px; text-align: center; }
-        .menu-text { flex: 1; font-size: 16px; font-weight: 500; color: #333; }
-        .menu-arrow { color: #ccc; }
-        .property-list-item { background: white; border-radius: 12px; margin-bottom: 10px; padding: 15px; border: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-        .prop-name { font-weight: 700; color: #333; }
-        .prop-count { font-size: 12px; color: #888; margin-top: 4px; }
-        .prop-actions button { margin-left: 5px; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-load { background: #2196F3; color: white; }
-        .btn-del { background: #ffebee; color: #c62828; }
-        .setting-row { display: flex; align-items: center; justify-content: space-between; background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .setting-label { font-size: 16px; font-weight: 500; color: #333; }
-        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #2196F3; }
-        input:checked + .slider:before { transform: translateX(22px); }
-        .account-banner { background: linear-gradient(135deg, #111 0%, #333 100%); color: white; padding: 30px; border-radius: 16px; margin-bottom: 25px; text-align: center; }
-        .avatar-large { width: 80px; height: 80px; background: #555; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; font-size: 35px; border: 3px solid white; }
-        .upgrade-btn { background: #2196F3; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        .controls-container {
+            position: absolute; bottom: 220px; right: 20px;
+            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+        }
+        .fab-btn {
+            width: 50px; height: 50px; background: white; border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
 
         /* CARD */
-        .info-card { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); z-index: 2001; transform: translateY(110%); transition: transform 0.3s ease-out; }
+        .info-card {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: white;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 25px 20px 40px 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            z-index: 1001;
+            transform: translateY(110%);
+            transition: transform 0.3s ease-out;
+        }
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
         .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
@@ -105,270 +59,186 @@
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        .popup-btn { background: #2196F3; color: white; border: none; padding: 5px 10px; border-radius: 4px; width: 100%; margin-top: 5px; cursor: pointer; font-weight: bold; }
-        .custom-div-icon div { background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        /* GPS PULSE */
+        .gps-pulse {
+            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+            animation: pulse-blue 2s infinite;
+            border-radius: 50%;
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="center-crosshair" id="crosshair"><div class="ch-circle"></div><div class="ch-h ch-line"></div><div class="ch-v ch-line"></div></div>
-    <div class="drop-btn" id="dropBtn" onclick="dropStakeAtCenter()">DROP STAKE HERE</div>
-
     <div class="search-container">
-        <span class="search-icon" onclick="performSearch()">🔍</span>
-        <input type="text" class="search-input" placeholder="Search Address or Owner...">
-    </div>
-
-    <div class="nav-hud" id="navHud">
-        <div class="nav-label">Distance to Stake</div><div class="nav-distance" id="distText">0 ft</div><button class="nav-stop" onclick="stopNavigation()">STOP NAVIGATION</button>
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="Search PIN or Address...">
     </div>
 
     <div id="map"></div>
 
     <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch View">🗺️</div>
-        <div class="fab-btn" id="stakeBtn" onclick="toggleStakeMode()" title="Stake Mode">🔨</div>
-        
-        <div style="display:flex; flex-direction:column; align-items:center;">
-            <div id="gpsStatus" class="gps-status">OFF</div>
-            <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
-        </div>
-        
-        <div class="fab-btn menu-btn" onclick="openModal('mainMenu')">☰</div>
+        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
+        <!-- Button is still here to re-center if you get lost, but starts active -->
+        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
     </div>
-
-    <div class="modal-overlay" id="mainMenu" onclick="closeModal('mainMenu')"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="modal-title">Menu</div><div class="close-icon" onclick="closeModal('mainMenu')">✕</div></div><div class="menu-list"><div class="menu-item" onclick="openModal('accountModal')"><div class="menu-icon">👤</div><div class="menu-text">My Account & Saved Properties</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="openModal('settingsModal')"><div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="shareLocation()"><div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="inviteFriend()"><div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div></div></div></div></div>
-    
-    <div class="modal-overlay" id="accountModal">
-        <div class="modal-panel" onclick="event.stopPropagation()">
-            <div class="modal-header"><div class="close-icon" onclick="closeModal('accountModal')">←</div><div class="modal-title">My Saved Properties</div><div style="width:40px"></div></div>
-            <div class="menu-list">
-                <div class="account-banner"><div class="avatar-large">👤</div><h2>Guest User</h2><p id="activePropName">No Property Loaded</p></div>
-                
-                <div class="save-bar" id="saveBar">
-                    Unsaved Stakes! 
-                    <button onclick="saveCurrentStakesAsProp()">Save Project</button>
-                    <div class="save-close" onclick="dismissSaveBar()">✕</div>
-                </div>
-                
-                <h3>Saved Properties</h3>
-                <div id="savedListContainer"></div>
-                <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-                <div class="menu-item" onclick="exportData()"><div class="menu-icon">💾</div><div class="menu-text">Download Backup File</div><div class="menu-arrow">↓</div></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="settingsModal"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="close-icon" onclick="closeModal('settingsModal')">←</div><div class="modal-title">Settings</div><div style="width:40px"></div></div><div class="menu-list"><div class="setting-row"><div class="setting-label">Units (Feet / Meters)</div><label class="switch"><input type="checkbox" id="unitToggle" onchange="saveSettings()"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-label">Start in Satellite Mode</div><label class="switch"><input type="checkbox" id="mapToggle" checked onchange="saveSettings()"><span class="slider"></span></label></div></div></div></div>
 
     <div class="info-card" id="card">
         <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div><div class="prop-value" id="owner">Loading...</div>
-        <div class="prop-label">ADDRESS / INFO</div><div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
+        <div class="prop-label">OWNER / PIN</div>
+        <div class="prop-value" id="owner">Loading...</div>
+        <div class="prop-label">ADDRESS / INFO</div>
+        <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
         <div class="action-row">
             <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <div class="action-btn btn-primary" onclick="saveActiveParcel()">Save This Parcel</div> 
+            <div class="action-btn btn-primary">Save</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 25, maxNativeZoom: 19 });
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 25, maxNativeZoom: 19 });
-        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 15, layers: [satelliteLayer], zoomControl: false, maxZoom: 25 });
+        // --- MAP SETUP ---
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 19
+        });
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        });
 
-        // FORCE GPS LAYER ON TOP
-        map.createPane('gpsPane');
-        map.getPane('gpsPane').style.zIndex = 3000; // Above everything
+        const map = L.map('map', {
+            center: [40.764356, -73.973057], 
+            zoom: 18, 
+            layers: [satelliteLayer], 
+            zoomControl: false,
+            bounceAtZoomLimits: false 
+        });
 
-        let currentBaseLayer = "satellite"; let currentGeoJSON = null; 
-        let currentStakes = []; 
-        let savedProperties = [];
-        try { savedProperties = JSON.parse(localStorage.getItem('savedProperties') || '[]'); } catch(e) { savedProperties = []; }
-        
-        let activeParcelData = null; 
-        let hasUnsavedChanges = false;
+        let currentBaseLayer = "satellite";
+        let currentGeoJSON = null;
 
-        let isStakingMode = false; let navTarget = null; let navLine = null; let userMarker = null; let accuracyCircle = null; let isTracking = false;
+        // --- GPS LOGIC ---
+        let userMarker = null;
+        let isTracking = false;
+        let followUser = false; 
 
-        // LOAD SAVED STAKES
-        try {
-            const lastSessionStakes = JSON.parse(localStorage.getItem('currentStakes') || '[]');
-            if(Array.isArray(lastSessionStakes)) {
-                lastSessionStakes.forEach(s => {
-                    if(s.lat && s.lng) addStakeToMap(s.lat, s.lng, false, false);
-                });
-            }
-        } catch(e) { console.log("Resetting stakes"); localStorage.removeItem('currentStakes'); }
-        
-        function updateSaveBar() {
-            const bar = document.getElementById('saveBar');
-            if(hasUnsavedChanges && currentStakes.length > 0) bar.style.display = 'block'; 
-            else bar.style.display = 'none';
-        }
-        function dismissSaveBar() { hasUnsavedChanges = false; updateSaveBar(); }
-
-        function saveCurrentStakesAsProp() {
-            const name = prompt("Name this Stake Project (e.g. 'Fence Line'):");
-            if(!name) return;
-            const newProp = { id: Date.now(), type: 'stakes', name: name, stakes: currentStakes.map(s => ({lat: s.lat, lng: s.lng})), date: new Date().toLocaleDateString() };
-            savedProperties.push(newProp);
-            localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
-            hasUnsavedChanges = false; 
-            renderSavedList(); updateSaveBar(); alert("Project Saved!");
-        }
-
-        function saveActiveParcel() {
-            if(!activeParcelData) { alert("No property selected."); return; }
-            const name = prompt("Name this Property (e.g. 'My House'):", activeParcelData.address);
-            if(!name) return;
-            const newProp = { id: Date.now(), type: 'parcel', name: name, data: activeParcelData, date: new Date().toLocaleDateString() };
-            savedProperties.push(newProp);
-            localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
-            renderSavedList(); alert("Parcel Saved!");
-        }
-
-        function loadProperty(id) {
-            const prop = savedProperties.find(p => p.id === id);
-            if(!prop) return;
-            if(confirm(`Load "${prop.name}"?`)) {
-                currentStakes.forEach(s => map.removeLayer(s.markerRef));
-                currentStakes = [];
-                if(currentGeoJSON) map.removeLayer(currentGeoJSON);
-                
-                if(prop.type === 'stakes') {
-                    prop.stakes.forEach(s => addStakeToMap(s.lat, s.lng, false, false));
-                    if(prop.stakes.length > 0) map.flyTo([prop.stakes[0].lat, prop.stakes[0].lng], 19);
-                } else {
-                    showParcelData(prop.data);
-                    const layer = L.geoJSON(JSON.parse(prop.data.geometry));
-                    map.fitBounds(layer.getBounds());
+        function toggleGPS() {
+            if (!isTracking) {
+                // START GPS
+                map.locate({ watch: true, enableHighAccuracy: true, setView: false });
+                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
+                isTracking = true;
+                followUser = true; 
+            } else {
+                // If clicked while on, just re-center
+                if (userMarker) {
+                    map.flyTo(userMarker.getLatLng(), 18);
+                    followUser = true;
+                    document.getElementById('gpsBtn').style.color = "#2196F3";
                 }
-                
-                document.getElementById('activePropName').innerText = "Active: " + prop.name;
-                hasUnsavedChanges = false; 
-                saveCurrentStakesToStorage(); updateSaveBar(); closeModal('accountModal');
             }
         }
 
-        function deleteProperty(id) {
-            if(confirm("Delete this saved item?")) {
-                savedProperties = savedProperties.filter(p => p.id !== id);
-                localStorage.setItem('savedProperties', JSON.stringify(savedProperties));
-                renderSavedList();
+        map.on('locationfound', (e) => {
+            // Update Blue Dot Position
+            if (userMarker) {
+                userMarker.setLatLng(e.latlng);
+            } else {
+                userMarker = L.circleMarker(e.latlng, {
+                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
+                    fillOpacity: 1, className: 'gps-pulse'
+                }).addTo(map);
             }
-        }
 
-        function renderSavedList() {
-            const container = document.getElementById('savedListContainer');
-            container.innerHTML = "";
-            if(savedProperties.length === 0) { container.innerHTML = "<p style='color:#999; text-align:center;'>No saved properties yet.</p>"; return; }
-            savedProperties.forEach(prop => {
-                const div = document.createElement('div');
-                div.className = 'property-list-item';
-                let desc = prop.type === 'stakes' ? `${prop.stakes.length} stakes` : 'Parcel Boundary';
-                div.innerHTML = `<div><div class="prop-name">${prop.name}</div><div class="prop-count">${desc} • ${prop.date}</div></div><div class="prop-actions"><button class="btn-load" onclick="loadProperty(${prop.id})">LOAD</button><button class="btn-del" onclick="deleteProperty(${prop.id})">✕</button></div>`;
-                container.appendChild(div);
-            });
-        }
+            // Move Camera if locked
+            if (followUser) {
+                map.flyTo(e.latlng, map.getZoom(), { animate: false });
+            }
+        });
 
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedProperties));
-            const downloadAnchorNode = document.createElement('a'); downloadAnchorNode.setAttribute("href", dataStr); downloadAnchorNode.setAttribute("download", "landslide_backup.json"); document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
-        }
+        // Unlock camera if user drags
+        map.on('dragstart', () => {
+            followUser = false;
+            document.getElementById('gpsBtn').style.color = "#666"; // Turn Grey
+        });
 
-        function addStakeToMap(lat, lng, save = true, setDirty = true) {
-            const stakeIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5);'></div>", iconSize: [15, 15], iconAnchor: [6, 6] });
-            const marker = L.marker([lat, lng], {icon: stakeIcon}).addTo(map);
-            const popupContent = `<div style="text-align:center"><b>Stake Point</b><br><small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small><br><button class="popup-btn" onclick="startNavigation(${lat}, ${lng})">GO TO</button><button style="margin-top:5px; color:red; border:none; background:none; cursor:pointer" onclick="deleteStake(${lat}, ${lng})">Delete</button></div>`;
-            marker.bindPopup(popupContent);
-            const stakeObj = { lat, lng, markerRef: marker };
-            if (save) { currentStakes.push(stakeObj); saveCurrentStakesToStorage(); if(setDirty) { hasUnsavedChanges = true; updateSaveBar(); } } 
-            else { const existing = currentStakes.find(s => s.lat === lat && s.lng === lng); if(existing) existing.markerRef = marker; else currentStakes.push(stakeObj); }
-        }
-        function deleteStake(lat, lng) {
-            const index = currentStakes.findIndex(s => s.lat === lat && s.lng === lng);
-            if (index > -1) { map.removeLayer(currentStakes[index].markerRef); currentStakes.splice(index, 1); saveCurrentStakesToStorage(); hasUnsavedChanges = true; updateSaveBar(); }
-        }
-        function saveCurrentStakesToStorage() { const simpleStakes = currentStakes.map(s => ({lat: s.lat, lng: s.lng})); localStorage.setItem('currentStakes', JSON.stringify(simpleStakes)); }
+        map.on('locationerror', (e) => {
+            console.log("GPS Error", e);
+        });
+
+        // --- SEARCH & CLICKS ---
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const text = searchInput.value;
+                if(text.length < 2) return; 
+                searchInput.blur();
+                try {
+                    const response = await fetch(`/api/search?q=${text}`);
+                    const results = await response.json();
+                    if (results.length > 0) {
+                        const bestMatch = results[0];
+                        map.flyTo([bestMatch.lat, bestMatch.lng], 19);
+                        followUser = false; 
+                        setTimeout(() => {
+                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
+                            document.getElementById('address').innerText = bestMatch.address || "No Info";
+                            document.getElementById('card').classList.add('active');
+                        }, 1000);
+                    } else {
+                        alert("No matches found.");
+                    }
+                } catch (err) { console.error(err); }
+            }
+        });
 
         map.on('click', async (e) => {
-            if (isStakingMode) return; 
             const { lat, lng } = e.latlng;
             try {
                 const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const data = await response.json();
-                if(data.length > 0) showParcelData(data[0]); else closeCard();
+                if(data.length > 0) {
+                    const parcel = data[0];
+                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
+                    document.getElementById('address').innerText = parcel.address || "No Info";
+                    document.getElementById('card').classList.add('active');
+                    if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+                    const geoJsonData = JSON.parse(parcel.geometry);
+                    currentGeoJSON = L.geoJSON(geoJsonData, {
+                        style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
+                    }).addTo(map);
+                } else {
+                    closeCard();
+                }
             } catch (err) { console.error(err); }
         });
 
-        function showParcelData(parcel) {
-            activeParcelData = parcel; document.getElementById('owner').innerText = parcel.owner_name || "Unknown"; document.getElementById('address').innerText = parcel.address || "No Info"; document.getElementById('card').classList.add('active'); if (currentGeoJSON) map.removeLayer(currentGeoJSON); const geoJsonData = JSON.parse(parcel.geometry); currentGeoJSON = L.geoJSON(geoJsonData, { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
-        }
-        function closeCard() { document.getElementById('card').classList.remove('active'); activeParcelData = null; }
-
-        function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
-        
-        // --- BULLETPROOF GPS ---
-        function toggleGPS() {
-            const btn = document.getElementById('gpsBtn');
-            const status = document.getElementById('gpsStatus');
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 22 });
-                btn.classList.add('active-btn');
-                status.innerText = "Searching..."; status.style.display = "block";
-                isTracking = true;
+        function toggleLayer() {
+            if (currentBaseLayer === "satellite") {
+                map.removeLayer(satelliteLayer);
+                map.addLayer(streetLayer);
+                currentBaseLayer = "street";
             } else {
-                map.stopLocate();
-                btn.classList.remove('active-btn');
-                status.style.display = "none";
-                isTracking = false;
-                if(accuracyCircle) map.removeLayer(accuracyCircle);
+                map.removeLayer(streetLayer);
+                map.addLayer(satelliteLayer);
+                currentBaseLayer = "satellite";
             }
         }
-        
-        map.on('locationfound', (e) => {
-            document.getElementById('gpsStatus').innerText = "LOCKED";
-            const radius = e.accuracy / 2;
-            
-            // WE SWITCHED TO 'L.marker' WITH A CSS ICON BECAUSE IT IS MORE STABLE THAN 'L.circleMarker'
-            // THIS ENSURES IT STAYS ON TOP OF SATELLITE TILES
-            if (userMarker) { 
-                userMarker.setLatLng(e.latlng); 
-            } else { 
-                // Define the CSS icon
-                var gpsIcon = L.divIcon({ className: 'gps-pulse-marker', iconSize: [24, 24], iconAnchor: [12, 12] });
-                
-                // Create marker on the custom 'gpsPane' (z-index 3000)
-                userMarker = L.marker(e.latlng, { icon: gpsIcon, pane: 'gpsPane' }).addTo(map);
-            }
-            
-            if(accuracyCircle) { accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } 
-            else { accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map); }
-            
-            if (navTarget) updateNavigation(e.latlng);
-        });
 
-        map.on('locationerror', (e) => { 
-            alert("GPS Error: " + e.message + "\n\nMake sure location is enabled for this site!"); 
-            document.getElementById('gpsBtn').classList.remove('active-btn');
-            document.getElementById('gpsStatus').innerText = "ERROR";
-            isTracking = false; 
-        });
+        function closeCard() {
+            document.getElementById('card').classList.remove('active');
+            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+        }
 
-        function toggleStakeMode() { isStakingMode = !isStakingMode; const btn = document.getElementById('stakeBtn'); const crosshair = document.getElementById('crosshair'); const dropBtn = document.getElementById('dropBtn'); if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; } }
-        function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true, true); if(navigator.vibrate) navigator.vibrate(50); }
-        function startNavigation(targetLat, targetLng) { if (!isTracking) { alert("Enable GPS first!"); toggleGPS(); } navTarget = L.latLng(targetLat, targetLng); document.getElementById('navHud').style.display = 'block'; map.closePopup(); if (userMarker) updateNavigation(userMarker.getLatLng()); }
-        function updateNavigation(userLatLng) { const distanceMeters = userLatLng.distanceTo(navTarget); let displayDist = ""; if(useMetric) displayDist = Math.round(distanceMeters) + " m"; else { const feet = Math.round(distanceMeters * 3.28084); displayDist = feet + " ft"; } document.getElementById('distText').innerText = displayDist; if (navLine) map.removeLayer(navLine); navLine = L.polyline([userLatLng, navTarget], { color: 'white', weight: 4, dashArray: '10, 10', opacity: 0.8 }).addTo(map); }
-        function stopNavigation() { navTarget = null; document.getElementById('navHud').style.display = 'none'; if (navLine) map.removeLayer(navLine); }
-        const searchInput = document.querySelector('.search-input'); async function performSearch() { const text = searchInput.value; if(text.length < 2) return; searchInput.blur(); try { const response = await fetch(`/api/search?q=${text}`); const results = await response.json(); if (results.length > 0) { const bestMatch = results[0]; map.flyTo([bestMatch.lat, bestMatch.lng], 19); setTimeout(() => showParcelData(bestMatch), 1000); } else { alert("No matches found."); } } catch (err) { console.error(err); } } searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
-        let useMetric = localStorage.getItem('useMetric') === 'true'; document.getElementById('unitToggle').checked = useMetric; let userId = localStorage.getItem('userId'); if(!userId) { userId = 'User-' + Math.floor(Math.random() * 100000); localStorage.setItem('userId', userId); } document.getElementById('userIdDisplay').innerText = userId;
-        function saveSettings() { useMetric = document.getElementById('unitToggle').checked; localStorage.setItem('useMetric', useMetric); }
-        function clearAllData() { if(confirm("Delete all?")) { stakes.forEach(s => map.removeLayer(s.markerRef)); stakes = []; localStorage.setItem('myStakes', '[]'); alert("Cleared."); closeModal('accountModal'); } }
-        function openModal(id) { if(id === 'accountModal') renderSavedList(); document.getElementById(id).classList.add('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open'); }
-        async function shareLocation() { if (!userMarker) { alert("Enable GPS first!"); return; } const { lat, lng } = userMarker.getLatLng(); const link = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; if (navigator.share) await navigator.share({ title: 'Location', url: link }); else prompt("Copy link:", link); }
-        async function inviteFriend() { const appUrl = window.location.href; if (navigator.share) await navigator.share({ title: 'Landslide', url: appUrl }); else prompt("Copy link:", appUrl); }
+        // --- AUTO START GPS ---
+        // We trigger this immediately so the blue dot appears on load
+        toggleGPS();
+
     </script>
 </body>
 </html>
