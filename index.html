@@ -17,32 +17,24 @@
 
         /* --- CROSSHAIR (SNIPER MODE) --- */
         .center-crosshair {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 900; pointer-events: none; /* Let clicks pass through */
-            display: none; /* Hidden by default */
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 900; pointer-events: none; display: none;
         }
-        /* The lines of the crosshair */
         .ch-line { background: red; position: absolute; }
         .ch-h { width: 40px; height: 2px; left: -20px; top: 0; }
         .ch-v { width: 2px; height: 40px; left: 0; top: -20px; }
-        .ch-circle { 
-            width: 20px; height: 20px; border: 2px solid red; border-radius: 50%; 
-            position: absolute; top: -11px; left: -11px;
-        }
+        .ch-circle { width: 20px; height: 20px; border: 2px solid red; border-radius: 50%; position: absolute; top: -11px; left: -11px; }
 
-        /* --- DROP STAKE BUTTON --- */
+        /* --- DROP BUTTON --- */
         .drop-btn {
             position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
-            background-color: #c30b82; color: white;
-            padding: 15px 30px; border-radius: 30px;
+            background-color: #c30b82; color: white; padding: 15px 30px; border-radius: 30px;
             font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 1000; border: 2px solid white; cursor: pointer;
-            display: none; /* Hidden by default */
+            z-index: 1000; border: 2px solid white; cursor: pointer; display: none;
         }
         .drop-btn:active { transform: translateX(-50%) scale(0.95); }
 
-        /* --- SEARCH BAR --- */
+        /* --- SEARCH --- */
         .search-container {
             position: absolute; top: 50px; left: 20px; right: 20px; z-index: 1000;
             background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -59,41 +51,20 @@
         }
         .nav-distance { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
         .nav-label { font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
-        .nav-stop { 
-            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; 
-            padding: 6px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; font-weight: 600;
-        }
+        .nav-stop { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
 
         /* --- CONTROLS --- */
-        .controls-container {
-            position: absolute; bottom: 40px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
-        }
-        .fab-btn {
-            width: 55px; height: 55px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: transform 0.1s; position: relative;
-        }
+        .controls-container { position: absolute; bottom: 40px; right: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; }
+        .fab-btn { width: 55px; height: 55px; background: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: transform 0.1s; position: relative; }
         .fab-btn:active { transform: scale(0.90); }
         .active-btn { background-color: #2196F3 !important; color: white !important; }
-        .stake-active { background-color: #c30b82 !important; color: white !important; } /* Purple for Hammer */
+        .stake-active { background-color: #c30b82 !important; color: white !important; }
         .menu-btn { background-color: #111; color: white; }
 
         /* --- MODALS --- */
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); z-index: 2000;
-            display: none; justify-content: flex-end; align-items: flex-end;
-        }
+        .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: flex-end; align-items: flex-end; }
         .modal-overlay.open { display: flex; }
-        .modal-panel {
-            background: #f9f9f9; width: 100%; height: 85vh; 
-            border-top-left-radius: 25px; border-top-right-radius: 25px;
-            padding: 0; overflow-y: auto;
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            display: flex; flex-direction: column;
-        }
+        .modal-panel { background: #f9f9f9; width: 100%; height: 85vh; border-top-left-radius: 25px; border-top-right-radius: 25px; padding: 0; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
         .modal-overlay.open .modal-panel { transform: translateY(0); }
         .modal-header { padding: 25px 20px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
         .modal-title { font-size: 22px; font-weight: 700; color: #111; }
@@ -138,13 +109,10 @@
 </head>
 <body>
 
-    <!-- CROSSHAIR (SNIPER MODE) -->
+    <!-- CROSSHAIR -->
     <div class="center-crosshair" id="crosshair">
-        <div class="ch-circle"></div>
-        <div class="ch-h ch-line"></div>
-        <div class="ch-v ch-line"></div>
+        <div class="ch-circle"></div><div class="ch-h ch-line"></div><div class="ch-v ch-line"></div>
     </div>
-
     <!-- DROP BUTTON -->
     <div class="drop-btn" id="dropBtn" onclick="dropStakeAtCenter()">DROP STAKE HERE</div>
 
@@ -172,44 +140,125 @@
         <div class="fab-btn menu-btn" onclick="openModal('mainMenu')">☰</div>
     </div>
 
-    <!-- MENU MODALS (Same as before) -->
-    <div class="modal-overlay" id="mainMenu" onclick="closeModal('mainMenu')">
-        <div class="modal-panel" onclick="event.stopPropagation()">
-            <div class="modal-header"><div class="modal-title">Menu</div><div class="close-icon" onclick="closeModal('mainMenu')">✕</div></div>
-            <div class="menu-list">
-                <div class="menu-item" onclick="openModal('accountModal')"><div class="menu-icon">👤</div><div class="menu-text">My Account</div><div class="menu-arrow">›</div></div>
-                <div class="menu-item" onclick="openModal('settingsModal')"><div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div></div>
-                <div class="menu-item" onclick="shareLocation()"><div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div></div>
-                <div class="menu-item" onclick="inviteFriend()"><div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div></div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-overlay" id="accountModal">
-        <div class="modal-panel" onclick="event.stopPropagation()">
-            <div class="modal-header"><div class="close-icon" onclick="closeModal('accountModal')">←</div><div class="modal-title">My Account</div><div style="width:40px"></div></div>
-            <div class="menu-list">
-                <div class="account-banner"><div class="avatar-large">👤</div><h2>Guest User</h2><p>Free Plan</p><button class="upgrade-btn">Upgrade</button></div>
-                <div class="menu-item"><div class="menu-text"><b>User ID:</b> <span id="userIdDisplay">Loading...</span></div></div>
-                <div class="danger-btn" onclick="clearAllData()">🗑️ Delete All Stakes</div>
-            </div>
-        </div>
-    </div>
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-panel" onclick="event.stopPropagation()">
-            <div class="modal-header"><div class="close-icon" onclick="closeModal('settingsModal')">←</div><div class="modal-title">Settings</div><div style="width:40px"></div></div>
-            <div class="menu-list">
-                <div class="setting-row"><div class="setting-label">Units (Feet / Meters)</div><label class="switch"><input type="checkbox" id="unitToggle" onchange="saveSettings()"><span class="slider"></span></label></div>
-                <div class="setting-row"><div class="setting-label">Start in Satellite Mode</div><label class="switch"><input type="checkbox" id="mapToggle" checked onchange="saveSettings()"><span class="slider"></span></label></div>
-            </div>
-        </div>
-    </div>
+    <!-- MODALS -->
+    <div class="modal-overlay" id="mainMenu" onclick="closeModal('mainMenu')"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="modal-title">Menu</div><div class="close-icon" onclick="closeModal('mainMenu')">✕</div></div><div class="menu-list"><div class="menu-item" onclick="openModal('accountModal')"><div class="menu-icon">👤</div><div class="menu-text">My Account</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="openModal('settingsModal')"><div class="menu-icon">⚙️</div><div class="menu-text">Settings</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="shareLocation()"><div class="menu-icon">📍</div><div class="menu-text">Share My Location</div><div class="menu-arrow">›</div></div><div class="menu-item" onclick="inviteFriend()"><div class="menu-icon">✉️</div><div class="menu-text">Invite a Friend</div><div class="menu-arrow">›</div></div></div></div></div>
+    <div class="modal-overlay" id="accountModal"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="close-icon" onclick="closeModal('accountModal')">←</div><div class="modal-title">My Account</div><div style="width:40px"></div></div><div class="menu-list"><div class="account-banner"><div class="avatar-large">👤</div><h2>Guest User</h2><p>Free Plan</p><button class="upgrade-btn">Upgrade</button></div><div class="menu-item"><div class="menu-text"><b>User ID:</b> <span id="userIdDisplay">Loading...</span></div></div><div class="danger-btn" onclick="clearAllData()">🗑️ Delete All Stakes</div></div></div></div>
+    <div class="modal-overlay" id="settingsModal"><div class="modal-panel" onclick="event.stopPropagation()"><div class="modal-header"><div class="close-icon" onclick="closeModal('settingsModal')">←</div><div class="modal-title">Settings</div><div style="width:40px"></div></div><div class="menu-list"><div class="setting-row"><div class="setting-label">Units (Feet / Meters)</div><label class="switch"><input type="checkbox" id="unitToggle" onchange="saveSettings()"><span class="slider"></span></label></div><div class="setting-row"><div class="setting-label">Start in Satellite Mode</div><label class="switch"><input type="checkbox" id="mapToggle" checked onchange="saveSettings()"><span class="slider"></span></label></div></div></div></div>
 
     <!-- CARD -->
-    <div class="info-card" id="card">
-        <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div><div class="prop-value" id="owner">Loading...</div>
-        <div class="prop-label">ADDRESS / INFO</div><div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
-        <div class="action-row"><div class="action-btn btn-secondary" onclick="closeCard()">Close</div><div class="action-btn btn-primary" id="saveBtn">Save</div></div>
-    </div>
+    <div class="info-card" id="card"><div class="card-handle"></div><div class="prop-label">OWNER / PIN</div><div class="prop-value" id="owner">Loading...</div><div class="prop-label">ADDRESS / INFO</div><div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div><div class="action-row"><div class="action-btn btn-secondary" onclick="closeCard()">Close</div><div class="action-btn btn-primary" id="saveBtn">Save</div></div></div>
 
-    <script src="https://
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // --- MAP SETUP WITH ULTRA ZOOM ---
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 25,       // Allow zooming way past level 19
+            maxNativeZoom: 19  // Stop asking server for new tiles after 19, just stretch them
+        });
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 25, 
+            maxNativeZoom: 19 
+        });
+
+        const map = L.map('map', {
+            center: [40.764356, -73.973057], zoom: 15, 
+            layers: [satelliteLayer], zoomControl: false,
+            maxZoom: 25 // ALLOW DEEP ZOOM
+        });
+
+        // --- VARS ---
+        let currentBaseLayer = "satellite"; let currentGeoJSON = null; let stakes = []; 
+        let isStakingMode = false; let navTarget = null; let navLine = null; 
+        let userMarker = null; let accuracyCircle = null; let isTracking = false;
+        
+        // --- SETTINGS ---
+        let useMetric = localStorage.getItem('useMetric') === 'true';
+        document.getElementById('unitToggle').checked = useMetric;
+        let userId = localStorage.getItem('userId');
+        if(!userId) { userId = 'User-' + Math.floor(Math.random() * 100000); localStorage.setItem('userId', userId); }
+        document.getElementById('userIdDisplay').innerText = userId;
+        function saveSettings() { useMetric = document.getElementById('unitToggle').checked; localStorage.setItem('useMetric', useMetric); }
+        function clearAllData() { if(confirm("Delete all stakes?")) { stakes.forEach(s => map.removeLayer(s.markerRef)); stakes = []; localStorage.setItem('myStakes', '[]'); alert("Cleared."); closeModal('accountModal'); } }
+
+        // --- MODALS ---
+        function openModal(id) { document.getElementById(id).classList.add('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.remove('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id !== 'mainMenu') document.getElementById('mainMenu').classList.add('open'); }
+        const savedStakes = JSON.parse(localStorage.getItem('myStakes') || '[]'); savedStakes.forEach(s => addStakeToMap(s.lat, s.lng, false));
+
+        async function shareLocation() { if (!userMarker) { alert("Enable GPS (📍) first!"); return; } const { lat, lng } = userMarker.getLatLng(); const link = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`; if (navigator.share) await navigator.share({ title: 'Location', url: link }); else prompt("Copy link:", link); }
+        async function inviteFriend() { const appUrl = window.location.href; if (navigator.share) await navigator.share({ title: 'Landslide', url: appUrl }); else prompt("Copy link:", appUrl); }
+
+        // --- SEARCH ---
+        const searchInput = document.querySelector('.search-input');
+        async function performSearch() { const text = searchInput.value; if(text.length < 2) return; searchInput.blur(); try { const response = await fetch(`/api/search?q=${text}`); const results = await response.json(); if (results.length > 0) { const bestMatch = results[0]; map.flyTo([bestMatch.lat, bestMatch.lng], 19); setTimeout(() => showParcelData(bestMatch), 1000); } else { alert("No matches found."); } } catch (err) { console.error(err); } }
+        searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
+        // --- CONTROLS ---
+        function toggleLayer() { if (currentBaseLayer === "satellite") { map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street"; } else { map.removeLayer(streetLayer); map.addLayer(satelliteLayer); currentBaseLayer = "satellite"; } }
+        function toggleGPS() { if (!isTracking) { map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 22 }); document.getElementById('gpsBtn').classList.add('active-btn'); isTracking = true; } else { map.stopLocate(); isTracking = false; document.getElementById('gpsBtn').classList.remove('active-btn'); if(accuracyCircle) map.removeLayer(accuracyCircle); } }
+        map.on('locationfound', (e) => { const radius = e.accuracy / 2; if (userMarker) { userMarker.setLatLng(e.latlng); accuracyCircle.setLatLng(e.latlng); accuracyCircle.setRadius(radius); } else { userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1, className: 'gps-pulse' }).addTo(map); accuracyCircle = L.circle(e.latlng, { radius: radius, color: '#2196F3', fillOpacity: 0.1, weight: 1 }).addTo(map); } if (navTarget) updateNavigation(e.latlng); });
+
+        // --- STAKE MODE ---
+        function toggleStakeMode() {
+            isStakingMode = !isStakingMode;
+            const btn = document.getElementById('stakeBtn');
+            const crosshair = document.getElementById('crosshair');
+            const dropBtn = document.getElementById('dropBtn');
+            if (isStakingMode) { btn.classList.add('stake-active'); crosshair.style.display = 'block'; dropBtn.style.display = 'block'; closeCard(); } 
+            else { btn.classList.remove('stake-active'); crosshair.style.display = 'none'; dropBtn.style.display = 'none'; }
+        }
+        function dropStakeAtCenter() { const center = map.getCenter(); addStakeToMap(center.lat, center.lng, true); if(navigator.vibrate) navigator.vibrate(50); }
+
+        function addStakeToMap(lat, lng, save = true) {
+            const stakeIcon = L.divIcon({ className: 'custom-div-icon', html: "<div style='background-color:#c30b82; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 2px 2px 4px rgba(0,0,0,0.5);'></div>", iconSize: [15, 15], iconAnchor: [6, 6] });
+            const marker = L.marker([lat, lng], {icon: stakeIcon}).addTo(map);
+            const popupContent = `<div style="text-align:center"><b>Stake Point</b><br><small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small><br><button class="popup-btn" onclick="startNavigation(${lat}, ${lng})">GO TO</button><button style="margin-top:5px; color:red; border:none; background:none; cursor:pointer" onclick="deleteStake(${lat}, ${lng})">Delete</button></div>`;
+            marker.bindPopup(popupContent);
+            const stakeObj = { lat, lng, markerRef: marker };
+            if (save) { stakes.push(stakeObj); saveStakesToStorage(); } else { const existing = stakes.find(s => s.lat === lat && s.lng === lng); if(existing) existing.markerRef = marker; else stakes.push(stakeObj); }
+        }
+
+        function startNavigation(targetLat, targetLng) {
+            if (!isTracking) { alert("Enable GPS first!"); toggleGPS(); }
+            navTarget = L.latLng(targetLat, targetLng); document.getElementById('navHud').style.display = 'block'; map.closePopup();
+            if (userMarker) updateNavigation(userMarker.getLatLng());
+        }
+
+        function updateNavigation(userLatLng) {
+            const distanceMeters = userLatLng.distanceTo(navTarget);
+            let displayDist = "";
+            if(useMetric) displayDist = Math.round(distanceMeters) + " m"; else { const feet = Math.round(distanceMeters * 3.28084); displayDist = feet + " ft"; }
+            document.getElementById('distText').innerText = displayDist;
+            if (navLine) map.removeLayer(navLine);
+            navLine = L.polyline([userLatLng, navTarget], { color: 'white', weight: 4, dashArray: '10, 10', opacity: 0.8 }).addTo(map);
+        }
+
+        function stopNavigation() { navTarget = null; document.getElementById('navHud').style.display = 'none'; if (navLine) map.removeLayer(navLine); }
+        function deleteStake(lat, lng) { const stake = stakes.find(s => s.lat === lat && s.lng === lng); if (stake && stake.markerRef) map.removeLayer(stake.markerRef); stakes = stakes.filter(s => s.lat !== lat); saveStakesToStorage(); }
+        function saveStakesToStorage() { const dataToSave = stakes.map(s => ({ lat: s.lat, lng: s.lng })); localStorage.setItem('myStakes', JSON.stringify(dataToSave)); }
+
+        // --- CLICK HANDLER ---
+        map.on('click', async (e) => {
+            if (isStakingMode) return; 
+            const { lat, lng } = e.latlng;
+            try {
+                const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
+                const data = await response.json();
+                if(data.length > 0) showParcelData(data[0]); else closeCard();
+            } catch (err) { console.error(err); }
+        });
+
+        function showParcelData(parcel) {
+            document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
+            document.getElementById('address').innerText = parcel.address || "No Info";
+            document.getElementById('card').classList.add('active');
+            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+            const geoJsonData = JSON.parse(parcel.geometry);
+            currentGeoJSON = L.geoJSON(geoJsonData, { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+        }
+        function closeCard() { document.getElementById('card').classList.remove('active'); }
+    </script>
+</body>
+</html>
