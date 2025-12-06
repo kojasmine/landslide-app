@@ -7,39 +7,45 @@
     
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Google Fonts -->
+    <!-- Google Fonts (Inter) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- GENERAL STYLES --- */
+        /* --- 1. GENERAL APP STYLING --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
         #map { height: 100vh; width: 100%; z-index: 1; }
 
-        /* --- SEARCH BAR --- */
+        /* --- 2. FLOATING SEARCH BAR (Top) --- */
         .search-container {
             position: absolute; top: 50px; left: 20px; right: 20px;
             z-index: 1000;
-            background: white; border-radius: 8px;
+            background: white;
+            border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
         }
         .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
+        .search-input {
+            border: none; outline: none; flex: 1; font-size: 16px; color: #333;
+        }
 
-        /* --- SIDE BUTTONS --- */
+        /* --- 3. FLOATING BUTTONS (Bottom Right) --- */
         .controls-container {
             position: absolute; bottom: 220px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 15px;
+            z-index: 1000;
         }
         .fab-btn {
-            width: 50px; height: 50px; background: white; border-radius: 50%;
+            width: 50px; height: 50px;
+            background: white; border-radius: 50%;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: transform 0.1s;
+            font-size: 24px; cursor: pointer;
+            transition: transform 0.1s;
         }
         .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
 
-        /* --- INFO CARD --- */
+        /* --- 4. PROPERTY INFO CARD (Bottom Sheet) --- */
         .info-card {
             position: absolute; bottom: 0; left: 0; right: 0;
             background: white;
@@ -47,120 +53,92 @@
             padding: 25px 20px 40px 20px;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
             z-index: 1001;
-            transform: translateY(110%);
+            transform: translateY(110%); /* Hidden by default */
             transition: transform 0.3s ease-out;
         }
         .info-card.active { transform: translateY(0); }
-        .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
-        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
-        .action-row { display: flex; gap: 10px; margin-top: 15px; }
-        .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
+        
+        .card-handle {
+            width: 40px; height: 5px; background: #ddd;
+            border-radius: 3px; margin: 0 auto 15px auto;
+        }
+        .prop-label {
+            font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px;
+        }
+        .prop-value {
+            font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .action-row {
+            display: flex; gap: 10px; margin-top: 15px;
+        }
+        .action-btn {
+            flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer;
+        }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
 
-        /* --- BLUE DOT ANIMATION --- */
-        .gps-pulse {
-            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-            animation: pulse-blue 2s infinite;
-            border-radius: 50%;
-        }
-        @keyframes pulse-blue {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
-        }
     </style>
 </head>
 <body>
 
-    <!-- SEARCH -->
+    <!-- SEARCH BAR -->
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" placeholder="Search PIN or Address...">
+        <input type="text" class="search-input" placeholder="Search address, APN, or owner...">
     </div>
 
-    <!-- MAP -->
+    <!-- MAP CONTAINER -->
     <div id="map"></div>
 
-    <!-- BUTTONS -->
+    <!-- SIDE BUTTONS -->
     <div class="controls-container">
         <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
-        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
+        <div class="fab-btn" onclick="locateUser()" title="Find Me">📍</div>
     </div>
 
-    <!-- CARD -->
+    <!-- PROPERTY CARD -->
     <div class="info-card" id="card">
         <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div>
+        
+        <!-- Content -->
+        <div class="prop-label">OWNER</div>
         <div class="prop-value" id="owner">Loading...</div>
+        
         <div class="prop-label">ADDRESS / INFO</div>
         <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
+
+        <!-- Action Buttons -->
         <div class="action-row">
             <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
             <div class="action-btn btn-primary">Save</div>
         </div>
     </div>
 
+    <!-- JS Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- SETUP MAP ---
+        // --- 1. SETUP MAP LAYERS ---
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         });
+        
         const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap'
         });
 
-        // Initialize Map
+        // Start with Satellite
         const map = L.map('map', {
-            center: [40.764356, -73.973057], // Default to NY until GPS loads
+            center: [40.764356, -73.973057], // Default NY
             zoom: 15,
-            layers: [satelliteLayer], 
-            zoomControl: false 
+            layers: [satelliteLayer], // Default layer
+            zoomControl: false // We will hide default zoom buttons for cleaner look
         });
 
         let currentBaseLayer = "satellite";
-        let currentGeoJSON = null;
+        let currentGeoJSON = null; // Store the yellow line
 
-        // --- SEARCH LOGIC (NEW) ---
-        const searchInput = document.querySelector('.search-input');
-        
-        searchInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-
-                // Close keyboard on mobile
-                searchInput.blur();
-
-                try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        
-                        // Fly to location
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 18);
-                        
-                        // Simulate opening the card
-                        setTimeout(() => {
-                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
-                            document.getElementById('address').innerText = bestMatch.address || "No Info";
-                            document.getElementById('card').classList.add('active');
-                        }, 1000);
-
-                    } else {
-                        alert("No matches found for: " + text);
-                    }
-                } catch (err) {
-                    console.error("Search failed", err);
-                }
-            }
-        });
-
-        // --- LAYER TOGGLE ---
+        // --- 2. SWITCH LAYER FUNCTION ---
         function toggleLayer() {
             if (currentBaseLayer === "satellite") {
                 map.removeLayer(satelliteLayer);
@@ -173,56 +151,38 @@
             }
         }
 
-        // --- REAL-TIME GPS ---
-        let userMarker = null;
-        let isTracking = false;
-
-        function toggleGPS() {
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 19 });
-                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
-                isTracking = true;
-            } else {
-                map.stopLocate();
-                isTracking = false;
-                document.getElementById('gpsBtn').style.color = "black";
-            }
-        }
-
-        map.on('locationfound', (e) => {
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse'
-                }).addTo(map);
-            }
-        });
-
-        map.on('locationerror', (e) => {
-            alert("Could not access GPS. Please check settings.");
-        });
-
-        // --- CLICK HANDLER ---
+        // --- 3. HANDLE CLICKS (API) ---
         map.on('click', async (e) => {
             const { lat, lng } = e.latlng;
+            
+            // UI Feedback: Click animation or logic here could go here
+            
             try {
+                // Fetch Data from Server
                 const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const data = await response.json();
                 
                 if(data.length > 0) {
                     const parcel = data[0];
-                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
-                    document.getElementById('address').innerText = parcel.address || "No Info";
+
+                    // 1. Update Card Content
+                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown Owner";
+                    document.getElementById('address').innerText = parcel.address || "No Address Info";
+                    
+                    // 2. Slide Card Up
                     document.getElementById('card').classList.add('active');
 
+                    // 3. Draw Yellow Line
                     if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+                    
                     const geoJsonData = JSON.parse(parcel.geometry);
                     currentGeoJSON = L.geoJSON(geoJsonData, {
                         style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
                     }).addTo(map);
+
                 } else {
+                    console.log("No data found here.");
+                    // Optional: close card if clicking empty space
                     closeCard();
                 }
             } catch (err) {
@@ -230,10 +190,30 @@
             }
         });
 
+        // --- 4. GPS LOGIC ---
+        function locateUser() {
+            map.locate({setView: true, maxZoom: 18});
+        }
+
+        map.on('locationfound', (e) => {
+            // Remove old blue dot if exists
+            map.eachLayer((layer) => {
+                if(layer.options.className === 'bluedot') map.removeLayer(layer);
+            });
+
+            // Add Blue Dot
+            L.circleMarker(e.latlng, {
+                radius: 8, fillColor: "#2196F3", color: "white", weight: 2, fillOpacity: 1,
+                className: 'bluedot'
+            }).addTo(map);
+        });
+
+        // --- 5. UI HELPERS ---
         function closeCard() {
             document.getElementById('card').classList.remove('active');
             if (currentGeoJSON) map.removeLayer(currentGeoJSON);
         }
+
     </script>
 </body>
 </html>
