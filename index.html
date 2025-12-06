@@ -9,200 +9,118 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* 1. RESET */
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #333; }
+        /* BASE */
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
         
-        /* 2. MAP (Layer 0) */
+        /* MAP */
         #map { 
-            position: absolute; top: 0; bottom: 0; left: 0; right: 0;
-            z-index: 0; /* Map stays at bottom */
+            position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+            z-index: 1;
         }
 
-        /* 3. UI LAYER (Layer 1) - The "Glass Shield" */
-        #ui-layer {
-            position: absolute; top: 0; bottom: 0; left: 0; right: 0;
-            z-index: 9999; /* Sits on top of map */
-            pointer-events: none; /* Let touches pass through to map... */
-            display: flex; flex-direction: column;
-            padding: 10px;
-        }
-
-        /* Enable clicking on actual buttons inside the glass shield */
-        .interactive { pointer-events: auto; }
-
-        /* --- WIDGETS --- */
+        /* --- UI ELEMENTS (FIXED POSITIONING) --- */
         
-        /* SEARCH BAR */
-        .search-wrapper {
-            width: 100%; display: flex; justify-content: center; margin-top: 40px; /* Safe space for notch */
-        }
-        .search-box {
-            background: white; width: 90%; max-width: 400px; height: 50px;
-            border-radius: 8px; border: 2px solid black; /* High visibility */
+        /* 1. SEARCH BAR (Top) */
+        .search-container {
+            position: fixed; top: 40px; left: 15px; right: 15px;
+            height: 50px;
+            background: white; border-radius: 8px;
             display: flex; align-items: center; padding: 0 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 2px solid #000;
+            z-index: 9999;
         }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; margin-left: 10px; }
+        .search-input { 
+            border: none; outline: none; flex: 1; font-size: 16px; color: #333; height: 100%;
+        }
 
-        /* RIGHT BUTTONS */
-        .buttons-wrapper {
-            position: absolute; top: 110px; right: 20px;
+        /* 2. BUTTONS (Bottom Right) */
+        .buttons-container {
+            position: fixed; bottom: 40px; right: 20px;
             display: flex; flex-direction: column; gap: 15px;
+            z-index: 9999;
         }
-        .fab {
-            width: 55px; height: 55px; background: white; 
-            border-radius: 12px; border: 2px solid black;
+        
+        .btn-circle {
+            width: 55px; height: 55px;
+            background-color: black; /* High Contrast */
+            border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px; cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            border: 2px solid white;
         }
-        .fab:active { background: #ddd; }
+        .btn-circle:active { transform: scale(0.95); }
+        
+        /* Icons (SVG) */
+        .icon-svg { width: 24px; height: 24px; fill: white; }
 
-        /* CARD (Bottom) */
+        /* 3. CARD (Bottom Sheet) */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white; border-top: 3px solid black;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; 
+            border-top: 4px solid black;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px;
-            transform: translateY(110%); transition: transform 0.3s ease-out;
-            pointer-events: auto; /* Make card clickable */
+            padding: 20px;
+            transform: translateY(110%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 10000; /* Highest */
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
         }
         .info-card.active { transform: translateY(0); }
-        .prop-label { font-size: 11px; font-weight: 800; color: #666; letter-spacing: 1px; margin-top: 10px; }
-        .prop-val { font-size: 18px; font-weight: 700; color: #000; }
-        .close-btn { background: black; color: white; text-align: center; padding: 15px; border-radius: 8px; margin-top: 15px; font-weight: bold; }
+        
+        .prop-label { font-size: 11px; font-weight: 800; color: #666; letter-spacing: 1px; margin-top: 5px; }
+        .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 10px; }
+        .close-btn { 
+            background: #eee; color: #333; text-align: center; padding: 15px; 
+            border-radius: 8px; margin-top: 15px; font-weight: bold; cursor: pointer;
+        }
 
-        /* DEBUG BADGE */
-        .debug {
-            position: absolute; bottom: 10px; left: 10px; 
-            background: #ff00ff; color: white; font-weight: bold; 
-            padding: 5px 10px; border: 2px solid white; font-size: 12px;
-            pointer-events: auto;
+        /* DEBUG BADGE (Orange) */
+        .debug-label {
+            position: fixed; top: 5px; left: 5px; 
+            background: orange; color: black; font-weight: bold; 
+            padding: 2px 6px; z-index: 99999; font-size: 10px;
         }
     </style>
 </head>
 <body>
 
-    <!-- MAP BACKGROUND -->
-    <div id="map"></div>
+    <!-- ORANGE LABEL = v9 -->
+    <div class="debug-label">v9</div>
 
-    <!-- UI FOREGROUND (The Glass Shield) -->
-    <div id="ui-layer">
+    <!-- SEARCH -->
+    <div class="search-container">
+        <!-- SVG Search Icon -->
+        <svg class="icon-svg" style="fill: #666; margin-right: 10px;" viewBox="0 0 24 24">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="Search Address...">
+    </div>
+
+    <!-- BUTTONS (Bottom Right) -->
+    <div class="buttons-container">
         
-        <!-- PINK BADGE = v8 -->
-        <div class="debug interactive">v8</div>
-
-        <!-- 1. SEARCH -->
-        <div class="search-wrapper">
-            <div class="search-box interactive">
-                <span>🔍</span>
-                <input type="text" class="search-input" placeholder="Search PIN or Address...">
-            </div>
+        <!-- LAYERS BUTTON (Stack Icon) -->
+        <div class="btn-circle" onclick="toggleLayer()">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/>
+            </svg>
         </div>
 
-        <!-- 2. BUTTONS -->
-        <div class="buttons-wrapper">
-            <div class="fab interactive" onclick="toggleLayer()">🗺️</div>
-            <div class="fab interactive" id="gpsBtn" onclick="toggleGPS()">📍</div>
-        </div>
-
-        <!-- 3. CARD -->
-        <div class="info-card interactive" id="card">
-            <div class="prop-label">OWNER / PIN</div>
-            <div class="prop-val" id="owner">...</div>
-            <div class="prop-label">ADDRESS</div>
-            <div class="prop-val" id="address">...</div>
-            <div class="close-btn" onclick="closeCard()">CLOSE</div>
+        <!-- GPS BUTTON (Crosshair Icon) -->
+        <div class="btn-circle" id="gpsBtn" onclick="toggleGPS()">
+            <svg class="icon-svg" id="gpsIcon" viewBox="0 0 24 24">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
         </div>
 
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // --- MAP SETUP (Google Tiles) ---
-        const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 });
-        const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 });
+    <!-- MAP -->
+    <div id="map"></div>
 
-        const map = L.map('map', {
-            center: [40.764356, -73.973057], zoom: 15,
-            layers: [satellite], zoomControl: false
-        });
-
-        // --- GPS LOGIC ---
-        let userMarker = null, isTracking = false, followUser = false;
-
-        function toggleGPS() {
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true });
-                document.getElementById('gpsBtn').style.borderColor = "#2196F3";
-                isTracking = true; followUser = true;
-            } else if (userMarker) {
-                map.flyTo(userMarker.getLatLng(), 18);
-                followUser = true;
-            }
-        }
-
-        map.on('locationfound', (e) => {
-            if (userMarker) userMarker.setLatLng(e.latlng);
-            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#2196F3", fillOpacity: 1 }).addTo(map);
-            if (followUser) map.flyTo(e.latlng, map.getZoom(), { animate: false });
-        });
-        
-        map.on('dragstart', () => { followUser = false; });
-
-        // --- LAYER TOGGLE ---
-        let currentLayer = "sat";
-        function toggleLayer() {
-            if (currentLayer === "sat") { map.removeLayer(satellite); map.addLayer(street); currentLayer = "street"; }
-            else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
-        }
-
-        // --- SEARCH ---
-        const input = document.querySelector('.search-input');
-        input.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const q = input.value;
-                if(q.length < 2) return;
-                input.blur();
-                try {
-                    const res = await fetch(`/api/search?q=${q}`);
-                    const json = await res.json();
-                    if(json.length > 0) {
-                        const hit = json[0];
-                        map.flyTo([hit.lat, hit.lng], 19);
-                        followUser = false;
-                        showCard(hit.owner_name, hit.address);
-                    } else alert("Not found");
-                } catch(e) { console.log(e); }
-            }
-        });
-
-        // --- CLICKS ---
-        let geojsonLayer = null;
-        map.on('click', async (e) => {
-            try {
-                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
-                const json = await res.json();
-                if(json.length > 0) {
-                    const p = json[0];
-                    if(geojsonLayer) map.removeLayer(geojsonLayer);
-                    geojsonLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
-                    showCard(p.owner_name, p.address);
-                } else closeCard();
-            } catch(e) { console.log(e); }
-        });
-
-        function showCard(own, addr) {
-            document.getElementById('owner').innerText = own || "Unknown";
-            document.getElementById('address').innerText = addr || "No Address";
-            document.getElementById('card').classList.add('active');
-        }
-        function closeCard() {
-            document.getElementById('card').classList.remove('active');
-            if(geojsonLayer) map.removeLayer(geojsonLayer);
-        }
-
-        toggleGPS();
-    </script>
-</body>
-</html>
+    <!-- CARD -->
+    <div class="info-card" id="card">
+        <div class="prop-label">OWNER</div>
+        <div class="prop-val" id="owner">Loading...</div>
+        <div class="prop-label">ADDRESS
