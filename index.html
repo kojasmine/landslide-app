@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Prevent the browser from zooming the whole page -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
@@ -10,235 +9,207 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
+        /* BASE */
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         
-        #map { height: 100vh; width: 100%; z-index: 1; touch-action: none; }
+        /* MAP */
+        #map { 
+            position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+            z-index: 1;
+        }
 
+        /* --- UI ELEMENTS --- */
+        
         /* SEARCH BAR */
         .search-container {
-            position: absolute; top: 50px; left: 20px; right: 20px;
-            z-index: 1000;
+            position: fixed; top: 40px; left: 15px; right: 15px;
+            height: 50px;
             background: white; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            display: flex; align-items: center; padding: 0 15px; height: 50px;
+            display: flex; align-items: center; padding: 0 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 2px solid #000;
+            z-index: 9999;
         }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
+        .search-input { 
+            border: none; outline: none; flex: 1; font-size: 16px; color: #333; height: 100%;
+        }
 
-        /* CONTROLS */
-        .controls-container {
-            position: absolute; bottom: 220px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
+        /* BUTTONS (Bottom Right) */
+        .buttons-container {
+            position: fixed; bottom: 40px; right: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            z-index: 9999;
         }
-        .fab-btn {
-            width: 50px; height: 50px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        .btn-circle {
+            width: 55px; height: 55px;
+            background-color: black;
+            border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            border: 2px solid white;
         }
-        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
+        .btn-circle:active { transform: scale(0.95); }
+        .icon-svg { width: 24px; height: 24px; fill: white; }
 
         /* CARD */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; 
+            border-top: 4px solid black;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 1001;
-            transform: translateY(110%);
-            transition: transform 0.3s ease-out;
+            padding: 20px;
+            transform: translateY(110%); transition: transform 0.3s ease-out;
+            z-index: 10000;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
         }
         .info-card.active { transform: translateY(0); }
-        .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
-        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
-        .action-row { display: flex; gap: 10px; margin-top: 15px; }
-        .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-secondary { background: #f3f4f6; color: #333; }
-
-        /* GPS PULSE */
-        .gps-pulse {
-            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-            animation: pulse-blue 2s infinite;
-            border-radius: 50%;
+        .prop-label { font-size: 11px; font-weight: 800; color: #666; letter-spacing: 1px; margin-top: 5px; }
+        .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 10px; }
+        .close-btn { 
+            background: #eee; color: #333; text-align: center; padding: 15px; 
+            border-radius: 8px; margin-top: 15px; font-weight: bold; cursor: pointer;
         }
-        @keyframes pulse-blue {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+
+        /* DEBUG BADGE (Purple) */
+        .debug-label {
+            position: fixed; top: 5px; left: 5px; 
+            background: #9C27B0; color: white; font-weight: bold; 
+            padding: 2px 6px; z-index: 99999; font-size: 10px; border: 1px solid white;
         }
     </style>
 </head>
 <body>
 
+    <!-- PURPLE LABEL = v10 -->
+    <div class="debug-label">v10</div>
+
+    <!-- SEARCH -->
     <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" placeholder="Search PIN or Address...">
+        <svg class="icon-svg" style="fill: #666; margin-right: 10px;" viewBox="0 0 24 24">
+            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="Search Address...">
     </div>
 
+    <!-- BUTTONS -->
+    <div class="buttons-container">
+        <div class="btn-circle" onclick="toggleLayer()">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/>
+            </svg>
+        </div>
+        <div class="btn-circle" id="gpsBtn" onclick="toggleGPS()">
+            <svg class="icon-svg" id="gpsIcon" viewBox="0 0 24 24">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- MAP -->
     <div id="map"></div>
 
-    <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
-        <!-- Button is still here to re-center if you get lost, but starts active -->
-        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
-    </div>
-
+    <!-- CARD -->
     <div class="info-card" id="card">
-        <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div>
-        <div class="prop-value" id="owner">Loading...</div>
-        <div class="prop-label">ADDRESS / INFO</div>
-        <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
-        <div class="action-row">
-            <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <div class="action-btn btn-primary">Save</div>
-        </div>
+        <div class="prop-label">OWNER</div>
+        <div class="prop-val" id="owner">...</div>
+        <div class="prop-label">ADDRESS</div>
+        <div class="prop-val" id="address">...</div>
+        <div class="close-btn" onclick="closeCard()">CLOSE</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- MAP SETUP ---
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri',
+        // --- 1. SETUP MAP LAYERS (RESTORED TO WORKING ESRI) ---
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Esri',
             maxZoom: 19
         });
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
+        
+        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'OSM',
             maxZoom: 19
         });
 
         const map = L.map('map', {
-            center: [40.764356, -73.973057], 
-            zoom: 18, 
-            layers: [satelliteLayer], 
-            zoomControl: false,
-            bounceAtZoomLimits: false 
+            center: [40.764356, -73.973057], // Default NY
+            zoom: 16, // Zoomed out slightly to ensure tiles load
+            layers: [satellite], 
+            zoomControl: false 
         });
-
-        let currentBaseLayer = "satellite";
-        let currentGeoJSON = null;
 
         // --- GPS LOGIC ---
-        let userMarker = null;
-        let isTracking = false;
-        let followUser = false; 
-
+        let userMarker = null, isTracking = false, followUser = false;
         function toggleGPS() {
             if (!isTracking) {
-                // START GPS
-                map.locate({ watch: true, enableHighAccuracy: true, setView: false });
-                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
-                isTracking = true;
-                followUser = true; 
-            } else {
-                // If clicked while on, just re-center
-                if (userMarker) {
-                    map.flyTo(userMarker.getLatLng(), 18);
-                    followUser = true;
-                    document.getElementById('gpsBtn').style.color = "#2196F3";
-                }
+                map.locate({ watch: true, enableHighAccuracy: true });
+                document.getElementById('gpsBtn').style.backgroundColor = "#2196F3"; // Blue
+                document.getElementById('gpsBtn').style.borderColor = "black";
+                isTracking = true; followUser = true;
+            } else if (userMarker) {
+                map.flyTo(userMarker.getLatLng(), 18);
+                followUser = true;
             }
         }
-
         map.on('locationfound', (e) => {
-            // Update Blue Dot Position
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse'
-                }).addTo(map);
-            }
-
-            // Move Camera if locked
-            if (followUser) {
-                map.flyTo(e.latlng, map.getZoom(), { animate: false });
-            }
+            if (userMarker) userMarker.setLatLng(e.latlng);
+            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#2196F3", fillOpacity: 1 }).addTo(map);
+            if (followUser) map.flyTo(e.latlng, map.getZoom(), { animate: false });
         });
+        map.on('dragstart', () => { followUser = false; });
 
-        // Unlock camera if user drags
-        map.on('dragstart', () => {
-            followUser = false;
-            document.getElementById('gpsBtn').style.color = "#666"; // Turn Grey
-        });
-
-        map.on('locationerror', (e) => {
-            console.log("GPS Error", e);
-        });
+        // --- LAYERS ---
+        let currentLayer = "sat";
+        function toggleLayer() {
+            if (currentLayer === "sat") { map.removeLayer(satellite); map.addLayer(street); currentLayer = "street"; }
+            else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
+        }
 
         // --- SEARCH & CLICKS ---
-        const searchInput = document.querySelector('.search-input');
-        searchInput.addEventListener('keypress', async (e) => {
+        const input = document.querySelector('.search-input');
+        input.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-                searchInput.blur();
+                const q = input.value;
+                if(q.length < 2) return;
+                input.blur();
                 try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 19);
-                        followUser = false; 
-                        setTimeout(() => {
-                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
-                            document.getElementById('address').innerText = bestMatch.address || "No Info";
-                            document.getElementById('card').classList.add('active');
-                        }, 1000);
-                    } else {
-                        alert("No matches found.");
-                    }
-                } catch (err) { console.error(err); }
+                    const res = await fetch(`/api/search?q=${q}`);
+                    const json = await res.json();
+                    if(json.length > 0) {
+                        const hit = json[0];
+                        map.flyTo([hit.lat, hit.lng], 19);
+                        followUser = false;
+                        showCard(hit.owner_name, hit.address);
+                    } else alert("Not found");
+                } catch(e) {}
             }
         });
 
+        let geojsonLayer = null;
         map.on('click', async (e) => {
-            const { lat, lng } = e.latlng;
             try {
-                const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
-                const data = await response.json();
-                if(data.length > 0) {
-                    const parcel = data[0];
-                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
-                    document.getElementById('address').innerText = parcel.address || "No Info";
-                    document.getElementById('card').classList.add('active');
-                    if (currentGeoJSON) map.removeLayer(currentGeoJSON);
-                    const geoJsonData = JSON.parse(parcel.geometry);
-                    currentGeoJSON = L.geoJSON(geoJsonData, {
-                        style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
-                    }).addTo(map);
-                } else {
-                    closeCard();
-                }
-            } catch (err) { console.error(err); }
+                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
+                const json = await res.json();
+                if(json.length > 0) {
+                    const p = json[0];
+                    if(geojsonLayer) map.removeLayer(geojsonLayer);
+                    geojsonLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+                    showCard(p.owner_name, p.address);
+                } else closeCard();
+            } catch(e) {}
         });
 
-        function toggleLayer() {
-            if (currentBaseLayer === "satellite") {
-                map.removeLayer(satelliteLayer);
-                map.addLayer(streetLayer);
-                currentBaseLayer = "street";
-            } else {
-                map.removeLayer(streetLayer);
-                map.addLayer(satelliteLayer);
-                currentBaseLayer = "satellite";
-            }
+        function showCard(own, addr) {
+            document.getElementById('owner').innerText = own || "Unknown";
+            document.getElementById('address').innerText = addr || "No Address";
+            document.getElementById('card').classList.add('active');
         }
-
         function closeCard() {
             document.getElementById('card').classList.remove('active');
-            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+            if(geojsonLayer) map.removeLayer(geojsonLayer);
         }
 
-        // --- AUTO START GPS ---
-        // We trigger this immediately so the blue dot appears on load
         toggleGPS();
-
     </script>
 </body>
 </html>
