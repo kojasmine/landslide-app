@@ -5,17 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
-    <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #f0f0f0; }
         #map { height: 100vh; width: 100%; z-index: 1; }
 
-        /* Search Bar */
+        /* --- MENU & SIDEBAR --- */
+        .menu-btn {
+            position: absolute; top: 50px; left: 20px;
+            width: 50px; height: 50px; background: white; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; z-index: 1002;
+        }
+
+        .sidebar {
+            position: absolute; top: 0; left: -300px; /* Hidden by default */
+            width: 280px; height: 100vh; background: white;
+            z-index: 2000; box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            transition: left 0.3s ease-in-out;
+            padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;
+        }
+        .sidebar.active { left: 0; }
+        
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .sidebar-title { font-weight: 700; font-size: 20px; color: #333; }
+        .close-btn { font-size: 24px; cursor: pointer; color: #666; }
+        
+        /* THE STACK (Saved List) */
+        .saved-list { flex: 1; overflow-y: auto; }
+        .saved-item {
+            background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;
+            border-left: 4px solid #2196F3; cursor: pointer;
+        }
+        .saved-item h4 { margin: 0 0 5px 0; font-size: 14px; color: #333; }
+        .saved-item p { margin: 0; font-size: 12px; color: #666; }
+        .empty-msg { color: #999; text-align: center; margin-top: 50px; font-size: 14px; }
+
+        /* --- SEARCH BAR (Moved to right slightly) --- */
         .search-container {
-            position: absolute; top: 50px; left: 20px; right: 20px;
+            position: absolute; top: 50px; left: 80px; right: 20px; /* Adjusted for menu btn */
             z-index: 1000; background: white; border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
@@ -23,7 +54,7 @@
         .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
         .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* Buttons */
+        /* --- CONTROLS --- */
         .controls-container {
             position: absolute; bottom: 220px; right: 20px;
             display: flex; flex-direction: column; gap: 15px; z-index: 1000;
@@ -32,60 +63,57 @@
             width: 50px; height: 50px; background: white; border-radius: 50%;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: transform 0.1s;
+            font-size: 24px; cursor: pointer;
         }
-        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
 
-        /* Info Card */
+        /* --- CARD --- */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white;
+            position: absolute; bottom: 0; left: 0; right: 0; background: white;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 1001;
-            transform: translateY(110%);
-            transition: transform 0.3s ease-out;
+            padding: 25px 20px 40px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            z-index: 1001; transform: translateY(110%); transition: transform 0.3s ease-out;
         }
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
-        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; }
+        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; }
+        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; }
         .action-row { display: flex; gap: 10px; margin-top: 15px; }
         .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
-        
-        /* Blue Dot Pulse Animation */
-        .gps-ring {
-            border: 3px solid #2196F3;
-            border-radius: 30px;
-            height: 18px; width: 18px;
-            animation: pulsate 1s ease-out;
-            animation-iteration-count: infinite; 
-            opacity: 0.0;
-        }
-        @keyframes pulsate {
-            0% {transform: scale(0.1, 0.1); opacity: 0.0;}
-            50% {opacity: 1.0;}
-            100% {transform: scale(1.2, 1.2); opacity: 0.0;}
-        }
     </style>
 </head>
 <body>
 
+    <!-- MENU BUTTON -->
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+
+    <!-- SIDEBAR (THE STACK) -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">My Saved Stack</div>
+            <div class="close-btn" onclick="toggleMenu()">✕</div>
+        </div>
+        <div class="saved-list" id="savedList">
+            <!-- Saved items will appear here -->
+            <div class="empty-msg">No properties saved yet.</div>
+        </div>
+    </div>
+
+    <!-- SEARCH BAR -->
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" placeholder="Search address, APN, or owner...">
+        <input type="text" class="search-input" placeholder="Search...">
     </div>
 
     <div id="map"></div>
 
     <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
-        <div class="fab-btn" onclick="locateUser()" title="Track Me">📍</div>
+        <div class="fab-btn" onclick="toggleLayer()">🗺️</div>
+        <div class="fab-btn" onclick="locateUser()">📍</div>
     </div>
 
+    <!-- PROPERTY CARD -->
     <div class="info-card" id="card">
         <div class="card-handle"></div>
         <div class="prop-label">OWNER</div>
@@ -94,12 +122,13 @@
         <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
         <div class="action-row">
             <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <div class="action-btn btn-primary">Save</div>
+            <div class="action-btn btn-primary" id="saveBtn" onclick="saveCurrentProperty()">Save to Stack</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // --- MAP SETUP ---
         const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
         const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' });
 
@@ -112,8 +141,15 @@
 
         let currentBaseLayer = "satellite";
         let currentGeoJSON = null;
-        let userMarker = null; // Store the blue dot marker
+        let userMarker = null;
+        
+        // STORE CURRENT PARCEL DATA (To save later)
+        let loadedParcel = null; 
 
+        // --- LOAD SAVED STACK ON STARTUP ---
+        loadStackFromStorage();
+
+        // --- FUNCTIONS ---
         function toggleLayer() {
             if (currentBaseLayer === "satellite") {
                 map.removeLayer(satelliteLayer); map.addLayer(streetLayer); currentBaseLayer = "street";
@@ -122,6 +158,11 @@
             }
         }
 
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // --- MAP CLICK ---
         map.on('click', async (e) => {
             const { lat, lng } = e.latlng;
             try {
@@ -130,48 +171,105 @@
                 
                 if(data.length > 0) {
                     const parcel = data[0];
+                    loadedParcel = parcel; // Save to global variable
+
+                    // Update UI
                     document.getElementById('owner').innerText = parcel.owner_name || "Unknown Owner";
                     document.getElementById('address').innerText = parcel.address || "No Address Info";
+                    document.getElementById('saveBtn').innerText = "Save to Stack"; // Reset button text
                     document.getElementById('card').classList.add('active');
 
-                    if (currentGeoJSON) map.removeLayer(currentGeoJSON);
-                    const geoJsonData = JSON.parse(parcel.geometry);
-                    currentGeoJSON = L.geoJSON(geoJsonData, {
-                        style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
-                    }).addTo(map);
+                    // Draw Line
+                    drawParcelOnMap(parcel.geometry);
                 } else {
                     closeCard();
                 }
-            } catch (err) { console.error("API Error:", err); }
+            } catch (err) { console.error(err); }
         });
 
-        // --- UPDATED GPS LOGIC ---
-        function locateUser() {
-            // 'watch: true' makes it follow you like a GPS
-            // 'enableHighAccuracy' turns on the GPS chip for precision
-            map.locate({setView: true, maxZoom: 19, watch: true, enableHighAccuracy: true});
+        function drawParcelOnMap(geoJsonString) {
+            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+            const geoJsonData = typeof geoJsonString === 'string' ? JSON.parse(geoJsonString) : geoJsonString;
+            
+            currentGeoJSON = L.geoJSON(geoJsonData, {
+                style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
+            }).addTo(map);
         }
 
-        map.on('locationfound', (e) => {
-            // If the marker already exists, just move it (don't create a new one)
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                // First time finding location: Create the Blue Dot
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1
-                }).addTo(map);
-            }
-        });
+        // --- SAVE TO STACK LOGIC ---
+        function saveCurrentProperty() {
+            if (!loadedParcel) return;
 
-        map.on('locationerror', (e) => {
-            alert("Please enable Location Services to see your position.");
-        });
+            // 1. Get existing stack
+            let stack = JSON.parse(localStorage.getItem('propertyStack') || "[]");
+
+            // 2. Add new item
+            const newItem = {
+                id: loadedParcel.id,
+                owner: loadedParcel.owner_name || "Unknown",
+                address: loadedParcel.address || "No Address",
+                geometry: loadedParcel.geometry,
+                lat: map.getCenter().lat, // Save roughly where it is
+                lng: map.getCenter().lng
+            };
+            
+            // Avoid duplicates
+            if (!stack.find(item => item.id === newItem.id)) {
+                stack.push(newItem);
+                localStorage.setItem('propertyStack', JSON.stringify(stack));
+                
+                // Feedback
+                document.getElementById('saveBtn').innerText = "Saved! ✓";
+                loadStackFromStorage(); // Refresh list
+            } else {
+                alert("Already in your stack!");
+            }
+        }
+
+        // --- LOAD STACK (MENU) ---
+        function loadStackFromStorage() {
+            const stack = JSON.parse(localStorage.getItem('propertyStack') || "[]");
+            const container = document.getElementById('savedList');
+            
+            if (stack.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No properties saved yet.<br>Click a property and hit Save!</div>';
+                return;
+            }
+
+            container.innerHTML = ""; // Clear list
+            stack.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'saved-item';
+                div.innerHTML = `<h4>${item.owner}</h4><p>${item.address}</p>`;
+                div.onclick = () => {
+                    // When clicked, fly to property and draw it
+                    toggleMenu(); // Close menu
+                    map.flyTo([item.lat, item.lng], 18);
+                    drawParcelOnMap(item.geometry);
+                    
+                    // Show card info again
+                    document.getElementById('owner').innerText = item.owner;
+                    document.getElementById('address').innerText = item.address;
+                    document.getElementById('card').classList.add('active');
+                };
+                container.appendChild(div);
+            });
+        }
 
         function closeCard() {
             document.getElementById('card').classList.remove('active');
             if (currentGeoJSON) map.removeLayer(currentGeoJSON);
         }
+
+        function locateUser() {
+            map.locate({setView: true, maxZoom: 19, watch: true, enableHighAccuracy: true});
+        }
+        
+        map.on('locationfound', (e) => {
+            if (userMarker) userMarker.setLatLng(e.latlng);
+            else userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1 }).addTo(map);
+        });
+
     </script>
 </body>
 </html>
