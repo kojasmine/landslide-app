@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Viewport fix for mobile phones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
@@ -9,52 +10,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* BASE STYLES */
+        /* --- RESET --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
         
-        /* MAP (Background Layer) */
+        /* --- MAP LAYER (Force to Bottom) --- */
         #map { 
             height: 100vh; width: 100%; 
-            z-index: 1 !important; /* Force Map to be at the bottom */
+            position: absolute; top: 0; left: 0;
+            z-index: 0 !important; /* Send Map to back */
             touch-action: none; 
         }
 
-        /* --- UI ELEMENTS (Floating on Top) --- */
+        /* --- UI LAYER (Force to Top) --- */
         
-        /* 1. SEARCH BAR (MENU) */
+        /* 1. SEARCH BAR */
         .search-container {
-            position: absolute; top: 50px; left: 20px; right: 20px;
-            z-index: 99999 !important; /* Force on Top */
+            position: fixed; top: 20px; left: 20px; right: 20px;
+            z-index: 10000 !important; /* Force to front */
             background: white; border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
+            border: 1px solid #ccc;
         }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
+        .search-icon { width: 20px; height: 20px; margin-right: 10px; opacity: 0.6; }
+        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; background: transparent; }
 
-        /* 2. BUTTONS (Stack & GPS) */
+        /* 2. SIDE BUTTONS */
         .controls-container {
-            position: absolute; bottom: 220px; right: 20px;
+            position: fixed; bottom: 200px; right: 20px;
             display: flex; flex-direction: column; gap: 15px; 
-            z-index: 99999 !important; /* Force on Top */
+            z-index: 10000 !important; /* Force to front */
         }
         .fab-btn {
             width: 50px; height: 50px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer;
+            cursor: pointer;
+            border: 1px solid #ccc;
             -webkit-tap-highlight-color: transparent;
         }
+        .fab-btn svg { width: 24px; height: 24px; fill: #333; }
         .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
 
         /* 3. INFO CARD */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
+            position: fixed; bottom: 0; left: 0; right: 0;
             background: white;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
             padding: 25px 20px 40px 20px;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 99999 !important; /* Force on Top */
+            z-index: 10001 !important;
             transform: translateY(110%);
             transition: transform 0.3s ease-out;
         }
@@ -82,170 +87,18 @@
 </head>
 <body>
 
-    <!-- SEARCH BAR -->
+    <!-- UI ELEMENTS -->
     <div class="search-container">
-        <span class="search-icon">🔍</span>
+        <!-- SVG SEARCH ICON -->
+        <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
         <input type="text" class="search-input" placeholder="Search PIN or Address...">
     </div>
 
-    <!-- MAP CONTAINER -->
-    <div id="map"></div>
-
-    <!-- BUTTONS -->
     <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Layers">🗺️</div>
-        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Find Me">📍</div>
-    </div>
-
-    <!-- INFO CARD -->
-    <div class="info-card" id="card">
-        <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div>
-        <div class="prop-value" id="owner">Loading...</div>
-        <div class="prop-label">ADDRESS / INFO</div>
-        <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
-        <div class="action-row">
-            <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <div class="action-btn btn-primary">Save</div>
+        <!-- SVG STACK ICON (LAYERS) -->
+        <div class="fab-btn" onclick="toggleLayer()" title="Switch Layers">
+            <svg viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
         </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // --- 1. MAP SETUP ---
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri',
-            maxZoom: 19
-        });
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-            maxZoom: 19
-        });
-
-        // Initialize Map
-        const map = L.map('map', {
-            center: [40.764356, -73.973057], 
-            zoom: 18, 
-            layers: [satelliteLayer], 
-            zoomControl: false,
-            bounceAtZoomLimits: false 
-        });
-
-        let currentBaseLayer = "satellite";
-        let currentGeoJSON = null;
-
-        // --- 2. AUTO GPS LOGIC ---
-        let userMarker = null;
-        let isTracking = false;
-        let followUser = false; 
-
-        function toggleGPS() {
-            if (!isTracking) {
-                // START GPS
-                map.locate({ watch: true, enableHighAccuracy: true, setView: false });
-                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
-                isTracking = true;
-                followUser = true; 
-            } else {
-                // RE-CENTER
-                if (userMarker) {
-                    map.flyTo(userMarker.getLatLng(), 18);
-                    followUser = true;
-                    document.getElementById('gpsBtn').style.color = "#2196F3";
-                }
-            }
-        }
-
-        map.on('locationfound', (e) => {
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse'
-                }).addTo(map);
-            }
-            if (followUser) {
-                map.flyTo(e.latlng, map.getZoom(), { animate: false });
-            }
-        });
-
-        map.on('dragstart', () => {
-            followUser = false;
-            document.getElementById('gpsBtn').style.color = "#666"; 
-        });
-
-        map.on('locationerror', (e) => {
-            console.log("GPS Error", e);
-        });
-
-        // --- 3. SEARCH & CLICK HANDLERS ---
-        const searchInput = document.querySelector('.search-input');
-        searchInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-                searchInput.blur();
-                try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 19);
-                        followUser = false; 
-                        setTimeout(() => {
-                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
-                            document.getElementById('address').innerText = bestMatch.address || "No Info";
-                            document.getElementById('card').classList.add('active');
-                        }, 1000);
-                    } else {
-                        alert("No matches found.");
-                    }
-                } catch (err) { console.error(err); }
-            }
-        });
-
-        map.on('click', async (e) => {
-            const { lat, lng } = e.latlng;
-            try {
-                const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
-                const data = await response.json();
-                if(data.length > 0) {
-                    const parcel = data[0];
-                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
-                    document.getElementById('address').innerText = parcel.address || "No Info";
-                    document.getElementById('card').classList.add('active');
-                    if (currentGeoJSON) map.removeLayer(currentGeoJSON);
-                    const geoJsonData = JSON.parse(parcel.geometry);
-                    currentGeoJSON = L.geoJSON(geoJsonData, {
-                        style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
-                    }).addTo(map);
-                } else {
-                    closeCard();
-                }
-            } catch (err) { console.error(err); }
-        });
-
-        function toggleLayer() {
-            if (currentBaseLayer === "satellite") {
-                map.removeLayer(satelliteLayer);
-                map.addLayer(streetLayer);
-                currentBaseLayer = "street";
-            } else {
-                map.removeLayer(streetLayer);
-                map.addLayer(satelliteLayer);
-                currentBaseLayer = "satellite";
-            }
-        }
-
-        function closeCard() {
-            document.getElementById('card').classList.remove('active');
-            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
-        }
-
-        // Start GPS automatically
-        toggleGPS();
-
-    </script>
-</body>
-</html>
+        <!-- SVG LOCATION ICON -->
+        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Find Me">
+            <svg id="gpsIcon" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.9
