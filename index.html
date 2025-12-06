@@ -2,103 +2,186 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport fix for mobile phones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- 1. Use a faster CDN for Leaflet (Cloudflare) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- RESET --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #eee; }
         
-        /* --- MAP LAYER (Force to Bottom) --- */
+        /* Ensure Map is positioned correctly behind everything */
         #map { 
-            height: 100vh; width: 100%; 
-            position: absolute; top: 0; left: 0;
-            z-index: 0 !important; /* Send Map to back */
-            touch-action: none; 
+            position: absolute; top: 0; bottom: 0; width: 100%; 
+            z-index: 0; 
         }
 
-        /* --- UI LAYER (Force to Top) --- */
+        /* --- UI ELEMENTS (Floating on Top) --- */
         
-        /* 1. SEARCH BAR */
         .search-container {
-            position: fixed; top: 20px; left: 20px; right: 20px;
-            z-index: 10000 !important; /* Force to front */
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            z-index: 1000;
             background: white; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             display: flex; align-items: center; padding: 0 15px; height: 50px;
-            border: 1px solid #ccc;
         }
-        .search-icon { width: 20px; height: 20px; margin-right: 10px; opacity: 0.6; }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; background: transparent; }
+        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
+        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
 
-        /* 2. SIDE BUTTONS */
         .controls-container {
-            position: fixed; bottom: 200px; right: 20px;
+            position: absolute; bottom: 40%; right: 20px;
             display: flex; flex-direction: column; gap: 15px; 
-            z-index: 10000 !important; /* Force to front */
+            z-index: 1000;
         }
+        
         .fab-btn {
             width: 50px; height: 50px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            border: 1px solid #ccc;
-            -webkit-tap-highlight-color: transparent;
         }
+        .fab-btn:active { background: #f0f0f0; }
+        
+        /* SVG Icon styling */
         .fab-btn svg { width: 24px; height: 24px; fill: #333; }
-        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
+        .fab-btn.active svg { fill: #2196F3; }
 
-        /* 3. INFO CARD */
+        /* INFO CARD */
         .info-card {
-            position: fixed; bottom: 0; left: 0; right: 0;
+            position: absolute; bottom: 0; left: 0; right: 0;
             background: white;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
             padding: 25px 20px 40px 20px;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 10001 !important;
+            z-index: 1001;
             transform: translateY(110%);
             transition: transform 0.3s ease-out;
         }
         .info-card.active { transform: translateY(0); }
         .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
-        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
-        .action-row { display: flex; gap: 10px; margin-top: 15px; }
+        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; margin-top: 10px; }
+        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 5px; }
+        
+        .action-row { display: flex; gap: 10px; margin-top: 20px; }
         .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
         .btn-secondary { background: #f3f4f6; color: #333; }
-
-        /* ANIMATIONS */
-        .gps-pulse {
-            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-            animation: pulse-blue 2s infinite;
-            border-radius: 50%;
-        }
-        @keyframes pulse-blue {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
-        }
     </style>
 </head>
 <body>
 
-    <!-- UI ELEMENTS -->
+    <!-- SEARCH BAR -->
     <div class="search-container">
-        <!-- SVG SEARCH ICON -->
-        <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <span class="search-icon">🔍</span>
         <input type="text" class="search-input" placeholder="Search PIN or Address...">
     </div>
 
+    <!-- MAP -->
+    <div id="map"></div>
+
+    <!-- BUTTONS (Using Real SVG Icons) -->
     <div class="controls-container">
-        <!-- SVG STACK ICON (LAYERS) -->
+        <!-- Layers Button -->
         <div class="fab-btn" onclick="toggleLayer()" title="Switch Layers">
-            <svg viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M11.99 2.04L2 7l9.99 5 9.99-5-9.99-4.96zm10 9.92l-9.99 5-9.99-5L2 14l9.99 5 9.99-5 .01-2.04z"/></svg>
         </div>
-        <!-- SVG LOCATION ICON -->
+        <!-- GPS Button -->
         <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Find Me">
-            <svg id="gpsIcon" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.9
+            <svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        </div>
+    </div>
+
+    <!-- CARD -->
+    <div class="info-card" id="card">
+        <div class="card-handle"></div>
+        <div class="prop-label">OWNER / PIN</div>
+        <div class="prop-value" id="owner">Loading...</div>
+        <div class="prop-label">ADDRESS</div>
+        <div class="prop-value" id="address">Loading...</div>
+        <div class="action-row">
+            <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
+            <div class="action-btn btn-primary">Save</div>
+        </div>
+    </div>
+
+    <!-- 2. Use a faster CDN for JS (Cloudflare) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <script>
+        // Check if Leaflet loaded
+        if (typeof L === 'undefined') {
+            alert("Error: Map library failed to load. Check your internet connection.");
+        }
+
+        // --- MAP SETUP ---
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 19
+        });
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        });
+
+        // Initialize Map
+        const map = L.map('map', {
+            center: [40.764356, -73.973057], 
+            zoom: 18, 
+            layers: [satelliteLayer], 
+            zoomControl: false
+        });
+
+        let currentBaseLayer = "satellite";
+        let currentGeoJSON = null;
+
+        // --- GPS LOGIC ---
+        let userMarker = null;
+        let isTracking = false;
+
+        function toggleGPS() {
+            if (!isTracking) {
+                map.locate({ watch: true, enableHighAccuracy: true });
+                document.getElementById('gpsBtn').classList.add('active'); // Turn Blue
+                isTracking = true;
+            } else {
+                if (userMarker) map.flyTo(userMarker.getLatLng(), 18);
+            }
+        }
+
+        map.on('locationfound', (e) => {
+            if (userMarker) {
+                userMarker.setLatLng(e.latlng);
+            } else {
+                userMarker = L.circleMarker(e.latlng, {
+                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, fillOpacity: 1
+                }).addTo(map);
+            }
+            // Only fly to user if they just started tracking
+            if (isTracking) {
+                // We don't force fly here to avoid "Snap Back" issue, user must click button to snap
+            }
+        });
+
+        map.on('locationerror', (e) => {
+            console.log("GPS Error: " + e.message);
+        });
+
+        // --- SEARCH & CLICKS ---
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const text = searchInput.value;
+                if(text.length < 2) return; 
+                searchInput.blur();
+                try {
+                    const response = await fetch(`/api/search?q=${text}`);
+                    const results = await response.json();
+                    if (results.length > 0) {
+                        const bestMatch = results[0];
+                        map.flyTo([bestMatch.lat, bestMatch.lng], 19);
+                        setTimeout(() => {
+                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
+                            document.getElementById('address').innerText = bestMatch.address || "No Info";
+                            document.getElementById('card').classList.add('active');
