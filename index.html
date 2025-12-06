@@ -1,245 +1,216 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Landslide</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* BASE */
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
-        
-        /* MAP LAYER */
-        #map { 
-            position: fixed; top: 60px; /* Below Top Bar */
-            bottom: 0; left: 0; right: 0;
-            z-index: 1;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Landslide</title>
 
-        /* --- TOP APP BAR --- */
-        .app-bar {
-            position: fixed; top: 0; left: 0; right: 0;
-            height: 60px;
-            background: white;
-            display: flex; align-items: center; padding: 0 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 99999;
-            border-bottom: 2px solid #333;
-        }
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-        /* MENU BUTTON (Hamburger) */
-        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
-
-        /* SEARCH INPUT */
-        .search-wrapper {
-            flex: 1; margin: 0 5px;
-            background: #f0f2f5; border-radius: 8px;
-            padding: 8px 10px; display: flex; align-items: center;
-        }
-        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
-
-        /* ICONS (SVG) */
-        .icon-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border-radius: 50%; margin-left: 2px;
-        }
-        .icon-btn:active { background: #eee; }
-        .icon-svg { width: 24px; height: 24px; fill: #333; }
-
-        /* CARD (Bottom) */
-        .info-card {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; 
-            border-top: 4px solid #333;
-            border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 20px;
-            transform: translateY(110%); transition: transform 0.3s ease-out;
-            z-index: 10000;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-        }
-        .info-card.active { transform: translateY(0); }
-        
-        .prop-label { font-size: 11px; font-weight: 800; color: #666; letter-spacing: 1px; margin-top: 5px; }
-        .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 15px; }
-        
-        /* ACTION BUTTONS IN CARD */
-        .card-actions { display: flex; gap: 10px; }
-        .btn-action { 
-            flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; cursor: pointer; 
-        }
-        .btn-save { background: #ff4400; color: white; } /* Orange Save Button */
-        .btn-close { background: #eee; color: #333; }
-
-        /* DEBUG BADGE */
-        .debug-label {
-            position: fixed; bottom: 5px; left: 5px; 
-            background: #ff4400; color: white; font-weight: bold; 
-            padding: 2px 6px; z-index: 99999; font-size: 10px;
-        }
-    </style>
+  <style>
+    body { margin:0; padding:0; font-family:'Inter',sans-serif; background:#222; overflow:hidden; }
+    #map { position:fixed; top:60px; bottom:0; left:0; right:0; z-index:1; }
+    .app-bar { position:fixed; top:0; left:0; right:0; height:60px; background:white; display:flex; align-items:center; padding:0 10px; box-shadow:0 2px 10px rgba(0,0,0,.15); z-index:9999; border-bottom:2px solid #333; }
+    .menu-btn { font-size:24px; padding:10px; cursor:pointer; color:#333; }
+    .search-wrapper { flex:1; margin:0 8px; background:#f0f2f5; border-radius:8px; padding:8px 10px; display:flex; align-items:center; }
+    .search-input { border:none; background:transparent; outline:none; width:100%; font-size:16px; }
+    .icon-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:50%; margin-left:6px; }
+    .icon-svg { width:24px; height:24px; fill:#333; }
+    .info-card { position:fixed; bottom:0; left:0; right:0; background:white; border-top:4px solid #333; border-top-left-radius:20px; border-top-right-radius:20px; padding:20px; transform:translateY(110%); transition:transform .28s ease-out; z-index:10000; box-shadow:0 -10px 40px rgba(0,0,0,.45); }
+    .info-card.active { transform:translateY(0); }
+    .prop-label { font-size:11px; font-weight:800; color:#666; letter-spacing:1px; margin-top:5px; }
+    .prop-val { font-size:18px; font-weight:700; color:#000; margin-bottom:15px; }
+    .card-actions { display:flex; gap:10px; }
+    .btn-action { flex:1; padding:12px; border-radius:8px; font-weight:700; text-align:center; cursor:pointer; }
+    .btn-save { background:#ff4400; color:white; }
+    .btn-close { background:#eee; color:#333; }
+    .debug-label { position:fixed; bottom:5px; left:5px; background:#ff4400; color:white; font-weight:bold; padding:2px 6px; z-index:99999; font-size:10px; }
+    .top-actions { display:flex; align-items:center; gap:6px; }
+    .small-btn { padding:6px 10px; border-radius:6px; font-size:13px; background:#eee; cursor:pointer; border:none; }
+  </style>
 </head>
 <body>
+  <div class="debug-label">v12</div>
 
-    <!-- Orange Badge = v12 -->
-    <div class="debug-label">v12</div>
-
-    <!-- TOP APP BAR -->
-    <div class="app-bar">
-        <div class="menu-btn" onclick="alert('Menu')">≡</div>
-        
-        <div class="search-wrapper">
-            <input type="text" class="search-input" placeholder="Search...">
-        </div>
-
-        <!-- STACK BUTTON (Layers) -->
-        <div class="icon-btn" onclick="toggleLayer()" title="Layers">
-            <svg class="icon-svg" viewBox="0 0 24 24">
-                <path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/>
-            </svg>
-        </div>
-        
-        <!-- GPS BUTTON -->
-        <div class="icon-btn" id="gpsBtn" onclick="toggleGPS()" title="Find Me">
-            <svg class="icon-svg" viewBox="0 0 24 24">
-                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-            </svg>
-        </div>
+  <div class="app-bar">
+    <div class="menu-btn" onclick="alert('Menu')">≡</div>
+    <div class="search-wrapper">
+      <input id="searchInput" class="search-input" placeholder="Search by address or PIN..."/>
     </div>
 
-    <!-- MAP -->
-    <div id="map"></div>
-
-    <!-- INFO CARD -->
-    <div class="info-card" id="card">
-        <div class="prop-label">OWNER</div>
-        <div class="prop-val" id="owner">...</div>
-        <div class="prop-label">ADDRESS</div>
-        <div class="prop-val" id="address">...</div>
-        
-        <div class="card-actions">
-            <div class="btn-action btn-close" onclick="closeCard()">CLOSE</div>
-            <div class="btn-action btn-save" onclick="saveProperty()">SAVE LINE</div>
-        </div>
+    <div class="top-actions">
+      <button class="small-btn" id="clearSavedBtn" title="Clear saved lines">Clear Saved</button>
+      <div class="icon-btn" id="layerBtn" title="Toggle layers"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
+      <div class="icon-btn" id="gpsBtn" title="Find me"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
+  </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // --- MAP SETUP ---
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
-        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  <div id="map"></div>
 
-        const map = L.map('map', {
-            center: [40.764356, -73.973057], zoom: 16,
-            layers: [satellite], zoomControl: false 
-        });
+  <div class="info-card" id="card">
+    <div class="prop-label">OWNER</div>
+    <div class="prop-val" id="owner">...</div>
+    <div class="prop-label">ADDRESS</div>
+    <div class="prop-val" id="address">...</div>
 
-        // --- GPS LOGIC ---
-        let userMarker = null, isTracking = false, followUser = false;
-        function toggleGPS() {
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true });
-                document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff"; // Blue Icon
-                isTracking = true; followUser = true;
-            } else if (userMarker) {
-                map.flyTo(userMarker.getLatLng(), 18);
-                followUser = true;
-            }
+    <div class="card-actions">
+      <div class="btn-action btn-close" id="closeCardBtn">CLOSE</div>
+      <div class="btn-action btn-save" id="savePropBtn">SAVE LINE</div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // --- Map layers & init
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+    const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+
+    const map = L.map('map', {
+      center: [40.764356, -73.973057],
+      zoom: 16,
+      layers: [satellite],
+      zoomControl: false
+    });
+
+    let currentLayer = 'sat';
+    document.getElementById('layerBtn').addEventListener('click', () => {
+      if (currentLayer === 'sat') { map.removeLayer(satellite); map.addLayer(street); currentLayer = 'street'; }
+      else { map.removeLayer(street); map.addLayer(satellite); currentLayer = 'sat'; }
+    });
+
+    // --- GPS logic (request permission only on user action)
+    let userMarker = null;
+    let isTracking = false;
+    let followUser = false;
+
+    async function enableGPS() {
+      if (!navigator.geolocation) { alert('Geolocation is not available'); return; }
+      if (!isTracking) {
+        // start watching
+        navigator.geolocation.watchPosition((pos) => {
+          const latlng = [pos.coords.latitude, pos.coords.longitude];
+          if (userMarker) userMarker.setLatLng(latlng);
+          else userMarker = L.circleMarker(latlng, { radius: 8, color:'white', fillColor:'#007bff', fillOpacity:1 }).addTo(map);
+          if (followUser) map.flyTo(latlng, Math.max(map.getZoom(), 15));
+        }, (err) => {
+          console.error('Geolocation error', err);
+          alert('Unable to get location: ' + (err.message || err.code));
+        }, { enableHighAccuracy: true });
+        isTracking = true;
+        followUser = true;
+        document.querySelector('#gpsBtn .icon-svg').style.fill = '#007bff';
+      } else {
+        // already tracking --> just center on user if exists
+        if (userMarker) {
+          map.flyTo(userMarker.getLatLng(), 18);
+          followUser = true;
         }
-        map.on('locationfound', (e) => {
-            if (userMarker) userMarker.setLatLng(e.latlng);
-            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
-            if (followUser) map.flyTo(e.latlng, map.getZoom(), { animate: false });
-        });
-        map.on('dragstart', () => { followUser = false; });
+      }
+    }
+    document.getElementById('gpsBtn').addEventListener('click', enableGPS);
 
-        // --- LAYERS ---
-        let currentLayer = "sat";
-        function toggleLayer() {
-            if (currentLayer === "sat") { map.removeLayer(satellite); map.addLayer(street); currentLayer = "street"; }
-            else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
+    // clicking or dragging disables follow
+    map.on('dragstart', () => { followUser = false; });
+
+    // --- Search (Enter to search)
+    const input = document.getElementById('searchInput');
+    input.addEventListener('keypress', async (e) => {
+      if (e.key !== 'Enter') return;
+      const q = input.value.trim();
+      if (q.length < 2) return;
+      try {
+        input.blur();
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const json = await res.json();
+        if (!json || json.length === 0) { alert('No results'); return; }
+        const hit = json[0];
+        // load property (we expect geometry in the hit)
+        loadProperty(hit);
+      } catch (err) {
+        console.error(err);
+        alert('Search error');
+      }
+    });
+
+    // --- Parcel click: query server for parcel at click point
+    let previewLayer = null;
+    let savedLayers = [];
+
+    map.on('click', async (e) => {
+      // disable follow when user interacts
+      followUser = false;
+
+      try {
+        const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
+        if (!res.ok) throw new Error('Server error');
+        const data = await res.json();
+        if (data && data.length > 0) {
+          loadProperty(data[0]);
+        } else {
+          closeCard();
         }
+      } catch (err) {
+        console.error('Click parcel error', err);
+      }
+    });
 
-        // --- SEARCH ---
-        const input = document.querySelector('.search-input');
-        input.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const q = input.value;
-                if(q.length < 2) return;
-                input.blur();
-                try {
-                    const res = await fetch(`/api/search?q=${q}`);
-                    const json = await res.json();
-                    if(json.length > 0) {
-                        const hit = json[0];
-                        map.flyTo([hit.lat, hit.lng], 19);
-                        followUser = false;
-                        loadProperty(hit); // Use helper function
-                    } else alert("Not found");
-                } catch(e) {}
-            }
-        });
+    // loadProperty: display info + draw preview polygon from feature.geometry (GeoJSON string)
+    function loadProperty(p) {
+      document.getElementById('owner').innerText = p.owner_name || 'Unknown';
+      document.getElementById('address').innerText = p.address || 'No Address';
+      document.getElementById('card').classList.add('active');
 
-        // --- MULTI-SAVE LOGIC (NEW!) ---
-        let previewLayer = null; // The temporary yellow line
-        let savedLayers = [];    // Array to hold Orange saved lines
+      // Remove old preview
+      if (previewLayer) { map.removeLayer(previewLayer); previewLayer = null; }
 
-        map.on('click', async (e) => {
-            try {
-                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
-                const json = await res.json();
-                if(json.length > 0) {
-                    loadProperty(json[0]);
-                } else {
-                    closeCard();
-                }
-            } catch(e) {}
-        });
-
-        function loadProperty(p) {
-            // 1. Show Data
-            document.getElementById('owner').innerText = p.owner_name || "Unknown";
-            document.getElementById('address').innerText = p.address || "No Address";
-            document.getElementById('card').classList.add('active');
-            
-            // 2. Remove old Preview (Yellow)
-            if(previewLayer) map.removeLayer(previewLayer);
-
-            // 3. Draw new Preview (Yellow)
-            previewLayer = L.geoJSON(JSON.parse(p.geometry), { 
-                style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
-            }).addTo(map);
+      try {
+        const geo = typeof p.geometry === 'string' ? JSON.parse(p.geometry) : p.geometry;
+        previewLayer = L.geoJSON(geo, { style: { color:'#ffcc00', weight:4, fillOpacity:0.08 } }).addTo(map);
+        // Fit bounds to geometry if possible (safer than fixed zoom)
+        const layerBounds = previewLayer.getBounds && previewLayer.getBounds();
+        if (layerBounds && layerBounds.isValid()) {
+          map.fitBounds(layerBounds.pad(0.15));
+        } else if (p.lat && p.lng) {
+          map.flyTo([p.lat, p.lng], 17);
         }
+      } catch (err) {
+        console.error('Geometry parse error', err);
+      }
+    }
 
-        function saveProperty() {
-            if(previewLayer) {
-                // 1. Turn it Orange/Red (Saved State)
-                previewLayer.setStyle({ color: "#ff4400", weight: 5, fillOpacity: 0.15 });
-                
-                // 2. Add to saved list (so we don't lose it)
-                savedLayers.push(previewLayer);
-                
-                // 3. Clear the preview variable so clicking elsewhere doesn't delete this one
-                previewLayer = null;
-                
-                // 4. Close card
-                document.getElementById('card').classList.remove('active');
-            }
-        }
+    // Save property (turn preview into saved layer)
+    document.getElementById('savePropBtn').addEventListener('click', () => {
+      if (!previewLayer) return;
+      previewLayer.setStyle && previewLayer.setStyle({ color:'#ff4400', weight:5, fillOpacity:0.15 });
+      savedLayers.push(previewLayer);
+      previewLayer = null;
+      document.getElementById('card').classList.remove('active');
+    });
 
-        function closeCard() {
-            document.getElementById('card').classList.remove('active');
-            // If we didn't save it, delete the yellow preview
-            if(previewLayer) {
-                map.removeLayer(previewLayer);
-                previewLayer = null;
-            }
-        }
+    // Close card (cancel preview)
+    document.getElementById('closeCardBtn').addEventListener('click', closeCard);
+    function closeCard() {
+      document.getElementById('card').classList.remove('active');
+      if (previewLayer) {
+        map.removeLayer(previewLayer);
+        previewLayer = null;
+      }
+    }
 
-        toggleGPS();
-    </script>
+    // Clear saved lines
+    document.getElementById('clearSavedBtn').addEventListener('click', () => {
+      savedLayers.forEach(l => map.removeLayer(l));
+      savedLayers = [];
+    });
+
+    // OPTIONAL: toggle preview on map move if needed (not used)
+    // tidy up on unload
+    window.addEventListener('beforeunload', () => {
+      // nothing special for now
+    });
+
+  </script>
 </body>
 </html>
