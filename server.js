@@ -8,67 +8,56 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Database Connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
+// --- 1. SERVE THE APP (Frontend) ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- SEARCH API ---
+// --- 2. SEARCH API (New!) ---
 app.get('/api/search', async (req, res) => {
-    const { q } = req.query;
+    const { q } = req.query; // The user's search text
+    
     if (!q || q.length < 1) return res.json([]);
 
-    const words = q.trim().split(/\s+/);
-    
-    // SAFE SEARCH: Cast numbers to text so they don't crash
-    const conditions = words.map((_, index) => 
-        `(t."ADRNO"::text ILIKE $${index + 1} OR t."ADRSTR" ILIKE $${index + 1} OR p."PIN" ILIKE $${index + 1})`
-    ).join(' AND ');
-
-    const searchTerms = words.map(w => `%${w}%`);
-
+    // We search the 'PARCEL_TYP' column (Address placeholder) AND 'PIN' (Owner placeholder)
+    // The % symbols allow for partial matching (e.g. "0102" finds "0102 14...")
     const query = `
-        SELECT p.id, 
-               p."PIN" as owner_name, 
-               -- Handle NULL addresses gracefully
-               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME"), 'Address Unknown') as address,
-               ST_X(ST_Centroid(p.geom)) as lng, 
-               ST_Y(ST_Centroid(p.geom)) as lat,
-               ST_AsGeoJSON(p.geom) as geometry
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"
-        WHERE (${conditions})
+        SELECT id, 
+               "PIN" as owner_name, 
+               "PARCEL_TYP" as address, 
+               ST_X(ST_Centroid(geom)) as lng, 
+               ST_Y(ST_Centroid(geom)) as lat
+        FROM "Parcels_real"
+        WHERE "PARCEL_TYP" ILIKE $1 OR "PIN" ILIKE $1
         LIMIT 5;
     `;
 
     try {
-        const result = await pool.query(query, searchTerms);
+        const result = await pool.query(query, [`%${q}%`]);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err);
-        // Don't crash the server, just send empty list
-        res.json([]);
+        res.status(500).send("Search Error");
     }
 });
 
-// --- MAP CLICK API ---
+// --- 3. GET PARCEL BY LOCATION (Clicking) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
     const query = `
-        SELECT p.id, 
-               p."PIN" as owner_name,        
-               COALESCE(CONCAT(t."ADRNO", ' ', t."ADRSTR", ' ', t."ADRSUF", ', ', t."CITYNAME"), 'No Address Info') as address,    
-               ST_AsGeoJSON(p.geom) as geometry
-        FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t 
-        ON p."PIN" = t."PARID"
-        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
+        SELECT id, 
+               "PIN" as owner_name,        
+               "PARCEL_TYP" as address,    
+               ST_AsGeoJSON(geom) as geometry
+        FROM "Parcels_real"                
+        ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
     
