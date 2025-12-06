@@ -5,235 +5,333 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
-    <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- GENERAL STYLES --- */
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
-        #map { height: 100vh; width: 100%; z-index: 1; }
+        /* BASE */
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
+        
+        /* MAP */
+        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
-        /* --- SEARCH BAR --- */
-        .search-container {
-            position: absolute; top: 50px; left: 20px; right: 20px;
-            z-index: 1000;
-            background: white; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            display: flex; align-items: center; padding: 0 15px; height: 50px;
+        /* APP BAR */
+        .app-bar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: white; display: flex; align-items: center; padding: 0 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 2px solid #333;
         }
-        .search-icon { font-size: 18px; color: #666; margin-right: 10px; }
-        .search-input { border: none; outline: none; flex: 1; font-size: 16px; color: #333; }
+        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
+        .search-wrapper {
+            flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px;
+            padding: 8px 10px; display: flex; align-items: center;
+        }
+        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
+        .icon-btn {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border-radius: 50%; margin-left: 2px;
+        }
+        .icon-btn:active { background: #eee; }
+        .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* --- SIDE BUTTONS --- */
-        .controls-container {
-            position: absolute; bottom: 220px; right: 20px;
-            display: flex; flex-direction: column; gap: 15px; z-index: 1000;
-        }
-        .fab-btn {
-            width: 50px; height: 50px; background: white; border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: transform 0.1s;
-        }
-        .fab-btn:active { transform: scale(0.95); background: #f0f0f0; }
-
-        /* --- INFO CARD --- */
+        /* CARD */
         .info-card {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; border-top: 4px solid #333;
             border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 25px 20px 40px 20px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            z-index: 1001;
-            transform: translateY(110%);
-            transition: transform 0.3s ease-out;
+            padding: 20px; transform: translateY(110%); transition: transform 0.3s ease-out;
+            z-index: 10000; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
         }
         .info-card.active { transform: translateY(0); }
-        .card-handle { width: 40px; height: 5px; background: #ddd; border-radius: 3px; margin: 0 auto 15px auto; }
-        .prop-label { font-size: 12px; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: 0.5px; }
-        .prop-value { font-size: 18px; color: #111; font-weight: 600; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; }
-        .action-row { display: flex; gap: 10px; margin-top: 15px; }
-        .action-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 600; text-align: center; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-secondary { background: #f3f4f6; color: #333; }
+        .prop-label { font-size: 11px; font-weight: 800; color: #666; letter-spacing: 1px; margin-top: 5px; }
+        .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 15px; }
+        .card-actions { display: flex; gap: 10px; }
+        .btn-action { flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; cursor: pointer; }
+        .btn-save { background: #ff4400; color: white; }
+        .btn-close { background: #eee; color: #333; }
 
-        /* --- BLUE DOT ANIMATION --- */
-        .gps-pulse {
-            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-            animation: pulse-blue 2s infinite;
-            border-radius: 50%;
+        /* SAVED DRAWER */
+        .saved-modal {
+            position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px;
+            background: white; z-index: 10001; transform: translateX(100%);
+            transition: transform 0.3s ease-out; box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column;
         }
-        @keyframes pulse-blue {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+        .saved-modal.active { transform: translateX(0); }
+        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .saved-list { flex: 1; overflow-y: auto; padding: 0; }
+        
+        /* SAVED ITEMS */
+        .saved-item { 
+            padding: 15px; border-bottom: 1px solid #eee; display: flex; 
+            justify-content: space-between; align-items: center;
+        }
+        .saved-info { flex: 1; cursor: pointer; }
+        .saved-info h4 { margin: 0; font-size: 14px; color: #000; }
+        .saved-info p { margin: 3px 0 0 0; font-size: 12px; color: #666; }
+        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
+
+        .export-btn {
+            margin: 10px; padding: 15px; background: #007bff; color: white; 
+            text-align: center; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* BADGE */
+        .debug-label {
+            position: fixed; bottom: 5px; left: 5px; 
+            background: #4CAF50; color: white; font-weight: bold; 
+            padding: 2px 6px; z-index: 99999; font-size: 10px;
         }
     </style>
 </head>
 <body>
 
-    <!-- SEARCH -->
-    <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" placeholder="Search PIN or Address...">
+    <!-- Green Badge = v14 -->
+    <div class="debug-label">v14</div>
+
+    <!-- APP BAR -->
+    <div class="app-bar">
+        <div class="menu-btn">≡</div>
+        <div class="search-wrapper">
+            <input type="text" class="search-input" placeholder="Search...">
+        </div>
+        <!-- FOLDER (Saved) -->
+        <div class="icon-btn" onclick="toggleSavedList()">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+            </svg>
+        </div>
+        <!-- LAYERS -->
+        <div class="icon-btn" onclick="toggleLayer()">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/>
+            </svg>
+        </div>
+        <!-- GPS -->
+        <div class="icon-btn" id="gpsBtn" onclick="toggleGPS()">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- SAVED LIST -->
+    <div class="saved-modal" id="savedModal">
+        <div class="saved-header">
+            <span>Saved Properties</span>
+            <span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span>
+        </div>
+        <div class="saved-list" id="savedListContainer"></div>
+        <div class="export-btn" onclick="exportToCSV()">DOWNLOAD CSV</div>
     </div>
 
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- BUTTONS -->
-    <div class="controls-container">
-        <div class="fab-btn" onclick="toggleLayer()" title="Switch Map View">🗺️</div>
-        <div class="fab-btn" id="gpsBtn" onclick="toggleGPS()" title="Track Me">📍</div>
-    </div>
-
     <!-- CARD -->
     <div class="info-card" id="card">
-        <div class="card-handle"></div>
-        <div class="prop-label">OWNER / PIN</div>
-        <div class="prop-value" id="owner">Loading...</div>
-        <div class="prop-label">ADDRESS / INFO</div>
-        <div class="prop-value" id="address" style="font-size: 16px; font-weight: 400;">Loading...</div>
-        <div class="action-row">
-            <div class="action-btn btn-secondary" onclick="closeCard()">Close</div>
-            <div class="action-btn btn-primary">Save</div>
+        <div class="prop-label">OWNER</div>
+        <div class="prop-val" id="owner">...</div>
+        <div class="prop-label">ADDRESS</div>
+        <div class="prop-val" id="address">...</div>
+        <div class="card-actions">
+            <div class="btn-action btn-close" onclick="closeCard()">CLOSE</div>
+            <div class="btn-action btn-save" onclick="saveProperty()">SAVE / STACK</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- SETUP MAP ---
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        });
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
-        });
+        // --- MAP ---
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 16, layers: [satellite], zoomControl: false });
 
-        // Initialize Map
-        const map = L.map('map', {
-            center: [40.764356, -73.973057], // Default to NY until GPS loads
-            zoom: 15,
-            layers: [satelliteLayer], 
-            zoomControl: false 
+        // --- GPS ---
+        let userMarker = null, isTracking = false, followUser = false;
+        function toggleGPS() {
+            if (!isTracking) {
+                map.locate({ watch: true, enableHighAccuracy: true });
+                document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff";
+                isTracking = true; followUser = true;
+            } else if (userMarker) {
+                map.flyTo(userMarker.getLatLng(), 18);
+                followUser = true;
+            }
+        }
+        map.on('locationfound', (e) => {
+            if (userMarker) userMarker.setLatLng(e.latlng);
+            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
+            if (followUser) map.flyTo(e.latlng, map.getZoom(), { animate: false });
         });
+        map.on('dragstart', () => { followUser = false; });
 
-        let currentBaseLayer = "satellite";
-        let currentGeoJSON = null;
-
-        // --- SEARCH LOGIC (NEW) ---
-        const searchInput = document.querySelector('.search-input');
-        
-        searchInput.addEventListener('keypress', async (e) => {
+        // --- SEARCH ---
+        const input = document.querySelector('.search-input');
+        input.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
-                const text = searchInput.value;
-                if(text.length < 2) return; 
-
-                // Close keyboard on mobile
-                searchInput.blur();
-
+                const q = input.value;
+                if(q.length < 2) return;
+                input.blur();
                 try {
-                    const response = await fetch(`/api/search?q=${text}`);
-                    const results = await response.json();
-
-                    if (results.length > 0) {
-                        const bestMatch = results[0];
-                        
-                        // Fly to location
-                        map.flyTo([bestMatch.lat, bestMatch.lng], 18);
-                        
-                        // Simulate opening the card
-                        setTimeout(() => {
-                            document.getElementById('owner').innerText = bestMatch.owner_name || "Unknown";
-                            document.getElementById('address').innerText = bestMatch.address || "No Info";
-                            document.getElementById('card').classList.add('active');
-                        }, 1000);
-
-                    } else {
-                        alert("No matches found for: " + text);
-                    }
-                } catch (err) {
-                    console.error("Search failed", err);
-                }
+                    const res = await fetch(`/api/search?q=${q}`);
+                    const json = await res.json();
+                    if(json.length > 0) {
+                        loadProperty(json[0]);
+                        map.flyTo([json[0].lat, json[0].lng], 19);
+                        followUser = false;
+                    } else alert("Not found");
+                } catch(e) {}
             }
         });
 
         // --- LAYER TOGGLE ---
+        let currentLayer = "sat";
         function toggleLayer() {
-            if (currentBaseLayer === "satellite") {
-                map.removeLayer(satelliteLayer);
-                map.addLayer(streetLayer);
-                currentBaseLayer = "street";
-            } else {
-                map.removeLayer(streetLayer);
-                map.addLayer(satelliteLayer);
-                currentBaseLayer = "satellite";
-            }
+            if (currentLayer === "sat") { map.removeLayer(satellite); map.addLayer(street); currentLayer = "street"; }
+            else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
         }
 
-        // --- REAL-TIME GPS ---
-        let userMarker = null;
-        let isTracking = false;
+        // --- DATA LOGIC (PERSISTENT STORAGE) ---
+        let previewLayer = null; 
+        let currentParcelData = null;
+        let savedItems = []; 
+        let savedLayers = []; // Visual orange lines
 
-        function toggleGPS() {
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true, setView: true, maxZoom: 19 });
-                document.getElementById('gpsBtn').style.color = "#2196F3"; // Blue
-                isTracking = true;
-            } else {
-                map.stopLocate();
-                isTracking = false;
-                document.getElementById('gpsBtn').style.color = "black";
-            }
-        }
-
-        map.on('locationfound', (e) => {
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, {
-                    radius: 8, fillColor: "#2196F3", color: "white", weight: 3, 
-                    fillOpacity: 1, className: 'gps-pulse'
-                }).addTo(map);
-            }
-        });
-
-        map.on('locationerror', (e) => {
-            alert("Could not access GPS. Please check settings.");
-        });
-
-        // --- CLICK HANDLER ---
-        map.on('click', async (e) => {
-            const { lat, lng } = e.latlng;
-            try {
-                const response = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
-                const data = await response.json();
-                
-                if(data.length > 0) {
-                    const parcel = data[0];
-                    document.getElementById('owner').innerText = parcel.owner_name || "Unknown";
-                    document.getElementById('address').innerText = parcel.address || "No Info";
-                    document.getElementById('card').classList.add('active');
-
-                    if (currentGeoJSON) map.removeLayer(currentGeoJSON);
-                    const geoJsonData = JSON.parse(parcel.geometry);
-                    currentGeoJSON = L.geoJSON(geoJsonData, {
-                        style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 }
+        // 1. Initialize from LocalStorage on Startup
+        function initApp() {
+            const stored = localStorage.getItem('landslide_saves');
+            if (stored) {
+                savedItems = JSON.parse(stored);
+                // Re-draw all orange lines
+                savedItems.forEach(item => {
+                    const layer = L.geoJSON(JSON.parse(item.geometry), { 
+                        style: { color: "#ff4400", weight: 5, fillOpacity: 0.15 } 
                     }).addTo(map);
-                } else {
-                    closeCard();
-                }
-            } catch (err) {
-                console.error("API Error:", err);
+                    savedLayers.push({ id: item.id, layer: layer }); // Track ID to delete later
+                });
             }
+        }
+
+        map.on('click', async (e) => {
+            try {
+                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
+                const json = await res.json();
+                if(json.length > 0) {
+                    currentParcelData = json[0];
+                    loadProperty(json[0]);
+                } else closeCard();
+            } catch(e) {}
         });
+
+        function loadProperty(p) {
+            document.getElementById('owner').innerText = p.owner_name || "Unknown";
+            document.getElementById('address').innerText = p.address || "No Address";
+            document.getElementById('card').classList.add('active');
+            
+            if(previewLayer) map.removeLayer(previewLayer);
+            previewLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+        }
+
+        function saveProperty() {
+            if(previewLayer && currentParcelData) {
+                // Check if already saved
+                const exists = savedItems.find(i => i.id === currentParcelData.id);
+                if(exists) { alert("Already saved!"); return; }
+
+                // 1. Visual Update
+                previewLayer.setStyle({ color: "#ff4400", weight: 5, fillOpacity: 0.15 });
+                
+                // 2. Add to Data
+                savedItems.push(currentParcelData);
+                savedLayers.push({ id: currentParcelData.id, layer: previewLayer });
+                
+                // 3. Save to LocalStorage (The Fix!)
+                localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
+                
+                // 4. Cleanup UI
+                previewLayer = null; 
+                renderSavedList();
+                document.getElementById('card').classList.remove('active');
+            }
+        }
+
+        function deleteItem(id, event) {
+            event.stopPropagation(); // Don't trigger click on row
+            
+            // 1. Remove from Data
+            savedItems = savedItems.filter(i => i.id !== id);
+            localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
+
+            // 2. Remove Visual Line
+            const layerObj = savedLayers.find(l => l.id === id);
+            if(layerObj) map.removeLayer(layerObj.layer);
+            savedLayers = savedLayers.filter(l => l.id !== id);
+
+            // 3. Refresh List
+            renderSavedList();
+        }
+
+        function toggleSavedList() {
+            renderSavedList();
+            document.getElementById('savedModal').classList.toggle('active');
+        }
+
+        function renderSavedList() {
+            const container = document.getElementById('savedListContainer');
+            container.innerHTML = "";
+            
+            if(savedItems.length === 0) {
+                container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">No saved items.</div>';
+                return;
+            }
+
+            savedItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'saved-item';
+                div.innerHTML = `
+                    <div class="saved-info" onclick="flyToItem(${item.id})">
+                        <h4>${item.owner_name || "Unknown"}</h4>
+                        <p>${item.address || "No Address"}</p>
+                    </div>
+                    <div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function flyToItem(id) {
+            const item = savedItems.find(i => i.id === id);
+            if(item) {
+                const geo = JSON.parse(item.geometry);
+                const lat = geo.coordinates[0][0][0][1];
+                const lng = geo.coordinates[0][0][0][0];
+                map.flyTo([lat, lng], 19);
+                toggleSavedList();
+            }
+        }
+
+        function exportToCSV() {
+            if(savedItems.length === 0) { alert("Nothing to export!"); return; }
+            let csv = "Owner,Address,ID\n";
+            savedItems.forEach(i => csv += `"${i.owner_name}","${i.address}","${i.id}"\n`);
+            const link = document.createElement("a");
+            link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+            link.download = "landslide_properties.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         function closeCard() {
             document.getElementById('card').classList.remove('active');
-            if (currentGeoJSON) map.removeLayer(currentGeoJSON);
+            if(previewLayer) { map.removeLayer(previewLayer); previewLayer = null; }
         }
+
+        // STARTUP
+        toggleGPS();
+        initApp(); // Load saved items
+
     </script>
 </body>
 </html>
