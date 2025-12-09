@@ -18,16 +18,13 @@
         }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
         
-        /* SEARCH WITH BUTTON */
+        /* SEARCH */
         .search-wrapper {
             flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px;
             padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd;
         }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; height: 30px; }
-        .search-go-btn {
-            background: #007bff; color: white; border-radius: 5px; padding: 5px 10px;
-            font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px;
-        }
+        .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
 
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
@@ -57,18 +54,19 @@
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
         .export-btn { margin: 10px; padding: 15px; background: #007bff; color: white; text-align: center; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: red; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        
+        /* BLUE BADGE = v16 */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: blue; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v15</div>
+    <div class="debug-label">v16</div>
 
     <div class="app-bar">
         <div class="menu-btn">≡</div>
         <div class="search-wrapper">
             <input type="text" class="search-input" id="searchBox" placeholder="Search PIN...">
-            <!-- NEW PHYSICAL BUTTON -->
             <div class="search-go-btn" onclick="performSearch()">GO</div>
         </div>
         <div class="icon-btn" onclick="toggleSavedList()">
@@ -129,55 +127,32 @@
             else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
         }
 
-        // --- SEARCH LOGIC (FIXED) ---
+        // SEARCH
         const input = document.getElementById('searchBox');
-        
-        // 1. Enter Key
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') performSearch();
-        });
-
-        // 2. Click Logic
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
         async function performSearch() {
             const q = input.value;
             if(q.length < 2) return;
             input.blur();
-            
             try {
-                // Show loading state
-                document.querySelector('.search-go-btn').innerText = "...";
-                
                 const res = await fetch(`/api/search?q=${q}`);
-                
-                if (!res.ok) throw new Error("Server Error");
-                
                 const json = await res.json();
-                document.querySelector('.search-go-btn').innerText = "GO";
-
                 if(json.length > 0) {
                     loadProperty(json[0]);
                     map.flyTo([json[0].lat, json[0].lng], 19);
                     followUser = false;
-                } else {
-                    alert("No results found. Try searching a PIN number.");
-                }
-            } catch(e) {
-                document.querySelector('.search-go-btn').innerText = "GO";
-                alert("Search failed: " + e.message);
-            }
+                } else alert("Not found.");
+            } catch(e) { alert("Error"); }
         }
 
-        let previewLayer = null, currentParcelData = null, savedItems = [], savedLayers = [];
+        // DATA LOGIC
+        let activeLayer = null; // ONLY ONE LAYER AT A TIME
+        let currentParcelData = null;
+        let savedItems = [];
 
         function initApp() {
             const stored = localStorage.getItem('landslide_saves');
-            if (stored) {
-                savedItems = JSON.parse(stored);
-                savedItems.forEach(item => {
-                    const layer = L.geoJSON(JSON.parse(item.geometry), { style: { color: "#ff4400", weight: 5, fillOpacity: 0.15 } }).addTo(map);
-                    savedLayers.push({ id: item.id, layer: layer });
-                });
-            }
+            if (stored) savedItems = JSON.parse(stored);
         }
 
         map.on('click', async (e) => {
@@ -195,21 +170,25 @@
             document.getElementById('owner').innerText = p.owner_name || "Unknown PIN";
             document.getElementById('address').innerText = p.address || "Info";
             document.getElementById('card').classList.add('active');
-            if(previewLayer) map.removeLayer(previewLayer);
-            previewLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+            
+            // Remove previous layer (Single Select Mode)
+            if(activeLayer) map.removeLayer(activeLayer);
+            
+            // Add new layer
+            activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
         }
 
         function saveProperty() {
-            if(previewLayer && currentParcelData) {
+            if(activeLayer && currentParcelData) {
                 const exists = savedItems.find(i => i.id === currentParcelData.id);
                 if(exists) { alert("Already saved!"); return; }
-                previewLayer.setStyle({ color: "#ff4400", weight: 5, fillOpacity: 0.15 });
+                
+                // Add to list, but DON'T create a new permanent layer on map
                 savedItems.push(currentParcelData);
-                savedLayers.push({ id: currentParcelData.id, layer: previewLayer });
                 localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
-                previewLayer = null; 
+                
                 renderSavedList();
-                document.getElementById('card').classList.remove('active');
+                alert("Saved to Folder!");
             }
         }
 
@@ -217,9 +196,6 @@
             event.stopPropagation(); 
             savedItems = savedItems.filter(i => i.id !== id);
             localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
-            const layerObj = savedLayers.find(l => l.id === id);
-            if(layerObj) map.removeLayer(layerObj.layer);
-            savedLayers = savedLayers.filter(l => l.id !== id);
             renderSavedList();
         }
 
@@ -243,9 +219,17 @@
         function flyToItem(id) {
             const item = savedItems.find(i => i.id === id);
             if(item) {
+                // When clicking from list, we load it as the "Active" property
+                currentParcelData = item;
                 const geo = JSON.parse(item.geometry);
-                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19);
-                toggleSavedList();
+                
+                // Calculate center
+                const lat = geo.coordinates[0][0][0][1];
+                const lng = geo.coordinates[0][0][0][0];
+                
+                map.flyTo([lat, lng], 19);
+                loadProperty(item); // Highlight it on map
+                toggleSavedList(); // Close menu
             }
         }
 
@@ -263,7 +247,7 @@
 
         function closeCard() {
             document.getElementById('card').classList.remove('active');
-            if(previewLayer) { map.removeLayer(previewLayer); previewLayer = null; }
+            if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; }
         }
 
         toggleGPS();
