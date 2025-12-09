@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- SEARCH API (Fixed & Simplified) ---
+// --- SEARCH API (Now includes Geometry!) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
@@ -25,35 +25,27 @@ app.get('/api/search', async (req, res) => {
 
     console.log("Searching:", q);
 
-    // We use the JOIN method because we know it works for clicking.
-    // We cast everything to ::text to prevent "Integer" crashes.
     const query = `
         SELECT p.id, 
                t."PARID" as owner_name, 
                CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, 
                ST_X(ST_Centroid(p.geom)) as lng, 
-               ST_Y(ST_Centroid(p.geom)) as lat
+               ST_Y(ST_Centroid(p.geom)) as lat,
+               ST_AsGeoJSON(p.geom) as geometry   -- <--- THIS WAS MISSING!
         FROM taxdata t
         JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '')
         WHERE 
-           -- Check Full Address (Combined)
            CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1
-           OR
-           -- Check Parcel ID (Text)
-           t."PARID"::text ILIKE $1
-           OR
-           -- Check Street Name Only
-           t."ADRSTR" ILIKE $1
+           OR t."PARID"::text ILIKE $1
+           OR t."ADRSTR" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
-        console.log("Results:", result.rows.length);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err.message);
-        // Send a proper JSON error so the frontend doesn't choke
         res.status(500).json({ error: err.message });
     }
 });
