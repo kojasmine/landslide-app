@@ -17,28 +17,36 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- SEARCH API (Fixed with JOIN) ---
+// --- SEARCH API (FIXED) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
     if (!q || q.length < 1) return res.json([]);
 
-    // Logic:
-    // 1. We start with the Data Table (t) to find the address.
-    // 2. We JOIN the Map Table (p) to get the coordinates (Lat/Lng) for flying.
-    // 3. We construct the address by combining Number (ADRNO) + Name (ADRADD).
-    
+    console.log("Searching for:", q);
+
     const query = `
         SELECT p.id, 
                t."PARID" as owner_name, 
+               -- Create the full address for display
                CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address, 
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat
         FROM "tax_administration_s_real_estate" t
-        JOIN "Parcels_real" p ON t."PARID" = p."PIN"
-        WHERE t."PARID"::text ILIKE $1 
-           OR t."ADRADD" ILIKE $1
-           OR t."ADRNO"::text ILIKE $1
+        -- Safer Join: Removes spaces to ensure IDs match
+        JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '')
+        WHERE 
+           -- Check if the Search matches the ID
+           t."PARID"::text ILIKE $1 
+           OR
+           -- Check if the Search matches the NUMBER (e.g. "5223")
+           t."ADRNO"::text ILIKE $1
+           OR
+           -- Check if the Search matches the NAME (e.g. "Bradfield")
+           t."ADRADD" ILIKE $1
+           OR
+           -- THE FIX: Check if Search matches "5223 Bradfield" combined
+           CONCAT(t."ADRNO", ' ', t."ADRADD") ILIKE $1
         LIMIT 5;
     `;
 
@@ -51,13 +59,9 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- MAP CLICK API (Fixed with JOIN) ---
+// --- MAP CLICK API (FIXED) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
-    
-    // Logic:
-    // 1. We find the Shape (p.geom) that you clicked on.
-    // 2. We JOIN the Tax Table (t) to get the address text.
     
     const query = `
         SELECT p.id, 
@@ -65,7 +69,8 @@ app.get('/api/parcels', async (req, res) => {
                CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address,    
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
-        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
+        -- Safer Join here too
+        LEFT JOIN "tax_administration_s_real_estate" t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '')
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
