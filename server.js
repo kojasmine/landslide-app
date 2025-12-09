@@ -17,67 +17,43 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- ROBUST SEARCH API (Split Method) ---
+// --- SEARCH API (Fixed & Simplified) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
     if (!q || q.length < 1) return res.json([]);
 
-    console.log("Searching for:", q);
+    console.log("Searching:", q);
+
+    // We use the JOIN method because we know it works for clicking.
+    // We cast everything to ::text to prevent "Integer" crashes.
+    const query = `
+        SELECT p.id, 
+               t."PARID" as owner_name, 
+               CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, 
+               ST_X(ST_Centroid(p.geom)) as lng, 
+               ST_Y(ST_Centroid(p.geom)) as lat
+        FROM taxdata t
+        JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '')
+        WHERE 
+           -- Check Full Address (Combined)
+           CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1
+           OR
+           -- Check Parcel ID (Text)
+           t."PARID"::text ILIKE $1
+           OR
+           -- Check Street Name Only
+           t."ADRSTR" ILIKE $1
+        LIMIT 5;
+    `;
 
     try {
-        // STEP 1: Find the Address/Owner in the Tax Table first
-        // We cast everything to ::text to prevent "Integer" errors
-        const taxQuery = `
-            SELECT "PARID", "ADRNO", "ADRSTR"
-            FROM taxdata
-            WHERE 
-                CONCAT("ADRNO", ' ', "ADRSTR") ILIKE $1
-                OR "PARID"::text ILIKE $1
-                OR "ADRSTR" ILIKE $1
-            LIMIT 5;
-        `;
-        
-        const taxResults = await pool.query(taxQuery, [`%${q}%`]);
-        
-        if (taxResults.rows.length === 0) {
-            return res.json([]); // No address found
-        }
-
-        // STEP 2: Find the matching Map Shapes for these properties
-        // We create a list of IDs found in Step 1
-        const foundIDs = taxResults.rows.map(r => r.PARID);
-        
-        // We look for these IDs in the Parcels_real table
-        // We use REPLACE to handle spaces (e.g. "0401 23" vs "040123")
-        const mapQuery = `
-            SELECT id, "PIN", ST_X(ST_Centroid(geom)) as lng, ST_Y(ST_Centroid(geom)) as lat
-            FROM "Parcels_real"
-            WHERE REPLACE("PIN", ' ', '') = ANY($1)
-        `;
-        
-        // Clean spaces from the IDs for the comparison
-        const cleanIDs = foundIDs.map(id => id.replace(/ /g, ''));
-        const mapResults = await pool.query(mapQuery, [cleanIDs]);
-
-        // STEP 3: Combine the data
-        const finalResults = mapResults.rows.map(mapItem => {
-            // Find the matching tax info
-            const taxItem = taxResults.rows.find(t => t.PARID.replace(/ /g, '') === mapItem.PIN.replace(/ /g, ''));
-            return {
-                id: mapItem.id,
-                owner_name: taxItem ? taxItem.PARID : mapItem.PIN,
-                address: taxItem ? `${taxItem.ADRNO} ${taxItem.ADRSTR}` : "Unknown Address",
-                lat: mapItem.lat,
-                lng: mapItem.lng
-            };
-        });
-
-        res.json(finalResults);
-
+        const result = await pool.query(query, [`%${q}%`]);
+        console.log("Results:", result.rows.length);
+        res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err.message);
-        // Send the actual error message to the browser so we can see it
+        // Send a proper JSON error so the frontend doesn't choke
         res.status(500).json({ error: err.message });
     }
 });

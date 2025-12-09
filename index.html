@@ -9,62 +9,42 @@
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
-        .app-bar {
-            position: fixed; top: 0; left: 0; right: 0; height: 60px;
-            background: white; display: flex; align-items: center; padding: 0 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 2px solid #333;
-        }
+        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 2px solid #333; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
-        .search-wrapper {
-            flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px;
-            padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd;
-        }
+        .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; height: 30px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
-        .info-card {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 4px solid #333;
-            border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px;
-            transform: translateY(110%); transition: transform 0.3s ease-out; z-index: 10000;
-        }
+        .info-card { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 4px solid #333; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; transform: translateY(110%); transition: transform 0.3s ease-out; z-index: 10000; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 15px; }
         .card-actions { display: flex; gap: 10px; }
         .btn-action { flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; cursor: pointer; }
         .btn-save { background: #ff4400; color: white; }
         .btn-close { background: #eee; color: #333; }
-        .saved-modal {
-            position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white;
-            z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out;
-            display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3);
-        }
+        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .saved-modal.active { transform: translateX(0); }
         .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; }
         .saved-list { flex: 1; overflow-y: auto; }
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
         .export-btn { margin: 10px; padding: 15px; background: #007bff; color: white; text-align: center; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #673AB7; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v18 Badge = PINK */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #E91E63; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
-    <div class="debug-label">v17</div>
+    <div class="debug-label">v18</div>
     <div class="app-bar">
         <div class="menu-btn">≡</div>
         <div class="search-wrapper">
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()">GO</div>
         </div>
-        <div class="icon-btn" onclick="toggleSavedList()">
-            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-        </div>
-        <div class="icon-btn" onclick="toggleLayer()">
-            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
-        </div>
-        <div class="icon-btn" id="gpsBtn" onclick="toggleGPS()">
-            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
-        </div>
+        <div class="icon-btn" onclick="toggleSavedList()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
+        <div class="icon-btn" onclick="toggleLayer()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
+        <div class="icon-btn" id="gpsBtn" onclick="toggleGPS()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
     <div class="saved-modal" id="savedModal">
         <div class="saved-header"><span>Saved</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
@@ -88,18 +68,11 @@
 
         let userMarker = null, isTracking = false, followUser = false;
         function toggleGPS() {
-            if (!isTracking) {
-                map.locate({ watch: true, enableHighAccuracy: true });
-                document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff";
-                isTracking = true; followUser = true;
-            } else if (userMarker) {
-                map.flyTo(userMarker.getLatLng(), 18);
-                followUser = true;
-            }
+            if (!isTracking) { map.locate({ watch: true, enableHighAccuracy: true }); document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff"; isTracking = true; followUser = true; }
+            else if (userMarker) { map.flyTo(userMarker.getLatLng(), 18); followUser = true; }
         }
         map.on('locationfound', (e) => {
-            if (userMarker) userMarker.setLatLng(e.latlng);
-            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
+            if (userMarker) userMarker.setLatLng(e.latlng); else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
             if (followUser) map.flyTo(e.latlng, map.getZoom(), { animate: false });
         });
         map.on('dragstart', () => { followUser = false; });
@@ -112,6 +85,7 @@
 
         const input = document.getElementById('searchBox');
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        
         async function performSearch() {
             const q = input.value;
             if(q.length < 2) return;
@@ -119,36 +93,38 @@
             document.querySelector('.search-go-btn').innerText = "...";
             try {
                 const res = await fetch(`/api/search?q=${q}`);
-                if (!res.ok) {
-                    const errText = await res.json();
-                    throw new Error(errText.error || "Server Error");
+                const text = await res.text(); // GET RAW RESPONSE
+                
+                try {
+                    const json = JSON.parse(text); // Try parse
+                    document.querySelector('.search-go-btn').innerText = "GO";
+                    
+                    if(json.error) throw new Error(json.error); // Server sent error
+                    
+                    if(json.length > 0) {
+                        loadProperty(json[0]);
+                        map.flyTo([json[0].lat, json[0].lng], 19);
+                        followUser = false;
+                    } else alert("No results found.");
+                    
+                } catch(e) {
+                    // IF PARSE FAILS, SHOW RAW TEXT (Debug)
+                    alert("Search Failed: " + text.substring(0, 150));
+                    document.querySelector('.search-go-btn').innerText = "GO";
                 }
-                const json = await res.json();
-                document.querySelector('.search-go-btn').innerText = "GO";
-                if(json.length > 0) {
-                    loadProperty(json[0]);
-                    map.flyTo([json[0].lat, json[0].lng], 19);
-                    followUser = false;
-                } else alert("No results found.");
             } catch(e) {
                 document.querySelector('.search-go-btn').innerText = "GO";
-                alert("Search failed: " + e.message);
+                alert("Network Error: " + e.message);
             }
         }
 
         let activeLayer = null, currentParcelData = null, savedItems = [];
-        function initApp() {
-            const stored = localStorage.getItem('landslide_saves');
-            if (stored) savedItems = JSON.parse(stored);
-        }
+        function initApp() { const stored = localStorage.getItem('landslide_saves'); if (stored) savedItems = JSON.parse(stored); }
         map.on('click', async (e) => {
             try {
                 const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
                 const json = await res.json();
-                if(json.length > 0) {
-                    currentParcelData = json[0];
-                    loadProperty(json[0]);
-                } else closeCard();
+                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } else closeCard();
             } catch(e) {}
         });
         function loadProperty(p) {
@@ -164,26 +140,19 @@
                 if(exists) { alert("Already saved!"); return; }
                 savedItems.push(currentParcelData);
                 localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
-                renderSavedList();
-                alert("Saved to Folder!");
+                renderSavedList(); alert("Saved to Folder!");
             }
         }
         function deleteItem(id, event) {
             event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id);
-            localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
-            renderSavedList();
+            localStorage.setItem('landslide_saves', JSON.stringify(savedItems)); renderSavedList();
         }
-        function toggleSavedList() {
-            renderSavedList();
-            document.getElementById('savedModal').classList.toggle('active');
-        }
+        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
         function renderSavedList() {
-            const container = document.getElementById('savedListContainer');
-            container.innerHTML = "";
+            const container = document.getElementById('savedListContainer'); container.innerHTML = "";
             if(savedItems.length === 0) { container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">No saved items.</div>'; return; }
             savedItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'saved-item';
+                const div = document.createElement('div'); div.className = 'saved-item';
                 div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${item.owner_name||"Unknown"}</b><br><span style="font-size:12px;color:#666">${item.address||""}</span></div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`;
                 container.appendChild(div);
             });
@@ -191,30 +160,18 @@
         function flyToItem(id) {
             const item = savedItems.find(i => i.id === id);
             if(item) {
-                currentParcelData = item;
-                const geo = JSON.parse(item.geometry);
-                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19);
-                loadProperty(item);
-                toggleSavedList();
+                currentParcelData = item; const geo = JSON.parse(item.geometry);
+                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList();
             }
         }
         function exportToCSV() {
             if(savedItems.length === 0) { alert("Nothing to export!"); return; }
-            let csv = "Owner,Address,ID\n";
-            savedItems.forEach(i => csv += `"${i.owner_name}","${i.address}","${i.id}"\n`);
-            const link = document.createElement("a");
-            link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
-            link.download = "landslide_properties.csv";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            let csv = "Owner,Address,ID\n"; savedItems.forEach(i => csv += `"${i.owner_name}","${i.address}","${i.id}"\n`);
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "landslide_properties.csv";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
-        function closeCard() {
-            document.getElementById('card').classList.remove('active');
-            if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; }
-        }
-        toggleGPS();
-        initApp(); 
+        function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
+        toggleGPS(); initApp(); 
     </script>
 </body>
 </html>
