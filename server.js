@@ -17,41 +17,38 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- SEARCH API (FIXED) ---
+// --- SEARCH API (Using table 'taxdata') ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
     if (!q || q.length < 1) return res.json([]);
 
-    console.log("Searching for:", q);
+    console.log("Searching table 'taxdata' for:", q);
 
     const query = `
         SELECT p.id, 
                t."PARID" as owner_name, 
-               -- Create the full address for display
-               CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address, 
+               -- Combine Number + Street Name
+               CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, 
                ST_X(ST_Centroid(p.geom)) as lng, 
                ST_Y(ST_Centroid(p.geom)) as lat
-        FROM "tax_administration_s_real_estate" t
-        -- Safer Join: Removes spaces to ensure IDs match
+        FROM taxdata t
         JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '')
         WHERE 
-           -- Check if the Search matches the ID
-           t."PARID"::text ILIKE $1 
+           -- 1. Check Full Address
+           CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1
            OR
-           -- Check if the Search matches the NUMBER (e.g. "5223")
-           t."ADRNO"::text ILIKE $1
+           -- 2. Check PIN/PARID
+           t."PARID"::text ILIKE $1
            OR
-           -- Check if the Search matches the NAME (e.g. "Bradfield")
-           t."ADRADD" ILIKE $1
-           OR
-           -- THE FIX: Check if Search matches "5223 Bradfield" combined
-           CONCAT(t."ADRNO", ' ', t."ADRADD") ILIKE $1
+           -- 3. Check Street Name only
+           t."ADRSTR" ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
+        console.log("Found:", result.rows.length);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err.message);
@@ -59,18 +56,17 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// --- MAP CLICK API (FIXED) ---
+// --- MAP CLICK API (Using table 'taxdata') ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
     const query = `
         SELECT p.id, 
                t."PARID" as owner_name,        
-               CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address,    
+               CONCAT(t."ADRNO", ' ', t."ADRSTR") as address,    
                ST_AsGeoJSON(p.geom) as geometry
         FROM "Parcels_real" p
-        -- Safer Join here too
-        LEFT JOIN "tax_administration_s_real_estate" t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '')
+        LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '')
         ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
