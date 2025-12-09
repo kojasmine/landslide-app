@@ -30,12 +30,12 @@
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
         .export-btn { margin: 10px; padding: 15px; background: #007bff; color: white; text-align: center; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        /* v19 = CYAN */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #00BCD4; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v20 = YELLOW */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FFC107; color: black; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
-    <div class="debug-label">v19</div>
+    <div class="debug-label">v20</div>
     <div class="app-bar">
         <div class="menu-btn">≡</div>
         <div class="search-wrapper">
@@ -69,7 +69,7 @@
         let userMarker = null, isTracking = false, followUser = false;
         function toggleGPS() {
             if (!isTracking) { map.locate({ watch: true, enableHighAccuracy: true }); document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff"; isTracking = true; followUser = true; }
-            else if (userMarker) { map.flyTo(userMarker.getLatLng(), 18); followUser = true; }
+            else if (userMarker) { map.flyTo(userMarker.getLatLng(), 17); followUser = true; }
         }
         map.on('locationfound', (e) => {
             if (userMarker) userMarker.setLatLng(e.latlng); else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
@@ -83,4 +83,92 @@
             else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
         }
 
-        const i
+        const input = document.getElementById('searchBox');
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        
+        async function performSearch() {
+            const q = input.value;
+            if(q.length < 2) return;
+            input.blur();
+            document.querySelector('.search-go-btn').innerText = "...";
+            try {
+                const res = await fetch(`/api/search?q=${q}`);
+                if (!res.ok) {
+                    const errText = await res.json();
+                    throw new Error(errText.error || "Server Error");
+                }
+                const json = await res.json();
+                document.querySelector('.search-go-btn').innerText = "GO";
+                
+                if(json.length > 0) {
+                    loadProperty(json[0]);
+                    // FIXED: Lowered zoom level to 17 to prevent Black Screen
+                    map.flyTo([json[0].lat, json[0].lng], 17);
+                    followUser = false;
+                } else alert("No results found.");
+            } catch(e) {
+                document.querySelector('.search-go-btn').innerText = "GO";
+                console.error(e);
+                alert("Error: " + e.message);
+            }
+        }
+
+        let activeLayer = null, currentParcelData = null, savedItems = [];
+        function initApp() { const stored = localStorage.getItem('landslide_saves'); if (stored) savedItems = JSON.parse(stored); }
+        map.on('click', async (e) => {
+            try {
+                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
+                const json = await res.json();
+                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } else closeCard();
+            } catch(e) {}
+        });
+        function loadProperty(p) {
+            document.getElementById('owner').innerText = p.owner_name || "Unknown PIN";
+            document.getElementById('address').innerText = p.address || "Info";
+            document.getElementById('card').classList.add('active');
+            if(activeLayer) map.removeLayer(activeLayer);
+            if(p.geometry) {
+                activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+            }
+        }
+        function saveProperty() {
+            if(activeLayer && currentParcelData) {
+                const exists = savedItems.find(i => i.id === currentParcelData.id);
+                if(exists) { alert("Already saved!"); return; }
+                savedItems.push(currentParcelData);
+                localStorage.setItem('landslide_saves', JSON.stringify(savedItems));
+                renderSavedList(); alert("Saved to Folder!");
+            }
+        }
+        function deleteItem(id, event) {
+            event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id);
+            localStorage.setItem('landslide_saves', JSON.stringify(savedItems)); renderSavedList();
+        }
+        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
+        function renderSavedList() {
+            const container = document.getElementById('savedListContainer'); container.innerHTML = "";
+            if(savedItems.length === 0) { container.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">No saved items.</div>'; return; }
+            savedItems.forEach(item => {
+                const div = document.createElement('div'); div.className = 'saved-item';
+                div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${item.owner_name||"Unknown"}</b><br><span style="font-size:12px;color:#666">${item.address||""}</span></div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`;
+                container.appendChild(div);
+            });
+        }
+        function flyToItem(id) {
+            const item = savedItems.find(i => i.id === id);
+            if(item) {
+                currentParcelData = item; const geo = JSON.parse(item.geometry);
+                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 17); loadProperty(item); toggleSavedList();
+            }
+        }
+        function exportToCSV() {
+            if(savedItems.length === 0) { alert("Nothing to export!"); return; }
+            let csv = "Owner,Address,ID\n"; savedItems.forEach(i => csv += `"${i.owner_name}","${i.address}","${i.id}"\n`);
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "landslide_properties.csv";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+        function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
+        toggleGPS(); initApp(); 
+    </script>
+</body>
+</html>
