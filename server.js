@@ -13,35 +13,37 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// Serve Frontend
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// --- SEARCH API (The part that was likely missing/broken) ---
+// --- SEARCH API (Fixed with JOIN) ---
 app.get('/api/search', async (req, res) => {
     const { q } = req.query; 
     
     if (!q || q.length < 1) return res.json([]);
 
-    console.log("Searching for:", q); // This prints to Render Logs
-
-    // We search PIN and PARCEL_TYP.
-    // We cast "PIN" to text (::text) so it doesn't crash if the user types letters.
+    // Logic:
+    // 1. We start with the Data Table (t) to find the address.
+    // 2. We JOIN the Map Table (p) to get the coordinates (Lat/Lng) for flying.
+    // 3. We construct the address by combining Number (ADRNO) + Name (ADRADD).
+    
     const query = `
-        SELECT id, 
-               "PIN" as owner_name, 
-               "PARCEL_TYP" as address, 
-               ST_X(ST_Centroid(geom)) as lng, 
-               ST_Y(ST_Centroid(geom)) as lat
-        FROM "Parcels_real"
-        WHERE "PIN"::text ILIKE $1 OR "PARCEL_TYP" ILIKE $1
+        SELECT p.id, 
+               t."PARID" as owner_name, 
+               CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address, 
+               ST_X(ST_Centroid(p.geom)) as lng, 
+               ST_Y(ST_Centroid(p.geom)) as lat
+        FROM "tax_administration_s_real_estate" t
+        JOIN "Parcels_real" p ON t."PARID" = p."PIN"
+        WHERE t."PARID"::text ILIKE $1 
+           OR t."ADRADD" ILIKE $1
+           OR t."ADRNO"::text ILIKE $1
         LIMIT 5;
     `;
 
     try {
         const result = await pool.query(query, [`%${q}%`]);
-        console.log("Found rows:", result.rows.length);
         res.json(result.rows);
     } catch (err) {
         console.error("Search Error:", err.message);
@@ -49,17 +51,22 @@ app.get('/api/search', async (req, res) => {
     }
 });
 
-// Click Map API
+// --- MAP CLICK API (Fixed with JOIN) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     
+    // Logic:
+    // 1. We find the Shape (p.geom) that you clicked on.
+    // 2. We JOIN the Tax Table (t) to get the address text.
+    
     const query = `
-        SELECT id, 
-               "PIN" as owner_name,        
-               "PARCEL_TYP" as address,    
-               ST_AsGeoJSON(geom) as geometry
-        FROM "Parcels_real"                
-        ORDER BY geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
+        SELECT p.id, 
+               t."PARID" as owner_name,        
+               CONCAT(t."ADRNO", ' ', t."ADRADD", ' ', t."ADRSTR") as address,    
+               ST_AsGeoJSON(p.geom) as geometry
+        FROM "Parcels_real" p
+        LEFT JOIN "tax_administration_s_real_estate" t ON p."PIN" = t."PARID"
+        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326)
         LIMIT 1;
     `;
     
