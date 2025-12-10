@@ -75,7 +75,7 @@
         .menu-overlay.active { display: block; }
 
         .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; cursor: grab; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #9C27B0; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #673AB7; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         /* GPS PULSE */
         .gps-pulse {
@@ -93,18 +93,24 @@
 </head>
 <body>
 
-    <div class="debug-label">v29</div>
+    <div class="debug-label">v30</div>
 
-    <!-- HIDDEN FILE INPUT FOR LOADING -->
+    <!-- HIDDEN FILE INPUT -->
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
+        <!-- NEW: GPS Location is now item #1 here -->
+        <div class="menu-item" onclick="flyToUser(); toggleMenu();">📍 Go to Current Location</div>
+        
         <div class="menu-item" onclick="saveProjectFile()">💾 Save Project File</div>
         <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open Project File</div>
         <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
-        <div class="menu-item" style="margin-top:auto; color:#666; font-weight:400">v29 - Landslide</div>
+        
+        <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
+        <div class="menu-item" onclick="alert('Settings coming soon!')">⚙️ Settings</div>
+        <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
     </div>
 
     <!-- TOP BAR -->
@@ -116,7 +122,6 @@
         </div>
         <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
         <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
-        <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
 
     <!-- SAVED LIST -->
@@ -163,9 +168,10 @@
                     className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT TO AUTO-STAKE
+                // CLICK BLUE DOT TO STAKE
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
+                    // AUTO NAME: Stake 1, Stake 2, etc.
                     let nextNum = stakes.length + 1;
                     createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
                 });
@@ -181,7 +187,7 @@
 
         // --- STAKE LOGIC ---
         let stakes = [];
-        let stakeMarkers = {}; // Keep track of marker objects
+        let stakeMarkers = {}; 
         
         function createStake(lat, lng, label) {
             const id = Date.now();
@@ -205,7 +211,7 @@
                 saveToStorage();
             });
             
-            stakeMarkers[s.id] = hammer; // Store ref
+            stakeMarkers[s.id] = hammer; 
         }
 
         window.removeStakeByBtn = function(id) {
@@ -217,82 +223,6 @@
             stakes = stakes.filter(s => s.id !== id);
             delete stakeMarkers[id];
             saveToStorage();
-        }
-
-        // --- SAVE / LOAD SYSTEM (NEW) ---
-        
-        // 1. Save Project to File (.json)
-        function saveProjectFile() {
-            const data = {
-                date: new Date().toLocaleDateString(),
-                properties: savedItems,
-                stakes: stakes
-            };
-            const jsonStr = JSON.stringify(data);
-            
-            let fileName = prompt("Name your project:", "Survey_Project");
-            if(!fileName) return;
-            
-            const link = document.createElement("a");
-            link.href = "data:text/json;charset=utf-8," + encodeURIComponent(jsonStr);
-            link.download = fileName + ".json";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            toggleMenu(); // Close menu
-        }
-
-        // 2. Load Project from File
-        function loadProjectFile(input) {
-            const file = input.files[0];
-            if(!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    
-                    // Clear current data
-                    clearMap();
-                    
-                    // Restore Data
-                    if(data.properties) {
-                        data.properties.forEach(p => {
-                            savedItems.push(p);
-                            // Only draw active one? No, maybe just load data
-                        });
-                    }
-                    if(data.stakes) {
-                        data.stakes.forEach(s => {
-                            stakes.push(s);
-                            addStakeMarker(s);
-                        });
-                    }
-                    
-                    saveToStorage();
-                    renderSavedList();
-                    alert("Project Loaded Successfully!");
-                    toggleMenu();
-                    
-                    // Zoom to first stake or property
-                    if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
-                    
-                } catch(err) {
-                    alert("Error loading file: " + err);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function clearMap() {
-            // Remove all existing stakes from map
-            stakes.forEach(s => {
-                if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]);
-            });
-            stakes = [];
-            savedItems = [];
-            stakeMarkers = {};
-            localStorage.removeItem('landslide_saves');
         }
 
         // --- UI & SEARCH ---
@@ -325,9 +255,7 @@
             const stored = localStorage.getItem('landslide_saves'); 
             if (stored) {
                 const allData = JSON.parse(stored);
-                // Handle legacy format (array) vs new object format
                 let allItems = Array.isArray(allData) ? allData : []; 
-                
                 savedItems = allItems.filter(i => i.type !== 'stake');
                 const savedStakes = allItems.filter(i => i.type === 'stake');
                 savedStakes.forEach(s => { addStakeMarker(s); stakes.push(s); });
@@ -404,11 +332,49 @@
             }
         }
 
+        // SAVE & LOAD FUNCTIONS
+        function saveProjectFile() {
+            const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes: stakes };
+            let fileName = prompt("Name your project:", "Survey_Project");
+            if(!fileName) return;
+            const link = document.createElement("a");
+            link.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            link.download = fileName + ".json";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            toggleMenu();
+        }
+
+        function loadProjectFile(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    clearMap();
+                    if(data.properties) data.properties.forEach(p => savedItems.push(p));
+                    if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); });
+                    saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu();
+                    if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
+                } catch(err) { alert("Error loading file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearMap() {
+            stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); });
+            stakes = []; savedItems = []; stakeMarkers = {};
+            localStorage.removeItem('landslide_saves');
+        }
+
         function exportToCSV() {
-            let csv = "Type,Info,Lat,Lng\n";
-            savedItems.forEach(i => csv += `Property,"${i.address}",,\n`);
-            stakes.forEach(s => csv += `Stake,${s.label},${s.lat},${s.lng}\n`);
-            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "landslide_data.csv";
+            let fileName = prompt("Name your Excel file:", "my_property_data");
+            if (!fileName) return; 
+            if (!fileName.endsWith('.csv')) fileName += '.csv';
+            let csv = "Type,Name/ID,Details,Lat,Lng\n";
+            savedItems.forEach(i => csv += `Property,"${i.owner_name}","${i.address}",,\n`);
+            stakes.forEach(s => csv += `Stake,"${s.label}","Stake ID ${s.id}",${s.lat},${s.lng}\n`);
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = fileName;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
