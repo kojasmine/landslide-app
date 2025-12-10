@@ -32,7 +32,7 @@
         /* HAMMER BUTTON (Bottom Right) */
         .stake-btn {
             position: fixed; bottom: 140px; right: 20px;
-            background: #222; color: white;
+            background: #ff4400; color: white;
             width: 65px; height: 65px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 32px;
@@ -40,9 +40,9 @@
             z-index: 9999; cursor: pointer;
             border: 3px solid white;
         }
-        .stake-btn:active { transform: scale(0.95); background: #444; }
+        .stake-btn:active { transform: scale(0.95); background: #cc3700; }
 
-        /* CLEAN PROPERTY CARD (No big buttons) */
+        /* CLEAN PROPERTY CARD */
         .info-card {
             position: fixed; bottom: 20px; left: 15px; right: 15px; 
             background: white; border-radius: 15px;
@@ -54,13 +54,12 @@
         }
         .info-card.active { transform: translateY(0); }
         
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .prop-val { font-size: 18px; font-weight: 800; color: #000; line-height: 1.2; }
         .prop-sub { font-size: 14px; color: #666; margin-top: 4px; }
         
-        /* Small Card Icons */
         .card-icons { display: flex; gap: 15px; }
-        .mini-btn { cursor: pointer; font-size: 20px; color: #666; padding: 5px; }
+        .mini-btn { cursor: pointer; font-size: 24px; color: #666; padding: 5px; }
         .mini-btn:hover { color: #000; }
         .save-active { color: #ff4400 !important; }
 
@@ -88,13 +87,25 @@
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
 
-        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #607D8B; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; cursor: grab; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #4CAF50; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        
+        /* GPS PULSE */
+        .gps-pulse {
+            box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+            animation: pulse-blue 2s infinite;
+            border-radius: 50%;
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v24</div>
+    <div class="debug-label">v25</div>
 
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
@@ -114,10 +125,12 @@
         </div>
         <div class="icon-btn" onclick="toggleSavedList()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
         <div class="icon-btn" onclick="toggleLayer()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
+        <!-- GPS: Click to fly to user -->
+        <div class="icon-btn" id="gpsBtn" onclick="flyToUser()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
 
     <!-- HAMMER BUTTON -->
-    <div class="stake-btn" onclick="dropStake()" title="Drop Stake">🔨</div>
+    <div class="stake-btn" onclick="dropStakeAtGPS()" title="Drop Stake Here">🔨</div>
 
     <!-- SAVED LIST -->
     <div class="saved-modal" id="savedModal">
@@ -128,7 +141,7 @@
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- CLEAN CARD (v24) -->
+    <!-- CLEAN CARD -->
     <div class="info-card" id="card">
         <div class="card-header">
             <div>
@@ -136,9 +149,7 @@
                 <div class="prop-sub" id="address">...</div>
             </div>
             <div class="card-icons">
-                <!-- Save Icon -->
                 <div class="mini-btn" id="saveIcon" onclick="saveProperty()" title="Save Property">💾</div>
-                <!-- Close Icon -->
                 <div class="mini-btn" onclick="closeCard()" title="Close">✕</div>
             </div>
         </div>
@@ -150,35 +161,61 @@
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
-        // GPS (Always Active)
+        // --- GPS LOGIC (ALWAYS ON) ---
         let userMarker = null, currentLatLng = null;
         map.locate({ watch: true, enableHighAccuracy: true });
 
         map.on('locationfound', (e) => {
             currentLatLng = e.latlng;
+            // High Z-Index for Blue Dot so line doesn't hide it
             if (userMarker) userMarker.setLatLng(e.latlng); 
-            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
+            else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1, zIndexOffset: 1000, className: 'gps-pulse' }).addTo(map);
         });
 
-        // STAKE LOGIC
-        let stakes = [];
-        function dropStake() {
-            if (!currentLatLng) { alert("Waiting for GPS..."); return; }
-            const id = Date.now();
-            const stakeData = { id: id, type: 'stake', lat: currentLatLng.lat, lng: currentLatLng.lng };
-            addStakeToMap(stakeData);
-            stakes.push(stakeData);
-            saveToStorage();
-            // Center on stake
-            map.flyTo(currentLatLng, 21);
+        function flyToUser() {
+            if(currentLatLng) map.flyTo(currentLatLng, 20);
+            else alert("Finding GPS...");
         }
 
-        function addStakeToMap(s) {
-            const flag = L.marker([s.lat, s.lng], {
+        // --- STAKE LOGIC ---
+        let stakes = [];
+        
+        // 1. Drop at GPS (Walking Mode)
+        function dropStakeAtGPS() {
+            if (!currentLatLng) { alert("Waiting for GPS signal..."); return; }
+            createStake(currentLatLng.lat, currentLatLng.lng);
+        }
+
+        // 2. Helper to create stake
+        function createStake(lat, lng) {
+            const id = Date.now();
+            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng };
+            
+            addStakeMarker(stakeData);
+            stakes.push(stakeData);
+            saveToStorage();
+        }
+
+        // 3. Draw Stake on Map
+        function addStakeMarker(s) {
+            const hammer = L.marker([s.lat, s.lng], {
+                draggable: true, // Allow fine-tuning position
                 icon: L.divIcon({ className: 'stake-icon', html: '🔨', iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
-            flag.on('click', () => {
-                if(confirm("Delete this stake?")) { map.removeLayer(flag); removeStake(s.id); }
+            
+            // Drag to update
+            hammer.on('dragend', (e) => {
+                const newPos = e.target.getLatLng();
+                s.lat = newPos.lat; s.lng = newPos.lng;
+                saveToStorage();
+            });
+
+            // Click to delete
+            hammer.on('click', () => {
+                if(confirm("Remove this stake?")) {
+                    map.removeLayer(hammer);
+                    removeStake(s.id);
+                }
             });
         }
 
@@ -187,17 +224,13 @@
             saveToStorage();
         }
 
-        function toggleMenu() {
-            document.getElementById('sideMenu').classList.toggle('open');
-            document.getElementById('menuOverlay').classList.toggle('active');
-        }
-
+        // --- UI & SEARCH ---
+        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function toggleLayer() {
             if (map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); }
             else { map.removeLayer(street); map.addLayer(satellite); }
         }
 
-        // SEARCH
         const input = document.getElementById('searchBox');
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
         
@@ -210,12 +243,12 @@
                 document.querySelector('.search-go-btn').innerText = "GO";
                 if(json.length > 0) {
                     loadProperty(json[0]);
-                    // Fly to property, but allow GPS to keep updating blue dot
                     map.flyTo([json[0].lat, json[0].lng], 19);
                 } else alert("No results.");
             } catch(e) { document.querySelector('.search-go-btn').innerText = "GO"; }
         }
 
+        // --- PROPERTY LOGIC ---
         let activeLayer = null, currentParcelData = null, savedItems = [];
         
         function initApp() { 
@@ -224,32 +257,48 @@
                 const allData = JSON.parse(stored);
                 savedItems = allData.filter(i => i.type !== 'stake');
                 const savedStakes = allData.filter(i => i.type === 'stake');
-                savedStakes.forEach(s => { addStakeToMap(s); stakes.push(s); });
+                savedStakes.forEach(s => { addStakeMarker(s); stakes.push(s); });
             }
         }
 
+        // CLICK ON MAP
         map.on('click', async (e) => {
+            // Check if user clicked on an existing property polygon
+            // Note: Leaflet usually handles layer clicks first, but if we missed it:
             try {
                 const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
                 const json = await res.json();
-                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } else closeCard();
+                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } 
+                else closeCard();
             } catch(e) {}
         });
 
         function loadProperty(p) {
             document.getElementById('owner').innerText = p.owner_name;
             document.getElementById('address').innerText = p.address;
-            document.getElementById('saveIcon').classList.remove('save-active'); // Reset save icon
+            document.getElementById('saveIcon').classList.remove('save-active');
             document.getElementById('card').classList.add('active');
             
             if(activeLayer) map.removeLayer(activeLayer);
-            if(p.geometry) activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
+            if(p.geometry) {
+                activeLayer = L.geoJSON(JSON.parse(p.geometry), { 
+                    style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
+                }).addTo(map);
+                
+                // Allow CLICKING the line to drop a stake exactly there!
+                activeLayer.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e); // Don't trigger map click
+                    if(confirm("Drop a stake here on the line?")) {
+                        createStake(e.latlng.lat, e.latlng.lng);
+                    }
+                });
+            }
         }
 
         function saveProperty() {
             if(activeLayer && currentParcelData) {
                 savedItems.push(currentParcelData); saveToStorage(); 
-                document.getElementById('saveIcon').classList.add('save-active'); // Turn icon orange
+                document.getElementById('saveIcon').classList.add('save-active');
             }
         }
 
