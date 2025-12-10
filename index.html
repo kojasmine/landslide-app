@@ -4,37 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- BASE --- */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
-        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
         
-        /* APP BAR */
-        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 2px solid #333; }
+        /* MAP */
+        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
+
+        /* --- UI ELEMENTS --- */
+        
+        /* 1. TOP APP BAR */
+        .app-bar {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: white; display: flex; align-items: center; padding: 0 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 1px solid #ddd;
+        }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
         .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
-        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; height: 30px; }
+        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
         
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
-        .icon-svg { width: 24px; height: 24px; fill: #333; }
-
-        /* NEW: STAKE BUTTON (Floating Bottom Center) */
-        .stake-btn {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #ff4400; color: white;
-            padding: 15px 30px; border-radius: 30px;
-            font-weight: bold; font-size: 16px;
-            box-shadow: 0 4px 15px rgba(255, 68, 0, 0.4);
-            z-index: 9999; cursor: pointer;
-            display: flex; align-items: center; gap: 8px;
-            border: 2px solid white;
+        /* 2. SIDE MENU (The Drawer) */
+        .side-menu {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
+            background: white; z-index: 100000;
+            transform: translateX(-100%); transition: transform 0.3s ease-out;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
         }
-        .stake-btn:active { transform: translateX(-50%) scale(0.95); }
+        .side-menu.open { transform: translateX(0); }
+        .menu-item {
+            padding: 20px; border-bottom: 1px solid #eee; font-size: 16px; font-weight: 600; color: #333; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+        .menu-item:active { background: #f5f5f5; }
+        .menu-overlay {
+            position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none;
+        }
+        .menu-overlay.active { display: block; }
 
-        /* CARD */
-        .info-card { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 4px solid #333; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; transform: translateY(110%); transition: transform 0.3s ease-out; z-index: 10000; }
+        /* 3. DROP STAKE BUTTON (Moved to Right Side for Safety) */
+        .stake-btn {
+            position: fixed; bottom: 120px; right: 20px; /* Right side, above other buttons */
+            background: #ff4400; color: white;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(255, 68, 0, 0.5);
+            z-index: 9999; cursor: pointer;
+            border: 3px solid white;
+        }
+        .stake-btn:active { transform: scale(0.95); }
+
+        /* 4. SAVED DRAWER */
+        .saved-modal {
+            position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px;
+            background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out;
+            display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+        }
+        .saved-modal.active { transform: translateX(0); }
+        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; }
+        .saved-list { flex: 1; overflow-y: auto; }
+        .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
+
+        /* 5. PROPERTY CARD */
+        .info-card {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 4px solid #333;
+            border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px;
+            transform: translateY(110%); transition: transform 0.3s ease-out; z-index: 10000;
+            box-shadow: 0 -10px 50px rgba(0,0,0,0.3);
+        }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 15px; }
         .card-actions { display: flex; gap: 10px; }
@@ -42,46 +84,55 @@
         .btn-save { background: #ff4400; color: white; }
         .btn-close { background: #eee; color: #333; }
 
-        /* SAVED DRAWER */
-        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
-        .saved-modal.active { transform: translateX(0); }
-        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; }
-        .saved-list { flex: 1; overflow-y: auto; }
-        .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
+        /* MISC */
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
+        .icon-svg { width: 24px; height: 24px; fill: #333; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #9C27B0; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
-        /* STAKE ICON IN MAP */
-        .stake-icon { font-size: 30px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FF5722; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* STAKE ICON */
+        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; }
     </style>
 </head>
 <body>
-    <div class="debug-label">v21</div>
-    
+
+    <div class="debug-label">v22</div>
+
+    <!-- SIDE MENU -->
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="sideMenu">
+        <div style="padding:20px; background:#f5f5f5; font-weight:bold;">Menu</div>
+        <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
+        <div class="menu-item" onclick="alert('Settings coming soon!')">⚙️ Settings</div>
+        <div class="menu-item" onclick="exportToCSV()">📤 Share with Friends</div>
+        <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
+    </div>
+
+    <!-- TOP BAR -->
     <div class="app-bar">
-        <div class="menu-btn">≡</div>
+        <div class="menu-btn" onclick="toggleMenu()">≡</div>
         <div class="search-wrapper">
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()">GO</div>
         </div>
         <div class="icon-btn" onclick="toggleSavedList()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
         <div class="icon-btn" onclick="toggleLayer()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
-        <div class="icon-btn" id="gpsBtn" onclick="toggleGPS()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
 
-    <!-- NEW: STAKE BUTTON -->
-    <div class="stake-btn" onclick="dropStake()">
-        <span>🚩</span> DROP STAKE
+    <!-- STAKE BUTTON (Bottom Right) -->
+    <div class="stake-btn" onclick="dropStake()" title="Drop Stake Here">
+        🚩
     </div>
 
+    <!-- SAVED DRAWER -->
     <div class="saved-modal" id="savedModal">
         <div class="saved-header"><span>Saved</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="saved-list" id="savedListContainer"></div>
     </div>
 
+    <!-- MAP -->
     <div id="map"></div>
 
+    <!-- PROPERTY CARD -->
     <div class="info-card" id="card">
         <div class="prop-val" id="owner" style="font-size:14px; color:#666;">...</div>
         <div class="prop-val" id="address">...</div>
@@ -93,69 +144,80 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
-        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 16, layers: [satellite], zoomControl: false });
+        // 1. DEEP ZOOM MAP SETUP (Max Zoom 21)
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 21 });
+        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 21 });
+        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
-        // GPS LOGIC (High Accuracy)
+        // 2. GPS WALKING MODE
         let userMarker = null, isTracking = false, currentLatLng = null;
         
-        function toggleGPS() {
-            if (!isTracking) { 
-                map.locate({ watch: true, enableHighAccuracy: true }); 
-                document.querySelector('#gpsBtn .icon-svg').style.fill = "#007bff"; 
-                isTracking = true; 
-            } else if (userMarker) { 
-                map.flyTo(userMarker.getLatLng(), 18); 
-            }
-        }
-        
+        // Start GPS automatically
+        map.locate({ watch: true, enableHighAccuracy: true });
+
         map.on('locationfound', (e) => {
-            currentLatLng = e.latlng; // Save current spot for staking
+            currentLatLng = e.latlng;
+            // Draw Blue Dot
             if (userMarker) userMarker.setLatLng(e.latlng); 
             else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
+            
+            // Keep map centered on user (Walking Mode)
+            // But only if they haven't dragged the map away
+            if(isTracking) map.panTo(e.latlng);
         });
 
-        // STAKE LOGIC (NEW)
-        let stakes = []; // Holds the red flag markers
+        // If user drags map, stop auto-following
+        map.on('dragstart', () => { isTracking = false; });
+
+        // 3. STAKE LOGIC
+        let stakes = []; 
         
         function dropStake() {
-            if (!currentLatLng) {
-                alert("Waiting for GPS... Stand still.");
-                return;
-            }
+            if (!currentLatLng) { alert("Waiting for GPS..."); return; }
             
-            // 1. Create a visual flag on the map
-            const flag = L.marker(currentLatLng, {
-                icon: L.divIcon({
-                    className: 'stake-icon',
-                    html: '🚩',
-                    iconSize: [30, 30],
-                    iconAnchor: [5, 30] // Anchor to bottom of flag pole
-                })
+            const id = Date.now();
+            const stakeData = { id: id, type: 'stake', lat: currentLatLng.lat, lng: currentLatLng.lng };
+            
+            addStakeToMap(stakeData);
+            stakes.push(stakeData);
+            saveToStorage();
+            
+            // Re-center on stake
+            isTracking = true; 
+            map.flyTo(currentLatLng, 21); // Super zoom for accuracy
+        }
+
+        function addStakeToMap(s) {
+            const flag = L.marker([s.lat, s.lng], {
+                icon: L.divIcon({ className: 'stake-icon', html: '🚩', iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
             
-            // 2. Save stake data
-            const stakeData = {
-                id: Date.now(), // Unique ID
-                type: 'stake',
-                lat: currentLatLng.lat,
-                lng: currentLatLng.lng,
-                date: new Date().toLocaleTimeString()
-            };
-            
-            stakes.push(stakeData);
-            saveToStorage(); // Save to phone memory
-            alert("Stake Dropped!");
+            // CLICK TO DELETE
+            flag.on('click', () => {
+                if(confirm("Delete this stake?")) {
+                    map.removeLayer(flag);
+                    removeStake(s.id);
+                }
+            });
         }
 
-        // --- STANDARD APP LOGIC ---
-        let currentLayer = "sat";
+        function removeStake(id) {
+            stakes = stakes.filter(s => s.id !== id);
+            saveToStorage();
+        }
+
+        // 4. UI LOGIC
+        function toggleMenu() {
+            document.getElementById('sideMenu').classList.toggle('open');
+            document.getElementById('menuOverlay').classList.toggle('active');
+        }
+
         function toggleLayer() {
-            if (currentLayer === "sat") { map.removeLayer(satellite); map.addLayer(street); currentLayer = "street"; }
-            else { map.removeLayer(street); map.addLayer(satellite); currentLayer = "sat"; }
+            if (map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); }
+            else { map.removeLayer(street); map.addLayer(satellite); }
         }
 
+        // 5. SEARCH LOGIC
         const input = document.getElementById('searchBox');
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
         
@@ -168,37 +230,22 @@
                 document.querySelector('.search-go-btn').innerText = "GO";
                 if(json.length > 0) {
                     loadProperty(json[0]);
-                    map.flyTo([json[0].lat, json[0].lng], 17);
+                    isTracking = false; // Stop following GPS so we can look at search result
+                    map.flyTo([json[0].lat, json[0].lng], 19);
                 } else alert("No results.");
             } catch(e) { document.querySelector('.search-go-btn').innerText = "GO"; }
         }
 
+        // 6. SAVE/LOAD LOGIC
         let activeLayer = null, currentParcelData = null, savedItems = [];
         
-        // Load Saved Items AND Stakes
         function initApp() { 
             const stored = localStorage.getItem('landslide_saves'); 
             if (stored) {
                 const allData = JSON.parse(stored);
-                
-                // Split between Properties and Stakes
                 savedItems = allData.filter(i => i.type !== 'stake');
                 const savedStakes = allData.filter(i => i.type === 'stake');
-                
-                // Re-draw Stakes
-                savedStakes.forEach(s => {
-                    const flag = L.marker([s.lat, s.lng], {
-                        icon: L.divIcon({ className: 'stake-icon', html: '🚩', iconSize: [30, 30], iconAnchor: [5, 30] })
-                    }).addTo(map);
-                    // Add delete click
-                    flag.on('click', () => {
-                        if(confirm("Remove this stake?")) {
-                            map.removeLayer(flag);
-                            removeStake(s.id);
-                        }
-                    });
-                    stakes.push(s);
-                });
+                savedStakes.forEach(s => { addStakeToMap(s); stakes.push(s); });
             }
         }
 
@@ -220,21 +267,13 @@
 
         function saveProperty() {
             if(activeLayer && currentParcelData) {
-                savedItems.push(currentParcelData);
-                saveToStorage();
-                alert("Property Saved!");
+                savedItems.push(currentParcelData); saveToStorage(); alert("Property Saved!");
             }
         }
 
         function saveToStorage() {
-            // Combine Properties + Stakes into one save file
             const combined = [...savedItems, ...stakes];
             localStorage.setItem('landslide_saves', JSON.stringify(combined));
-        }
-
-        function removeStake(id) {
-            stakes = stakes.filter(s => s.id !== id);
-            saveToStorage();
         }
 
         function deleteItem(id, event) {
@@ -246,15 +285,11 @@
         
         function renderSavedList() {
             const container = document.getElementById('savedListContainer'); container.innerHTML = "";
-            
-            // Show Properties
             savedItems.forEach(item => {
                 const div = document.createElement('div'); div.className = 'saved-item';
                 div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${item.owner_name}</b><br>${item.address}</div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`;
                 container.appendChild(div);
             });
-
-            // Show Stakes Count
             if(stakes.length > 0) {
                 const div = document.createElement('div'); div.className = 'saved-item';
                 div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes placed</b></div>`;
@@ -266,13 +301,23 @@
             const item = savedItems.find(i => i.id === id);
             if(item) {
                 currentParcelData = item; const geo = JSON.parse(item.geometry);
-                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 17); loadProperty(item); toggleSavedList();
+                isTracking = false;
+                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList();
             }
+        }
+
+        function exportToCSV() {
+            // Exports BOTH properties and stakes coordinates
+            let csv = "Type,Info,Lat,Lng\n";
+            savedItems.forEach(i => csv += `Property,"${i.address}",,\n`);
+            stakes.forEach(s => csv += `Stake,Stake ID ${s.id},${s.lat},${s.lng}\n`);
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "landslide_data.csv";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
         
-        toggleGPS(); initApp(); 
+        initApp(); 
     </script>
 </body>
 </html>
