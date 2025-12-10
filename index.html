@@ -27,37 +27,32 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* INSTRUCTION TOAST (New!) */
+        /* INSTRUCTION TOAST */
         .instruction-toast {
             position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.8); color: white;
-            padding: 10px 20px; border-radius: 20px;
-            font-size: 14px; font-weight: bold;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: bold;
             z-index: 9999; pointer-events: none;
             opacity: 0; transition: opacity 0.5s;
         }
         .instruction-toast.visible { opacity: 1; }
 
-        /* CARD */
+        /* MINIMAL INFO CARD (v32) */
         .info-card {
-            position: fixed; bottom: 20px; left: 15px; right: 15px; 
-            background: white; border-radius: 15px;
-            padding: 20px;
+            position: fixed; bottom: 20px; left: 20px; right: 20px; 
+            background: white; border-radius: 12px;
+            padding: 15px 20px;
             transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 1px solid #ddd;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            border: 1px solid #eee;
+            text-align: center;
         }
         .info-card.active { transform: translateY(0); }
         
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .prop-val { font-size: 18px; font-weight: 800; color: #000; line-height: 1.2; }
-        .prop-sub { font-size: 14px; color: #666; margin-top: 4px; }
-        
-        .card-icons { display: flex; gap: 15px; }
-        .mini-btn { cursor: pointer; font-size: 24px; color: #666; padding: 5px; }
-        .mini-btn:hover { color: #000; }
-        .save-active { color: #ff4400 !important; }
+        .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
+        .prop-sub { font-size: 13px; color: #666; }
 
         /* SAVED DRAWER */
         .saved-modal {
@@ -83,10 +78,19 @@
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
 
-        /* STAKE ICON - RED FLAG */
-        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
+        /* STAKE ICON WITH NUMBER */
+        .stake-container { position: relative; }
+        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
+        .stake-number {
+            position: absolute; bottom: 0; right: 0;
+            background: black; color: white;
+            border-radius: 50%; width: 18px; height: 18px;
+            font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid white;
+        }
         
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FF5722; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #000; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         /* GPS PULSE */
         .gps-pulse {
@@ -104,7 +108,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v31</div>
+    <div class="debug-label">v32</div>
 
     <!-- HIDDEN FILE INPUT -->
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
@@ -116,6 +120,7 @@
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" onclick="flyToUser(); toggleMenu();">📍 Go to Current Location</div>
+        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
         <div class="menu-item" onclick="saveProjectFile()">💾 Save Project File</div>
         <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open Project File</div>
         <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
@@ -130,8 +135,9 @@
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()" title="Search Property">GO</div>
         </div>
-        <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
+        <!-- Removed Folder Icon -->
         <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
+        <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
 
     <!-- SAVED LIST -->
@@ -143,18 +149,10 @@
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- CARD -->
+    <!-- MINIMAL CARD (v32) -->
     <div class="info-card" id="card">
-        <div class="card-header">
-            <div>
-                <div class="prop-val" id="owner">...</div>
-                <div class="prop-sub" id="address">...</div>
-            </div>
-            <div class="card-icons">
-                <div class="mini-btn" id="saveIcon" onclick="saveProperty()" title="Save Property">💾</div>
-                <div class="mini-btn" onclick="closeCard()" title="Close">✕</div>
-            </div>
-        </div>
+        <div class="prop-val" id="owner">...</div>
+        <div class="prop-sub" id="address">...</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -181,7 +179,8 @@
                 // CLICK BLUE DOT TO AUTO-STAKE
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + (stakes.length + 1));
+                    let nextNum = stakes.length + 1;
+                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
                 });
             }
         });
@@ -190,33 +189,41 @@
         function flyToUser() {
             if(currentLatLng) {
                 map.flyTo(currentLatLng, 20);
-                // Scan ground for property automatically!
                 fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
             } else {
                 alert("Waiting for GPS signal...");
             }
         }
 
-        // --- STAKE LOGIC ---
+        // --- STAKE LOGIC (NUMBERED) ---
         let stakes = [];
         let stakeMarkers = {}; 
         
         function createStake(lat, lng, label) {
             const id = Date.now();
-            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng, label: label };
+            // Assign a number based on current count
+            const num = stakes.length + 1;
+            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng, label: label, number: num };
             addStakeMarker(stakeData);
             stakes.push(stakeData);
             saveToStorage();
         }
 
         function addStakeMarker(s) {
-            // RED FLAG ICON 🚩
+            // RED FLAG ICON WITH NUMBER
+            const html = `
+                <div class="stake-container">
+                    <div class="stake-emoji">🚩</div>
+                    <div class="stake-number">${s.number || '?'}</div>
+                </div>
+            `;
+
             const flag = L.marker([s.lat, s.lng], {
                 draggable: true,
-                icon: L.divIcon({ className: 'stake-icon', html: '🚩', iconSize: [40, 40], iconAnchor: [5, 40] })
+                icon: L.divIcon({ className: 'custom-icon', html: html, iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
             
-            flag.bindPopup(`<b>${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
+            flag.bindPopup(`<b>#${s.number} ${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
 
             flag.on('dragend', (e) => {
                 const newPos = e.target.getLatLng();
@@ -275,7 +282,6 @@
             }
         }
 
-        // REUSABLE FETCH FUNCTION (For GPS Auto-Detect)
         async function fetchParcelAt(lat, lng) {
             try {
                 const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
@@ -288,19 +294,23 @@
         }
 
         map.on('click', async (e) => {
-            fetchParcelAt(e.latlng.lat, e.latlng.lng);
+            // If card is active, clicking map closes it. Otherwise fetch property.
+            if(document.getElementById('card').classList.contains('active')) {
+                closeCard();
+            } else {
+                fetchParcelAt(e.latlng.lat, e.latlng.lng);
+            }
         });
 
         function loadProperty(p) {
             document.getElementById('owner').innerText = p.owner_name;
             document.getElementById('address').innerText = p.address;
-            document.getElementById('saveIcon').classList.remove('save-active');
             document.getElementById('card').classList.add('active');
             
-            // SHOW TOAST INSTRUCTION
+            // Show toast
             const toast = document.getElementById('toast');
             toast.classList.add('visible');
-            setTimeout(() => toast.classList.remove('visible'), 4000); // Hide after 4s
+            setTimeout(() => toast.classList.remove('visible'), 4000);
 
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) {
@@ -311,15 +321,9 @@
                 // CLICK YELLOW LINE TO DROP STAKE
                 activeLayer.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    createStake(e.latlng.lat, e.latlng.lng, "Stake " + (stakes.length + 1));
+                    let nextNum = stakes.length + 1;
+                    createStake(e.latlng.lat, e.latlng.lng, "Stake " + nextNum);
                 });
-            }
-        }
-
-        function saveProperty() {
-            if(activeLayer && currentParcelData) {
-                savedItems.push(currentParcelData); saveToStorage(); 
-                document.getElementById('saveIcon').classList.add('save-active');
             }
         }
 
@@ -348,7 +352,7 @@
                 stakes.forEach(s => {
                     const r = document.createElement('div');
                     r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
-                    r.innerText = `• ${s.label}`;
+                    r.innerText = `#${s.number} - ${s.label}`;
                     div.appendChild(r);
                 });
                 container.appendChild(div);
