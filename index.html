@@ -9,15 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- BASE --- */
+        /* BASE */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         
         /* MAP */
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
-        /* --- UI ELEMENTS --- */
-        
-        /* 1. TOP APP BAR */
+        /* UI LAYERS */
         .app-bar {
             position: fixed; top: 0; left: 0; right: 0; height: 60px;
             background: white; display: flex; align-items: center; padding: 0 10px;
@@ -28,37 +26,45 @@
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
         
-        /* 2. SIDE MENU (The Drawer) */
-        .side-menu {
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
-            background: white; z-index: 100000;
-            transform: translateX(-100%); transition: transform 0.3s ease-out;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
-        }
-        .side-menu.open { transform: translateX(0); }
-        .menu-item {
-            padding: 20px; border-bottom: 1px solid #eee; font-size: 16px; font-weight: 600; color: #333; cursor: pointer; display: flex; align-items: center; gap: 10px;
-        }
-        .menu-item:active { background: #f5f5f5; }
-        .menu-overlay {
-            position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none;
-        }
-        .menu-overlay.active { display: block; }
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
+        .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* 3. DROP STAKE BUTTON (Moved to Right Side for Safety) */
+        /* HAMMER BUTTON (Bottom Right) */
         .stake-btn {
-            position: fixed; bottom: 120px; right: 20px; /* Right side, above other buttons */
-            background: #ff4400; color: white;
-            width: 60px; height: 60px; border-radius: 50%;
+            position: fixed; bottom: 140px; right: 20px;
+            background: #222; color: white;
+            width: 65px; height: 65px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 4px 15px rgba(255, 68, 0, 0.5);
+            font-size: 32px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             z-index: 9999; cursor: pointer;
             border: 3px solid white;
         }
-        .stake-btn:active { transform: scale(0.95); }
+        .stake-btn:active { transform: scale(0.95); background: #444; }
 
-        /* 4. SAVED DRAWER */
+        /* CLEAN PROPERTY CARD (No big buttons) */
+        .info-card {
+            position: fixed; bottom: 20px; left: 15px; right: 15px; 
+            background: white; border-radius: 15px;
+            padding: 20px;
+            transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid #ddd;
+        }
+        .info-card.active { transform: translateY(0); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .prop-val { font-size: 18px; font-weight: 800; color: #000; line-height: 1.2; }
+        .prop-sub { font-size: 14px; color: #666; margin-top: 4px; }
+        
+        /* Small Card Icons */
+        .card-icons { display: flex; gap: 15px; }
+        .mini-btn { cursor: pointer; font-size: 20px; color: #666; padding: 5px; }
+        .mini-btn:hover { color: #000; }
+        .save-active { color: #ff4400 !important; }
+
+        /* SAVED DRAWER */
         .saved-modal {
             position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px;
             background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out;
@@ -70,37 +76,29 @@
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
 
-        /* 5. PROPERTY CARD */
-        .info-card {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 4px solid #333;
-            border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px;
-            transform: translateY(110%); transition: transform 0.3s ease-out; z-index: 10000;
-            box-shadow: 0 -10px 50px rgba(0,0,0,0.3);
+        /* SIDE MENU */
+        .side-menu {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
+            background: white; z-index: 100000;
+            transform: translateX(-100%); transition: transform 0.3s ease-out;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
         }
-        .info-card.active { transform: translateY(0); }
-        .prop-val { font-size: 18px; font-weight: 700; color: #000; margin-bottom: 15px; }
-        .card-actions { display: flex; gap: 10px; }
-        .btn-action { flex: 1; padding: 15px; border-radius: 8px; font-weight: bold; text-align: center; cursor: pointer; }
-        .btn-save { background: #ff4400; color: white; }
-        .btn-close { background: #eee; color: #333; }
+        .side-menu.open { transform: translateX(0); }
+        .menu-item { padding: 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; }
+        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
+        .menu-overlay.active { display: block; }
 
-        /* MISC */
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
-        .icon-svg { width: 24px; height: 24px; fill: #333; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #9C27B0; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
-        
-        /* STAKE ICON */
         .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #607D8B; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v22</div>
+    <div class="debug-label">v24</div>
 
-    <!-- SIDE MENU -->
+    <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
-        <div style="padding:20px; background:#f5f5f5; font-weight:bold;">Menu</div>
         <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
         <div class="menu-item" onclick="alert('Settings coming soon!')">⚙️ Settings</div>
         <div class="menu-item" onclick="exportToCSV()">📤 Share with Friends</div>
@@ -118,12 +116,10 @@
         <div class="icon-btn" onclick="toggleLayer()"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
     </div>
 
-    <!-- STAKE BUTTON (Bottom Right) -->
-    <div class="stake-btn" onclick="dropStake()" title="Drop Stake Here">
-        🚩
-    </div>
+    <!-- HAMMER BUTTON -->
+    <div class="stake-btn" onclick="dropStake()" title="Drop Stake">🔨</div>
 
-    <!-- SAVED DRAWER -->
+    <!-- SAVED LIST -->
     <div class="saved-modal" id="savedModal">
         <div class="saved-header"><span>Saved</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="saved-list" id="savedListContainer"></div>
@@ -132,72 +128,57 @@
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- PROPERTY CARD -->
+    <!-- CLEAN CARD (v24) -->
     <div class="info-card" id="card">
-        <div class="prop-val" id="owner" style="font-size:14px; color:#666;">...</div>
-        <div class="prop-val" id="address">...</div>
-        <div class="card-actions">
-            <div class="btn-action btn-close" onclick="closeCard()">CLOSE</div>
-            <div class="btn-action btn-save" onclick="saveProperty()">SAVE</div>
+        <div class="card-header">
+            <div>
+                <div class="prop-val" id="owner">...</div>
+                <div class="prop-sub" id="address">...</div>
+            </div>
+            <div class="card-icons">
+                <!-- Save Icon -->
+                <div class="mini-btn" id="saveIcon" onclick="saveProperty()" title="Save Property">💾</div>
+                <!-- Close Icon -->
+                <div class="mini-btn" onclick="closeCard()" title="Close">✕</div>
+            </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. DEEP ZOOM MAP SETUP (Max Zoom 21)
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 21 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
-        // 2. GPS WALKING MODE
-        let userMarker = null, isTracking = false, currentLatLng = null;
-        
-        // Start GPS automatically
+        // GPS (Always Active)
+        let userMarker = null, currentLatLng = null;
         map.locate({ watch: true, enableHighAccuracy: true });
 
         map.on('locationfound', (e) => {
             currentLatLng = e.latlng;
-            // Draw Blue Dot
             if (userMarker) userMarker.setLatLng(e.latlng); 
             else userMarker = L.circleMarker(e.latlng, { radius: 8, color: "white", fillColor: "#007bff", fillOpacity: 1 }).addTo(map);
-            
-            // Keep map centered on user (Walking Mode)
-            // But only if they haven't dragged the map away
-            if(isTracking) map.panTo(e.latlng);
         });
 
-        // If user drags map, stop auto-following
-        map.on('dragstart', () => { isTracking = false; });
-
-        // 3. STAKE LOGIC
-        let stakes = []; 
-        
+        // STAKE LOGIC
+        let stakes = [];
         function dropStake() {
             if (!currentLatLng) { alert("Waiting for GPS..."); return; }
-            
             const id = Date.now();
             const stakeData = { id: id, type: 'stake', lat: currentLatLng.lat, lng: currentLatLng.lng };
-            
             addStakeToMap(stakeData);
             stakes.push(stakeData);
             saveToStorage();
-            
-            // Re-center on stake
-            isTracking = true; 
-            map.flyTo(currentLatLng, 21); // Super zoom for accuracy
+            // Center on stake
+            map.flyTo(currentLatLng, 21);
         }
 
         function addStakeToMap(s) {
             const flag = L.marker([s.lat, s.lng], {
-                icon: L.divIcon({ className: 'stake-icon', html: '🚩', iconSize: [40, 40], iconAnchor: [5, 40] })
+                icon: L.divIcon({ className: 'stake-icon', html: '🔨', iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
-            
-            // CLICK TO DELETE
             flag.on('click', () => {
-                if(confirm("Delete this stake?")) {
-                    map.removeLayer(flag);
-                    removeStake(s.id);
-                }
+                if(confirm("Delete this stake?")) { map.removeLayer(flag); removeStake(s.id); }
             });
         }
 
@@ -206,7 +187,6 @@
             saveToStorage();
         }
 
-        // 4. UI LOGIC
         function toggleMenu() {
             document.getElementById('sideMenu').classList.toggle('open');
             document.getElementById('menuOverlay').classList.toggle('active');
@@ -217,7 +197,7 @@
             else { map.removeLayer(street); map.addLayer(satellite); }
         }
 
-        // 5. SEARCH LOGIC
+        // SEARCH
         const input = document.getElementById('searchBox');
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
         
@@ -230,13 +210,12 @@
                 document.querySelector('.search-go-btn').innerText = "GO";
                 if(json.length > 0) {
                     loadProperty(json[0]);
-                    isTracking = false; // Stop following GPS so we can look at search result
+                    // Fly to property, but allow GPS to keep updating blue dot
                     map.flyTo([json[0].lat, json[0].lng], 19);
                 } else alert("No results.");
             } catch(e) { document.querySelector('.search-go-btn').innerText = "GO"; }
         }
 
-        // 6. SAVE/LOAD LOGIC
         let activeLayer = null, currentParcelData = null, savedItems = [];
         
         function initApp() { 
@@ -260,14 +239,17 @@
         function loadProperty(p) {
             document.getElementById('owner').innerText = p.owner_name;
             document.getElementById('address').innerText = p.address;
+            document.getElementById('saveIcon').classList.remove('save-active'); // Reset save icon
             document.getElementById('card').classList.add('active');
+            
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
         }
 
         function saveProperty() {
             if(activeLayer && currentParcelData) {
-                savedItems.push(currentParcelData); saveToStorage(); alert("Property Saved!");
+                savedItems.push(currentParcelData); saveToStorage(); 
+                document.getElementById('saveIcon').classList.add('save-active'); // Turn icon orange
             }
         }
 
@@ -292,7 +274,7 @@
             });
             if(stakes.length > 0) {
                 const div = document.createElement('div'); div.className = 'saved-item';
-                div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes placed</b></div>`;
+                div.innerHTML = `<div><b>🔨 ${stakes.length} Stakes placed</b></div>`;
                 container.appendChild(div);
             }
         }
@@ -301,13 +283,11 @@
             const item = savedItems.find(i => i.id === id);
             if(item) {
                 currentParcelData = item; const geo = JSON.parse(item.geometry);
-                isTracking = false;
                 map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList();
             }
         }
 
         function exportToCSV() {
-            // Exports BOTH properties and stakes coordinates
             let csv = "Type,Info,Lat,Lng\n";
             savedItems.forEach(i => csv += `Property,"${i.address}",,\n`);
             stakes.forEach(s => csv += `Stake,Stake ID ${s.id},${s.lat},${s.lng}\n`);
@@ -315,7 +295,10 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
-        function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
+        function closeCard() { 
+            document.getElementById('card').classList.remove('active'); 
+            if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } 
+        }
         
         initApp(); 
     </script>
