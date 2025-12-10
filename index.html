@@ -11,8 +11,6 @@
     <style>
         /* BASE */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
-        
-        /* MAP */
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
         /* UI LAYERS */
@@ -28,6 +26,17 @@
         
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
+
+        /* INSTRUCTION TOAST (New!) */
+        .instruction-toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 10px 20px; border-radius: 20px;
+            font-size: 14px; font-weight: bold;
+            z-index: 9999; pointer-events: none;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        .instruction-toast.visible { opacity: 1; }
 
         /* CARD */
         .info-card {
@@ -74,8 +83,10 @@
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
 
-        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; cursor: grab; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #673AB7; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* STAKE ICON - RED FLAG */
+        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
+        
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FF5722; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         /* GPS PULSE */
         .gps-pulse {
@@ -93,23 +104,22 @@
 </head>
 <body>
 
-    <div class="debug-label">v30</div>
+    <div class="debug-label">v31</div>
 
     <!-- HIDDEN FILE INPUT -->
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
+    <!-- INSTRUCTION TOAST -->
+    <div class="instruction-toast" id="toast">Tap line to place a stake 🚩</div>
+
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
-        <!-- NEW: GPS Location is now item #1 here -->
         <div class="menu-item" onclick="flyToUser(); toggleMenu();">📍 Go to Current Location</div>
-        
         <div class="menu-item" onclick="saveProjectFile()">💾 Save Project File</div>
         <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open Project File</div>
         <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
-        
         <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
-        <div class="menu-item" onclick="alert('Settings coming soon!')">⚙️ Settings</div>
         <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
     </div>
 
@@ -168,21 +178,23 @@
                     className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT TO STAKE
+                // CLICK BLUE DOT TO AUTO-STAKE
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    // AUTO NAME: Stake 1, Stake 2, etc.
-                    let nextNum = stakes.length + 1;
-                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
+                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + (stakes.length + 1));
                 });
-                
-                userMarker.bindTooltip("Tap to Stake", {permanent: false, direction: "top"});
             }
         });
 
+        // AUTO-DETECT PROPERTY ON GPS CLICK
         function flyToUser() {
-            if(currentLatLng) map.flyTo(currentLatLng, 20);
-            else alert("Finding GPS...");
+            if(currentLatLng) {
+                map.flyTo(currentLatLng, 20);
+                // Scan ground for property automatically!
+                fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
+            } else {
+                alert("Waiting for GPS signal...");
+            }
         }
 
         // --- STAKE LOGIC ---
@@ -198,20 +210,21 @@
         }
 
         function addStakeMarker(s) {
-            const hammer = L.marker([s.lat, s.lng], {
+            // RED FLAG ICON 🚩
+            const flag = L.marker([s.lat, s.lng], {
                 draggable: true,
-                icon: L.divIcon({ className: 'stake-icon', html: '🔨', iconSize: [40, 40], iconAnchor: [5, 40] })
+                icon: L.divIcon({ className: 'stake-icon', html: '🚩', iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
             
-            hammer.bindPopup(`<b>${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
+            flag.bindPopup(`<b>${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
 
-            hammer.on('dragend', (e) => {
+            flag.on('dragend', (e) => {
                 const newPos = e.target.getLatLng();
                 s.lat = newPos.lat; s.lng = newPos.lng;
                 saveToStorage();
             });
             
-            stakeMarkers[s.id] = hammer; 
+            stakeMarkers[s.id] = flag; 
         }
 
         window.removeStakeByBtn = function(id) {
@@ -262,13 +275,20 @@
             }
         }
 
-        map.on('click', async (e) => {
+        // REUSABLE FETCH FUNCTION (For GPS Auto-Detect)
+        async function fetchParcelAt(lat, lng) {
             try {
-                const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
+                const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const json = await res.json();
-                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } 
-                else closeCard();
+                if(json.length > 0) { 
+                    currentParcelData = json[0]; 
+                    loadProperty(json[0]); 
+                } 
             } catch(e) {}
+        }
+
+        map.on('click', async (e) => {
+            fetchParcelAt(e.latlng.lat, e.latlng.lng);
         });
 
         function loadProperty(p) {
@@ -277,11 +297,22 @@
             document.getElementById('saveIcon').classList.remove('save-active');
             document.getElementById('card').classList.add('active');
             
+            // SHOW TOAST INSTRUCTION
+            const toast = document.getElementById('toast');
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 4000); // Hide after 4s
+
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) {
                 activeLayer = L.geoJSON(JSON.parse(p.geometry), { 
                     style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
                 }).addTo(map);
+                
+                // CLICK YELLOW LINE TO DROP STAKE
+                activeLayer.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    createStake(e.latlng.lat, e.latlng.lng, "Stake " + (stakes.length + 1));
+                });
             }
         }
 
@@ -313,11 +344,11 @@
             });
             if(stakes.length > 0) {
                 const div = document.createElement('div'); div.className = 'saved-item';
-                div.innerHTML = `<div><b>🔨 ${stakes.length} Stakes</b></div>`;
+                div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`;
                 stakes.forEach(s => {
                     const r = document.createElement('div');
                     r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
-                    r.innerText = `• ${s.label} (${s.lat.toFixed(5)}, ${s.lng.toFixed(5)})`;
+                    r.innerText = `• ${s.label}`;
                     div.appendChild(r);
                 });
                 container.appendChild(div);
@@ -332,7 +363,6 @@
             }
         }
 
-        // SAVE & LOAD FUNCTIONS
         function saveProjectFile() {
             const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes: stakes };
             let fileName = prompt("Name your project:", "Survey_Project");
