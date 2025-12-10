@@ -75,14 +75,14 @@
         .menu-overlay.active { display: block; }
 
         .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px white; cursor: grab; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #000; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #9C27B0; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         /* GPS PULSE */
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
             animation: pulse-blue 2s infinite;
             border-radius: 50%;
-            cursor: pointer !important; /* Make sure it looks clickable */
+            cursor: pointer !important;
         }
         @keyframes pulse-blue {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
@@ -93,15 +93,18 @@
 </head>
 <body>
 
-    <div class="debug-label">v26</div>
+    <div class="debug-label">v29</div>
+
+    <!-- HIDDEN FILE INPUT FOR LOADING -->
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
-        <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
-        <div class="menu-item" onclick="alert('Settings coming soon!')">⚙️ Settings</div>
-        <div class="menu-item" onclick="exportToCSV()">📤 Share with Friends</div>
-        <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
+        <div class="menu-item" onclick="saveProjectFile()">💾 Save Project File</div>
+        <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open Project File</div>
+        <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
+        <div class="menu-item" style="margin-top:auto; color:#666; font-weight:400">v29 - Landslide</div>
     </div>
 
     <!-- TOP BAR -->
@@ -113,7 +116,6 @@
         </div>
         <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
         <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
-        <!-- GPS: Mouseover text added -->
         <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
     </div>
 
@@ -142,8 +144,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 21 });
-        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 21 });
+        const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21 });
+        const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
         // --- GPS LOGIC ---
@@ -152,32 +154,22 @@
 
         map.on('locationfound', (e) => {
             currentLatLng = e.latlng;
-            
-            // Create or Move the Blue Dot
             if (userMarker) {
                 userMarker.setLatLng(e.latlng);
             } else {
-                // Initialize User Dot with CLICK event
                 userMarker = L.circleMarker(e.latlng, { 
-                    radius: 12, // Bigger touch target
-                    color: "white", 
-                    fillColor: "#007bff", 
-                    fillOpacity: 1, 
-                    zIndexOffset: 1000, 
-                    className: 'gps-pulse',
-                    interactive: true // Ensure it can be clicked
+                    radius: 12, color: "white", fillColor: "#007bff", 
+                    fillOpacity: 1, zIndexOffset: 1000, 
+                    className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT TO STAKE
+                // CLICK BLUE DOT TO AUTO-STAKE
                 userMarker.on('click', (e) => {
-                    // Stop map click from firing
                     L.DomEvent.stopPropagation(e);
-                    if(confirm("Drop a stake here at your location?")) {
-                        createStake(currentLatLng.lat, currentLatLng.lng);
-                    }
+                    let nextNum = stakes.length + 1;
+                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
                 });
                 
-                // Add tooltip hint
                 userMarker.bindTooltip("Tap to Stake", {permanent: false, direction: "top"});
             }
         });
@@ -189,10 +181,11 @@
 
         // --- STAKE LOGIC ---
         let stakes = [];
+        let stakeMarkers = {}; // Keep track of marker objects
         
-        function createStake(lat, lng) {
+        function createStake(lat, lng, label) {
             const id = Date.now();
-            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng };
+            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng, label: label };
             addStakeMarker(stakeData);
             stakes.push(stakeData);
             saveToStorage();
@@ -204,23 +197,102 @@
                 icon: L.divIcon({ className: 'stake-icon', html: '🔨', iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
             
+            hammer.bindPopup(`<b>${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
+
             hammer.on('dragend', (e) => {
                 const newPos = e.target.getLatLng();
                 s.lat = newPos.lat; s.lng = newPos.lng;
                 saveToStorage();
             });
+            
+            stakeMarkers[s.id] = hammer; // Store ref
+        }
 
-            hammer.on('click', () => {
-                if(confirm("Remove this stake?")) {
-                    map.removeLayer(hammer);
-                    removeStake(s.id);
-                }
-            });
+        window.removeStakeByBtn = function(id) {
+            if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]);
+            removeStake(id);
         }
 
         function removeStake(id) {
             stakes = stakes.filter(s => s.id !== id);
+            delete stakeMarkers[id];
             saveToStorage();
+        }
+
+        // --- SAVE / LOAD SYSTEM (NEW) ---
+        
+        // 1. Save Project to File (.json)
+        function saveProjectFile() {
+            const data = {
+                date: new Date().toLocaleDateString(),
+                properties: savedItems,
+                stakes: stakes
+            };
+            const jsonStr = JSON.stringify(data);
+            
+            let fileName = prompt("Name your project:", "Survey_Project");
+            if(!fileName) return;
+            
+            const link = document.createElement("a");
+            link.href = "data:text/json;charset=utf-8," + encodeURIComponent(jsonStr);
+            link.download = fileName + ".json";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            toggleMenu(); // Close menu
+        }
+
+        // 2. Load Project from File
+        function loadProjectFile(input) {
+            const file = input.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Clear current data
+                    clearMap();
+                    
+                    // Restore Data
+                    if(data.properties) {
+                        data.properties.forEach(p => {
+                            savedItems.push(p);
+                            // Only draw active one? No, maybe just load data
+                        });
+                    }
+                    if(data.stakes) {
+                        data.stakes.forEach(s => {
+                            stakes.push(s);
+                            addStakeMarker(s);
+                        });
+                    }
+                    
+                    saveToStorage();
+                    renderSavedList();
+                    alert("Project Loaded Successfully!");
+                    toggleMenu();
+                    
+                    // Zoom to first stake or property
+                    if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
+                    
+                } catch(err) {
+                    alert("Error loading file: " + err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearMap() {
+            // Remove all existing stakes from map
+            stakes.forEach(s => {
+                if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]);
+            });
+            stakes = [];
+            savedItems = [];
+            stakeMarkers = {};
+            localStorage.removeItem('landslide_saves');
         }
 
         // --- UI & SEARCH ---
@@ -253,13 +325,15 @@
             const stored = localStorage.getItem('landslide_saves'); 
             if (stored) {
                 const allData = JSON.parse(stored);
-                savedItems = allData.filter(i => i.type !== 'stake');
-                const savedStakes = allData.filter(i => i.type === 'stake');
+                // Handle legacy format (array) vs new object format
+                let allItems = Array.isArray(allData) ? allData : []; 
+                
+                savedItems = allItems.filter(i => i.type !== 'stake');
+                const savedStakes = allItems.filter(i => i.type === 'stake');
                 savedStakes.forEach(s => { addStakeMarker(s); stakes.push(s); });
             }
         }
 
-        // CLICK ON MAP
         map.on('click', async (e) => {
             try {
                 const res = await fetch(`/api/parcels?lat=${e.latlng.lat}&lng=${e.latlng.lng}`);
@@ -280,14 +354,6 @@
                 activeLayer = L.geoJSON(JSON.parse(p.geometry), { 
                     style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
                 }).addTo(map);
-                
-                // Allow CLICKING the line to drop a stake
-                activeLayer.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e); 
-                    if(confirm("Drop a stake here on the line?")) {
-                        createStake(e.latlng.lat, e.latlng.lng);
-                    }
-                });
             }
         }
 
@@ -319,7 +385,13 @@
             });
             if(stakes.length > 0) {
                 const div = document.createElement('div'); div.className = 'saved-item';
-                div.innerHTML = `<div><b>🔨 ${stakes.length} Stakes placed</b></div>`;
+                div.innerHTML = `<div><b>🔨 ${stakes.length} Stakes</b></div>`;
+                stakes.forEach(s => {
+                    const r = document.createElement('div');
+                    r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
+                    r.innerText = `• ${s.label} (${s.lat.toFixed(5)}, ${s.lng.toFixed(5)})`;
+                    div.appendChild(r);
+                });
                 container.appendChild(div);
             }
         }
@@ -335,7 +407,7 @@
         function exportToCSV() {
             let csv = "Type,Info,Lat,Lng\n";
             savedItems.forEach(i => csv += `Property,"${i.address}",,\n`);
-            stakes.forEach(s => csv += `Stake,Stake ID ${s.id},${s.lat},${s.lng}\n`);
+            stakes.forEach(s => csv += `Stake,${s.label},${s.lat},${s.lng}\n`);
             const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "landslide_data.csv";
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
