@@ -39,7 +39,7 @@
         .prop-val { font-size: 13px; font-weight: 800; color: #000; margin-bottom: 2px; line-height: 1.2; }
         .prop-sub { font-size: 11px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* SIDE MENU (CLEANED v47) */
+        /* SIDE MENU */
         .side-menu {
             position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
             background: white; z-index: 100000;
@@ -48,6 +48,7 @@
         }
         .side-menu.open { transform: translateX(0); }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f5f5f5; font-weight: 500; color: #333; cursor: pointer; font-size: 16px; }
+        .menu-header { padding: 15px 20px 5px; font-size: 11px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
         
@@ -86,13 +87,13 @@
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         
-        /* v47 = BLACK */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #000; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v48 = DARK BLUE */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #0D47A1; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v47</div>
+    <div class="debug-label">v48</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -100,8 +101,10 @@
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         
-        <!-- PUBLIC OPTIONS -->
+        <div class="menu-header">Account</div>
         <div class="menu-item" style="color:#007bff; font-weight:bold" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
+
+        <div class="menu-header">Map Tools</div>
         <div class="menu-item" onclick="enableCompass(); flyToUser(); toggleMenu();">📍 Go to Current Location</div>
         <div class="menu-item" onclick="shareLocation()">📡 Share My Location</div>
         <div class="menu-item" onclick="shareApp()">🔗 Invite Friends</div>
@@ -109,6 +112,9 @@
 
         <!-- HIDDEN UNTIL LOGGED IN -->
         <div id="proFeatures">
+            <div class="menu-header">Cloud Projects</div>
+            <!-- NEW: START NEW PROJECT -->
+            <div class="menu-item" style="color:#28a745; font-weight:bold;" onclick="createNewProject()">➕ Start New Project</div>
             <div class="menu-item" onclick="saveToCloud()">☁️ Save Project</div>
             <div class="menu-item" onclick="loadFromCloud()">📂 Open Project</div>
         </div>
@@ -166,7 +172,7 @@
             if(currentUser) { 
                 if(confirm("Log out? Local data will be cleared.")) { 
                     currentUser = null; 
-                    updateMenu(); // Hides buttons
+                    updateMenu(); 
                     clearMap(); 
                     alert("Logged out.");
                 } 
@@ -182,11 +188,11 @@
             if(currentUser) {
                 el.innerText = "👤 " + currentUser.email; 
                 el.style.color = "green";
-                proSection.style.display = "block"; // SHOW SAVE/LOAD
+                proSection.style.display = "block"; // SHOW PRO MENU
             } else {
                 el.innerText = "👤 Login / Register";
                 el.style.color = "#007bff";
-                proSection.style.display = "none"; // HIDE SAVE/LOAD
+                proSection.style.display = "none"; // HIDE PRO MENU
             }
         }
 
@@ -196,11 +202,19 @@
         async function handleAuth() { const email = document.getElementById('email').value, pass = document.getElementById('password').value; if(!email || !pass) return alert("Fill all fields"); try { const res = await fetch(isRegistering ? '/api/register' : '/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) }); const data = await res.json(); if(data.success) { currentUser = data.user; updateMenu(); closeLogin(); alert("Welcome!"); } else alert(data.message); } catch(e){ alert("Error"); } }
 
         // --- CLOUD ---
+        function createNewProject() {
+            if(confirm("Start new project? This will clear current map items.")) {
+                clearMap();
+                toggleMenu();
+                alert("Map cleared. Ready for new project.");
+            }
+        }
+
         async function saveToCloud() {
             if(!currentUser) return openLogin();
             let name = prompt("Project Name:"); if(!name) return;
             const data = { properties: savedItems, stakes, date: new Date().toISOString() };
-            try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); toggleMenu(); } catch(e) { alert("Error"); }
+            try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); } catch(e) { alert("Error"); }
         }
         async function loadFromCloud() {
             if(!currentUser) return openLogin();
@@ -270,7 +284,7 @@
                     savedStakes.forEach(s => { addStakeMarker(s); stakes.push(s); });
                 } catch(e){}
             }
-            updateMenu(); // Ensure menu is correct state on load
+            updateMenu(); // Ensure menu state is correct
         }
         async function fetchParcelAt(lat, lng) { try { const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`); const json = await res.json(); if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } } catch(e){} }
         
@@ -290,7 +304,6 @@
             }
         }
 
-        // --- SAVING ---
         function saveProperty(silent=false) { if(activeLayer && currentParcelData) { const exists = savedItems.find(i => i.id === currentParcelData.id); if(!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Saved"); } } }
         function saveToStorage() { const combined = [...savedItems, ...stakes]; localStorage.setItem('landslide_saves', JSON.stringify(combined)); }
         function deleteItem(id, event) { event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id); saveToStorage(); renderSavedList(); }
