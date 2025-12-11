@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
     
+    <!-- FIX FOR THE RED ERROR: Use an Emoji as the Tab Icon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
         /* BASE */
@@ -17,27 +21,28 @@
         .app-bar {
             position: fixed; top: 0; left: 0; right: 0; height: 60px;
             background: white; display: flex; align-items: center; padding: 0 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 99999; border-bottom: 1px solid #eee;
         }
-        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
-        .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
-        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
-        .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
+        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
-        .icon-btn.active { background: #e3f2fd; border-radius: 8px; border: 2px solid #007bff; }
-        .icon-svg { width: 24px; height: 24px; fill: #333; }
-
-        /* FLOATING RULER BUTTON (Below Top Bar) */
-        .ruler-float-btn {
-            position: fixed; top: 75px; right: 10px;
-            width: 45px; height: 45px; background: white; border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: 1px solid #ccc;
+        .search-wrapper { 
+            flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; 
+            padding: 5px 10px; display: flex; align-items: center; 
         }
-        .ruler-float-btn.active { background: #333; border: 2px solid white; }
-        .ruler-float-btn.active svg { fill: white; }
+        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
+        .search-go-btn { 
+            background: #007bff; color: white; border-radius: 4px; 
+            padding: 6px 12px; font-size: 13px; font-weight: bold; 
+            cursor: pointer; margin-left: 5px; border: none;
+        }
+        
+        .top-icons { display: flex; gap: 5px; }
+        .icon-btn { 
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; border-radius: 4px;
+        }
+        .icon-btn:hover { background: #f0f0f0; }
+        .icon-svg { width: 24px; height: 24px; fill: #444; }
 
         /* MEASURE BOX */
         .measure-box {
@@ -56,7 +61,7 @@
             font-size: 16px; cursor: pointer; margin-left: 5px;
         }
 
-        /* MINIMAL INFO CARD */
+        /* INFO CARD */
         .info-card {
             position: fixed; bottom: 20px; left: 20px; right: 20px; 
             background: white; border-radius: 12px;
@@ -64,23 +69,31 @@
             transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10000;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            border: 1px solid #eee;
-            text-align: center;
+            border: 1px solid #eee; text-align: center;
         }
         .info-card.active { transform: translateY(0); }
-        
         .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
 
         /* SIDE MENU */
         .side-menu {
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 280px;
             background: white; z-index: 100000;
             transform: translateX(-100%); transition: transform 0.3s ease-out;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+            padding-top: 10px;
         }
         .side-menu.open { transform: translateX(0); }
-        .menu-item { padding: 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; }
+        
+        .menu-item { 
+            padding: 15px 20px; border-bottom: 1px solid #f0f0f0; 
+            font-weight: 600; color: #444; cursor: pointer; 
+            display: flex; align-items: center; gap: 15px;
+            font-size: 15px;
+        }
+        .menu-item:hover { background: #f9f9f9; }
+        .menu-icon { font-size: 20px; width: 24px; text-align: center; }
+
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
 
@@ -96,42 +109,35 @@
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
 
-        /* ICONS */
+        /* STAKES & GPS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-number {
-            position: absolute; bottom: 0; right: 0;
-            background: black; color: white;
-            border-radius: 50%; width: 18px; height: 18px;
-            font-size: 11px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid white;
+            position: absolute; bottom: 0; right: 0; background: black; color: white;
+            border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; border: 1px solid white;
         }
+        .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
         
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: black; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v54 BADGE IS TEAL */
+        .debug-label { position: fixed; bottom: 10px; left: 10px; background: #00BCD4; color: white; font-weight: bold; padding: 5px 10px; z-index: 999999; font-size: 16px; border: 2px solid white; }
         
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
             animation: pulse-blue 2s infinite;
-            border-radius: 50%;
-            cursor: pointer !important;
+            border-radius: 50%; cursor: pointer !important;
         }
         @keyframes pulse-blue {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
         }
-        
-        .leaflet-tooltip.gps-label {
-            background-color: rgba(0, 123, 255, 0.9);
-            border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px;
-        }
-        .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v51</div>
+    <div class="debug-label">v54</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -141,32 +147,50 @@
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
-    <!-- MENU -->
+    <!-- MENU OVERLAY -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    
+    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
-        <div class="menu-item" onclick="flyToUser(); toggleMenu();">📍 Go to Current Location</div>
-        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
-        <div class="menu-item" onclick="saveProjectFile()">💾 Save Project File</div>
-        <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open Project File</div>
-        <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
-        <div class="menu-item" onclick="alert('Account feature coming soon!')">👤 My Account</div>
-        <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
+        <div class="menu-item" onclick="alert('Login Feature Coming Soon')">
+            <span class="menu-icon" style="color:#007bff">👤</span> Login / Register
+        </div>
+        <div class="menu-item" onclick="flyToUser(); toggleMenu();">
+            <span class="menu-icon" style="color:#E91E63">📍</span> Go to Current Location
+        </div>
+        <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();">
+            <span class="menu-icon" style="color:#666">📏</span> Measure Distance
+        </div>
+        <div class="menu-item" onclick="exportToCSV()">
+            <span class="menu-icon" style="color:#666">📤</span> Share My Location
+        </div>
+        <div class="menu-item" onclick="alert('Coming Soon')">
+            <span class="menu-icon" style="color:#666">🔗</span> Invite Friends
+        </div>
     </div>
 
-    <!-- TOP BAR (CLEAN - NO FOLDER) -->
+    <!-- TOP BAR -->
     <div class="app-bar">
-        <div class="menu-btn" onclick="toggleMenu()" title="Main Menu">≡</div>
+        <div class="menu-btn" onclick="toggleMenu()" title="Main Menu">
+            <span class="material-icons">menu</span>
+        </div>
+        
         <div class="search-wrapper">
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()" title="Search Property">GO</div>
         </div>
-        <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
-        <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
-    </div>
-
-    <!-- FLOATING RULER (Right Side) -->
-    <div class="ruler-float-btn" id="rulerBtn" onclick="toggleMeasureMode()" title="Measure Tool">
-        <svg style="width:24px;height:24px;fill:#333" viewBox="0 0 24 24"><path d="M2 7h18v2H2V7zm0 8h18v2H2v-2zm0-4h18v2H2v-2z" transform="rotate(-45, 12, 12)"/></svg>
+        
+        <div class="top-icons">
+            <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties">
+                <span class="material-icons" style="color:#444">folder_open</span>
+            </div>
+            <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View">
+                <span class="material-icons" style="color:#444">layers</span>
+            </div>
+            <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location">
+                <span class="material-icons" style="color:#007bff">my_location</span>
+            </div>
+        </div>
     </div>
 
     <!-- SAVED LIST -->
@@ -205,7 +229,6 @@
                     className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     if(isMeasuring) {
@@ -224,33 +247,26 @@
             if(currentLatLng) {
                 map.flyTo(currentLatLng, 20);
                 if(!isMeasuring) fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
-            } else {
-                alert("Waiting for GPS signal...");
-            }
+            } else alert("Waiting for GPS...");
         }
 
-        // --- MEASURE ---
+        // --- MEASURE (KEEPS YELLOW LINE VISIBLE) ---
         let isMeasuring = false;
         let measurePoints = [];
         let measureLayer = L.layerGroup().addTo(map);
 
         function toggleMeasureMode() {
             isMeasuring = !isMeasuring;
-            const btn = document.getElementById('rulerBtn');
             const box = document.getElementById('measureBox');
             const card = document.getElementById('card');
             
             if(isMeasuring) {
-                btn.classList.add('active'); 
                 box.classList.add('visible'); 
-                // Hide card, keep line
-                card.classList.remove('active');
+                card.classList.remove('active'); // Hide card info, but ActiveLayer (Line) remains!
             } else {
-                btn.classList.remove('active');
                 box.classList.remove('visible');
                 clearMeasure();
-                // Restore card if property selected
-                if(currentParcelData) card.classList.add('active');
+                if(currentParcelData) card.classList.add('active'); // Bring card back
             }
         }
 
