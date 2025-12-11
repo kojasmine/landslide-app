@@ -1,1 +1,0 @@
-postgresql://dpg-d4nhv3m3jp1c73cg4tv0-a.virginia-postgres.render.com/
