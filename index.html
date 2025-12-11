@@ -25,27 +25,27 @@
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
         
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
-        .icon-btn.active { background: #e3f2fd; border-radius: 8px; } /* Active State */
+        .icon-btn.active { background: #e3f2fd; border-radius: 8px; border: 2px solid #007bff; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* MEASURE BOX (New!) */
+        /* MEASURE BOX */
         .measure-box {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8); color: white;
-            padding: 10px 20px; border-radius: 30px;
-            font-size: 16px; font-weight: bold;
-            z-index: 9998; display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            white-space: nowrap;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9); color: white;
+            padding: 12px 25px; border-radius: 30px;
+            font-size: 18px; font-weight: bold;
+            z-index: 10001; display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            white-space: nowrap; border: 2px solid white;
         }
-        .measure-box.visible { display: flex; align-items: center; gap: 10px; }
+        .measure-box.visible { display: flex; align-items: center; gap: 15px; }
         .clear-measure { 
             background: #ff4400; color: white; border-radius: 50%; 
-            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; 
-            font-size: 14px; cursor: pointer; margin-left: 10px;
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; 
+            font-size: 16px; cursor: pointer; margin-left: 5px;
         }
 
-        /* MINIMAL INFO CARD */
+        /* INFO CARD */
         .info-card {
             position: fixed; bottom: 20px; left: 20px; right: 20px; 
             background: white; border-radius: 12px;
@@ -86,7 +86,7 @@
         .menu-overlay.active { display: block; }
 
         .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #673AB7; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #8BC34A; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
@@ -99,22 +99,18 @@
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); }
         }
-
-        .measure-dot {
-            width: 12px; height: 12px; background: blue; border: 2px solid white; border-radius: 50%;
-        }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v36</div>
+    <div class="debug-label">v37</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
     <!-- MEASURE DISPLAY -->
     <div class="measure-box" id="measureBox">
         <span id="distVal">0 ft</span>
-        <div class="clear-measure" onclick="clearMeasure()">✕</div>
+        <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
     <!-- MENU -->
@@ -137,7 +133,7 @@
             <div class="search-go-btn" onclick="performSearch()" title="Search Property">GO</div>
         </div>
         
-        <!-- RULER ICON (NEW) -->
+        <!-- RULER ICON -->
         <div class="icon-btn" id="rulerBtn" onclick="toggleMeasureMode()" title="Measure Tool">
             <svg class="icon-svg" viewBox="0 0 24 24"><path d="M2 7h18v2H2V7zm0 8h18v2H2v-2zm0-4h18v2H2v-2z" transform="rotate(-45, 12, 12)"/></svg>
         </div>
@@ -181,19 +177,18 @@
                     className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT TO AUTO-STAKE
+                // CLICK BLUE DOT
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    
                     if(isMeasuring) {
-                        // If measuring, treat blue dot as a point
                         addMeasurePoint(e.latlng);
                     } else {
-                        // Else, stake
                         let nextNum = stakes.length + 1;
                         createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
                     }
                 });
+                
+                userMarker.bindTooltip("Tap to Stake", {permanent: true, direction: "bottom", className: "gps-label", offset: [0, 10]});
             }
         });
 
@@ -206,7 +201,7 @@
             }
         }
 
-        // --- MEASUREMENT LOGIC (NEW) ---
+        // --- MEASUREMENT LOGIC ---
         let isMeasuring = false;
         let measurePoints = [];
         let measureLayer = L.layerGroup().addTo(map);
@@ -215,36 +210,36 @@
             isMeasuring = !isMeasuring;
             const btn = document.getElementById('rulerBtn');
             const box = document.getElementById('measureBox');
+            const card = document.getElementById('card');
             
             if(isMeasuring) {
-                btn.classList.add('active'); // Highlight button
-                box.classList.add('visible'); // Show distance box
-                // Don't clear map, KEEP property line visible!
+                btn.classList.add('active'); 
+                box.classList.add('visible'); 
+                // Hide card visually, but KEEP activeLayer (yellow line)
+                card.classList.remove('active');
             } else {
                 btn.classList.remove('active');
                 box.classList.remove('visible');
                 clearMeasure();
+                // Restore card if property selected
+                if(currentParcelData) card.classList.add('active');
             }
         }
 
         function addMeasurePoint(latlng) {
-            // Add visual dot
-            L.circleMarker(latlng, { radius: 5, color: 'blue', fillColor: 'white', fillOpacity: 1 }).addTo(measureLayer);
+            L.circleMarker(latlng, { radius: 6, color: '#ff4400', fillColor: 'white', fillOpacity: 1 }).addTo(measureLayer);
             measurePoints.push(latlng);
 
-            // Draw line if > 1 point
             if(measurePoints.length > 1) {
-                L.polyline(measurePoints, { color: 'blue', dashArray: '5, 10' }).addTo(measureLayer);
+                L.polyline(measurePoints, { color: '#ff4400', weight: 4, dashArray: '10, 10' }).addTo(measureLayer);
                 
-                // Calculate total distance
                 let totalMeters = 0;
                 for(let i=0; i < measurePoints.length - 1; i++) {
                     totalMeters += measurePoints[i].distanceTo(measurePoints[i+1]);
                 }
                 
-                // Convert to feet
                 let totalFeet = (totalMeters * 3.28084).toFixed(1);
-                document.getElementById('distVal').innerText = `${totalFeet} ft (${totalMeters.toFixed(1)}m)`;
+                document.getElementById('distVal').innerText = `${totalFeet} ft`;
             }
         }
 
@@ -264,32 +259,24 @@
             const stakeData = { id: id, type: 'stake', lat: lat, lng: lng, label: label, number: num };
             addStakeMarker(stakeData);
             stakes.push(stakeData);
-            
             if(currentParcelData) saveProperty(true); 
             saveToStorage();
         }
 
         function addStakeMarker(s) {
-            const html = `
-                <div class="stake-container">
-                    <div class="stake-emoji">🚩</div>
-                    <div class="stake-number">${s.number || '?'}</div>
-                </div>
-            `;
-
+            const html = `<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number || '?'}</div></div>`;
             const flag = L.marker([s.lat, s.lng], {
                 draggable: true,
                 icon: L.divIcon({ className: 'custom-icon', html: html, iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
             
             flag.bindPopup(`<b>#${s.number} ${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
-
+            
             flag.on('dragend', (e) => {
                 const newPos = e.target.getLatLng();
                 s.lat = newPos.lat; s.lng = newPos.lng;
                 saveToStorage();
             });
-            
             stakeMarkers[s.id] = flag; 
         }
 
@@ -315,7 +302,7 @@
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
         
         async function performSearch() {
-            if(isMeasuring) { alert("Please turn off Ruler mode first."); return; }
+            if(isMeasuring) { alert("Please close Ruler first."); return; }
             const q = input.value; if(q.length < 2) return; input.blur();
             document.querySelector('.search-go-btn').innerText = "...";
             try {
@@ -354,14 +341,10 @@
         }
 
         map.on('click', async (e) => {
-            
-            // IF MEASURING, ADD POINT (Don't load property)
             if(isMeasuring) {
                 addMeasurePoint(e.latlng);
                 return;
             }
-
-            // Normal Click Logic
             if(document.getElementById('card').classList.contains('active')) {
                 closeCard();
             } else {
@@ -380,15 +363,12 @@
                     style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
                 }).addTo(map);
                 
-                // CLICK YELLOW LINE LOGIC
+                // Active Layer Click Logic
                 activeLayer.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    
                     if(isMeasuring) {
-                        // Use line as measure point
                         addMeasurePoint(e.latlng);
                     } else {
-                        // Use line as stake point
                         let nextNum = stakes.length + 1;
                         createStake(e.latlng.lat, e.latlng.lng, "Stake " + nextNum);
                     }
@@ -402,7 +382,7 @@
                 if (!exists) {
                     savedItems.push(currentParcelData); 
                     saveToStorage(); 
-                    if(!silent) alert("Property Auto-Saved with Stake");
+                    if(!silent) alert("Property Auto-Saved");
                 }
             }
         }
