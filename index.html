@@ -39,7 +39,7 @@
         .prop-val { font-size: 13px; font-weight: 800; color: #000; margin-bottom: 2px; line-height: 1.2; }
         .prop-sub { font-size: 11px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* SIDE MENU (CLEANED v43) */
+        /* SIDE MENU */
         .side-menu {
             position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
             background: white; z-index: 100000;
@@ -86,12 +86,15 @@
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #E91E63; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v44 = GREEN */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #4CAF50; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v43</div>
+    <div class="debug-label">v44</div>
+
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
@@ -153,6 +156,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // GLOBALS
         const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
@@ -208,7 +212,7 @@
             }
         }
 
-        // --- SHARE ---
+        // --- SHARE LOCATION ---
         function shareLocation() {
             if(!currentLatLng) return alert("Waiting for GPS...");
             const link = `https://maps.google.com/?q=${currentLatLng.lat},${currentLatLng.lng}`;
@@ -311,7 +315,9 @@
         async function saveToCloud() { if(!currentUser) return openLogin(); let name = prompt("Project Name:"); if(!name) return; const data = { properties: savedItems, stakes, date: new Date().toISOString() }; try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); } catch(e) { alert("Error"); } }
         async function loadFromCloud() { if(!currentUser) return openLogin(); try { const res = await fetch(`/api/cloud/load/${currentUser.id}`); const list = await res.json(); if(list.length === 0) return alert("No saves."); const data = (typeof list[0].data === 'string') ? JSON.parse(list[0].data) : list[0].data; clearMap(); if(data.properties) data.properties.forEach(p => savedItems.push(p)); if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Loaded: " + list[0].name); toggleMenu(); if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(e) { alert("Error"); } }
         
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
+        function saveProjectFile() { const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes }; let f = prompt("Project Name:", "Survey"); if(!f) return; const l = document.createElement("a"); l.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); l.download = f + ".json"; document.body.appendChild(l); l.click(); document.body.removeChild(l); toggleMenu(); }
+        function loadProjectFile(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); clearMap(); if(d.properties) d.properties.forEach(p => savedItems.push(p)); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu(); if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(x){alert("Error");} }; r.readAsText(f); }
+        function exportToCSV() { let f = prompt("File Name:", "data"); if(!f) return; if(!f.endsWith('.csv')) f+='.csv'; let c = "Type,Name/ID,Details,Lat,Lng\n"; savedItems.forEach(i => c+=`Property,"${i.owner_name}","${i.address}",,\n`); stakes.forEach(s => c+=`Stake,${s.label},${s.number},${s.lat},${s.lng}\n`); const l = document.createElement("a"); l.href = encodeURI("data:text/csv;charset=utf-8," + c); l.download = f; document.body.appendChild(l); l.click(); document.body.removeChild(l); }
         
         // UI HELPERS
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
