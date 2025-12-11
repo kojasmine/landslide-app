@@ -19,7 +19,7 @@
             background: white; display: flex; align-items: center; padding: 0 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 1px solid #ddd;
         }
-        .menu-btn { font-size: 28px; padding: 10px 15px; cursor: pointer; color: #333; }
+        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
         .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
@@ -48,7 +48,6 @@
         }
         .side-menu.open { transform: translateX(0); }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; font-size: 15px; }
-        .menu-header { padding: 15px 20px 5px; font-size: 11px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
 
@@ -64,19 +63,19 @@
         .saved-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 16px; }
 
-        /* LOGIN MODAL */
+        /* LOGIN MODAL (Fixed) */
         .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100002; display: none; justify-content: center; align-items: center; }
         .login-modal.active { display: flex; }
         .login-box { background: white; padding: 30px; border-radius: 12px; width: 85%; max-width: 350px; text-align: center; }
         .login-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
         .login-btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .login-link { color: #007bff; cursor: pointer; font-size: 12px; margin-top: 15px; display: block; }
+        .login-link { color: #007bff; cursor: pointer; font-size: 14px; margin-top: 15px; display: block; font-weight: bold; padding: 5px; }
+        .login-link:active { opacity: 0.7; }
 
         /* ASSETS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
-        
         .gps-marker-wrap { position: relative; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; }
         .gps-dot-core { width: 16px; height: 16px; background-color: #007bff; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index: 2; }
         .gps-arrow { position: absolute; top: -8px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 12px solid #007bff; z-index: 1; transition: transform 0.1s linear; transform-origin: center 20px; }
@@ -86,35 +85,31 @@
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         
-        /* v44 = GREEN */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #4CAF50; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v45 = GOLD */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FFD700; color: black; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v44</div>
+    <div class="debug-label">v45</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
     <!-- MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
-        
-        <div class="menu-header">Account</div>
-        <div class="menu-item" style="color:#007bff; font-weight:bold" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
-
-        <div class="menu-header">Map Tools</div>
+        <div class="menu-item" style="background:#f0f7ff" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
         <div class="menu-item" onclick="enableCompass(); flyToUser(); toggleMenu();">📍 Go to Current Location</div>
         <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
-        <div class="menu-item" onclick="shareLocation()">📡 Share My Location</div>
-
-        <div class="menu-header">Cloud Projects</div>
+        
+        <div style="font-size:11px; color:#999; padding:15px 20px 5px;">PROJECTS</div>
         <div class="menu-item" onclick="saveToCloud()">☁️ Save to Cloud</div>
         <div class="menu-item" onclick="loadFromCloud()">☁️ Load from Cloud</div>
+        <div class="menu-item" onclick="saveProjectFile()">💾 Save to File</div>
+        <div class="menu-item" onclick="document.getElementById('fileInput').click()">📂 Open File</div>
+        <div class="menu-item" onclick="exportToCSV()">📤 Export to Excel</div>
         
-        <div class="menu-header">App</div>
         <div class="menu-item" onclick="shareApp()">🔗 Invite Friends</div>
-        <div class="menu-item" onclick="alert('Settings')">⚙️ Settings</div>
     </div>
 
     <!-- TOP BAR -->
@@ -139,9 +134,9 @@
             <h2 id="authTitle">Login</h2>
             <input type="email" id="email" class="login-input" placeholder="Email">
             <input type="password" id="password" class="login-input" placeholder="Password">
-            <button class="login-btn" onclick="handleAuth()">Submit</button>
+            <button class="login-btn" id="submitBtn" onclick="handleAuth()">Login</button>
             <div class="login-link" onclick="toggleAuthMode()" id="authLink">Need an account? Register</div>
-            <div class="login-link" onclick="closeLogin()" style="color:#666">Cancel</div>
+            <div class="login-link" onclick="closeLogin()" style="color:#666; font-weight:normal">Cancel</div>
         </div>
     </div>
 
@@ -156,7 +151,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // GLOBALS
         const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
@@ -164,55 +158,72 @@
         let currentUser = null, userMarker = null, currentLatLng = null;
         let stakes = [], stakeMarkers = {}, activeLayer = null, currentParcelData = null, savedItems = [];
 
+        // --- AUTH LOGIC (FIXED) ---
+        let isRegistering = false;
+        function openLogin() {
+            if(currentUser) { if(confirm("Log out?")) { currentUser = null; updateMenuUser(); } } 
+            else { document.getElementById('loginModal').classList.add('active'); }
+        }
+        function closeLogin() { document.getElementById('loginModal').classList.remove('active'); }
+        
+        function toggleAuthMode() {
+            isRegistering = !isRegistering;
+            const title = document.getElementById('authTitle');
+            const link = document.getElementById('authLink');
+            const btn = document.getElementById('submitBtn');
+
+            if (isRegistering) {
+                title.innerText = "Create Account";
+                link.innerText = "Have an account? Login here";
+                btn.innerText = "Register";
+            } else {
+                title.innerText = "Login";
+                link.innerText = "Need an account? Register here";
+                btn.innerText = "Login";
+            }
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('email').value, pass = document.getElementById('password').value;
+            if(!email || !pass) return alert("Fill all fields");
+            const endpoint = isRegistering ? '/api/register' : '/api/login';
+            try {
+                const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+                const data = await res.json();
+                if(data.success) { currentUser = data.user; updateMenuUser(); closeLogin(); alert("Welcome " + data.user.email); } else alert(data.message);
+            } catch(e){ alert("Error"); }
+        }
+        
+        function updateMenuUser() {
+            const el = document.getElementById('userDisplay');
+            if(currentUser) { el.innerText = "👤 " + currentUser.email; el.style.color = "green"; } 
+            else { el.innerText = "👤 Login / Register"; el.style.color = "007bff"; }
+        }
+
         // --- GPS ---
         map.locate({ watch: true, enableHighAccuracy: true });
-
         function enableCompass() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(res => { if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation); })
-                    .catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
+                DeviceOrientationEvent.requestPermission().then(res => { if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation); });
+            } else { window.addEventListener('deviceorientation', handleOrientation); }
         }
         function handleOrientation(e) {
             let heading = e.webkitCompassHeading || Math.abs(e.alpha - 360);
             const arrow = document.getElementById('userHeadingArrow');
             if(arrow) arrow.style.transform = `rotate(${heading}deg)`;
         }
-
         map.on('locationfound', (e) => {
             currentLatLng = e.latlng;
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                const gpsIcon = L.divIcon({
-                    className: 'gps-marker-wrap',
-                    html: `<div class="gps-arrow" id="userHeadingArrow"></div><div class="gps-dot-core"></div>`,
-                    iconSize: [24, 24], iconAnchor: [12, 12]
-                });
+            if (userMarker) { userMarker.setLatLng(e.latlng); } 
+            else {
+                const gpsIcon = L.divIcon({ className: 'gps-marker-wrap', html: `<div class="gps-arrow" id="userHeadingArrow"></div><div class="gps-dot-core"></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
                 userMarker = L.marker(e.latlng, { icon: gpsIcon, zIndexOffset: 1000 }).addTo(map);
-                
-                userMarker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    let nextNum = stakes.length + 1;
-                    createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
-                });
+                userMarker.on('click', (e) => { L.DomEvent.stopPropagation(e); let nextNum = stakes.length + 1; createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum); });
                 userMarker.bindTooltip("Tap to Stake", { permanent: true, direction: "bottom", className: "gps-label", offset: [0, 10] });
             }
         });
+        function flyToUser() { if(currentLatLng) { map.flyTo(currentLatLng, 20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng); } else alert("Waiting for GPS..."); }
 
-        function flyToUser() {
-            if(currentLatLng) {
-                map.flyTo(currentLatLng, 20);
-                fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
-            } else {
-                alert("Waiting for GPS...");
-            }
-        }
-
-        // --- SHARE LOCATION ---
         function shareLocation() {
             if(!currentLatLng) return alert("Waiting for GPS...");
             const link = `https://maps.google.com/?q=${currentLatLng.lat},${currentLatLng.lng}`;
@@ -220,21 +231,16 @@
             if (navigator.share) { navigator.share({ title: 'My Location', text: text, url: link }).catch(console.error); }
             else { prompt("Copy location link:", link); }
         }
-
         function shareApp() {
-            if (navigator.share) {
-                navigator.share({ title: 'Landslide App', text: 'Map your property lines and drop stakes with Landslide!', url: window.location.href }).catch(console.error);
-            } else {
-                prompt("Copy link:", window.location.href);
-            }
+            if (navigator.share) { navigator.share({ title: 'Landslide App', text: 'Check out Landslide!', url: window.location.href }).catch(console.error); }
+            else { prompt("Copy link:", window.location.href); }
         }
 
         // --- STAKE LOGIC ---
         function createStake(lat, lng, label) {
             const id = Date.now();
             const stakeData = { id, type: 'stake', lat, lng, label, number: stakes.length+1 };
-            addStakeMarker(stakeData);
-            stakes.push(stakeData);
+            addStakeMarker(stakeData); stakes.push(stakeData);
             if(currentParcelData) saveProperty(true);
             saveToStorage();
         }
@@ -286,7 +292,6 @@
             document.getElementById('owner').innerText = p.owner_name;
             document.getElementById('address').innerText = p.address;
             document.getElementById('card').classList.add('active');
-            
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) {
                 activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
@@ -294,7 +299,6 @@
             }
         }
 
-        // --- SAVING ---
         function saveProperty(silent=false) { if(activeLayer && currentParcelData) { const exists = savedItems.find(i => i.id === currentParcelData.id); if(!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Saved"); } } }
         function saveToStorage() { const combined = [...savedItems, ...stakes]; localStorage.setItem('landslide_saves', JSON.stringify(combined)); }
         function deleteItem(id, event) { event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id); saveToStorage(); renderSavedList(); }
@@ -305,13 +309,6 @@
         }
         function flyToItem(id) { const item = savedItems.find(i => i.id === id); if(item) { currentParcelData = item; const geo = JSON.parse(item.geometry); map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList(); } }
 
-        // --- AUTH & CLOUD ---
-        function openLogin() { if(currentUser) { if(confirm("Log out?")) { currentUser = null; updateMenuUser(); } } else document.getElementById('loginModal').classList.add('active'); }
-        function closeLogin() { document.getElementById('loginModal').classList.remove('active'); }
-        function toggleAuthMode() { isRegistering = !isRegistering; document.getElementById('authTitle').innerText = isRegistering ? "Register" : "Login"; document.getElementById('authLink').innerText = isRegistering ? "Login" : "Register"; }
-        async function handleAuth() { const email = document.getElementById('email').value, pass = document.getElementById('password').value; if(!email || !pass) return alert("Fill all fields"); try { const res = await fetch(isRegistering ? '/api/register' : '/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) }); const data = await res.json(); if(data.success) { currentUser = data.user; updateMenuUser(); closeLogin(); alert("Welcome!"); } else alert(data.message); } catch(e){ alert("Error"); } }
-        function updateMenuUser() { const el = document.getElementById('userDisplay'); if(currentUser) { el.innerText = "👤 " + currentUser.email; el.style.color = "green"; } else { el.innerText = "👤 Login / Register"; el.style.color = "007bff"; } }
-        
         async function saveToCloud() { if(!currentUser) return openLogin(); let name = prompt("Project Name:"); if(!name) return; const data = { properties: savedItems, stakes, date: new Date().toISOString() }; try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); } catch(e) { alert("Error"); } }
         async function loadFromCloud() { if(!currentUser) return openLogin(); try { const res = await fetch(`/api/cloud/load/${currentUser.id}`); const list = await res.json(); if(list.length === 0) return alert("No saves."); const data = (typeof list[0].data === 'string') ? JSON.parse(list[0].data) : list[0].data; clearMap(); if(data.properties) data.properties.forEach(p => savedItems.push(p)); if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Loaded: " + list[0].name); toggleMenu(); if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(e) { alert("Error"); } }
         
@@ -319,11 +316,11 @@
         function loadProjectFile(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); clearMap(); if(d.properties) d.properties.forEach(p => savedItems.push(p)); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu(); if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(x){alert("Error");} }; r.readAsText(f); }
         function exportToCSV() { let f = prompt("File Name:", "data"); if(!f) return; if(!f.endsWith('.csv')) f+='.csv'; let c = "Type,Name/ID,Details,Lat,Lng\n"; savedItems.forEach(i => c+=`Property,"${i.owner_name}","${i.address}",,\n`); stakes.forEach(s => c+=`Stake,${s.label},${s.number},${s.lat},${s.lng}\n`); const l = document.createElement("a"); l.href = encodeURI("data:text/csv;charset=utf-8," + c); l.download = f; document.body.appendChild(l); l.click(); document.body.removeChild(l); }
         
-        // UI HELPERS
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
         function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
         function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
+        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
 
         enableCompass(); initApp();
     </script>
