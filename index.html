@@ -13,22 +13,49 @@
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
-        /* UI LAYERS */
+        /* --- UI LAYERS --- */
+        
+        /* 1. TOP APP BAR (Restored to Clean Version) */
         .app-bar {
             position: fixed; top: 0; left: 0; right: 0; height: 60px;
             background: white; display: flex; align-items: center; padding: 0 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 1px solid #ddd;
         }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
-        .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
+        
+        .search-wrapper { 
+            flex: 1; margin: 0 10px; background: #f0f2f5; border-radius: 8px; 
+            padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; 
+        }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
         
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
-        .icon-btn.active { background: #e3f2fd; border-radius: 8px; border: 2px solid #007bff; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* MEASURE BOX */
+        /* 2. SIDE MENU */
+        .side-menu {
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
+            background: white; z-index: 100000;
+            transform: translateX(-100%); transition: transform 0.3s ease-out;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        }
+        .side-menu.open { transform: translateX(0); }
+        .menu-item { padding: 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; }
+        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
+        .menu-overlay.active { display: block; }
+
+        /* 3. MEASURE BUTTON (Floating below top bar) */
+        .ruler-float-btn {
+            position: fixed; top: 75px; right: 15px;
+            width: 45px; height: 45px; background: white; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 1px solid #ccc;
+        }
+        .ruler-float-btn.active { background: #e3f2fd; border: 2px solid #007bff; }
+
+        /* MEASURE DISPLAY BOX */
         .measure-box {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.9); color: white;
@@ -45,7 +72,7 @@
             font-size: 16px; cursor: pointer; margin-left: 5px;
         }
 
-        /* INFO CARD */
+        /* 4. MINIMAL CARD */
         .info-card {
             position: fixed; bottom: 20px; left: 20px; right: 20px; 
             background: white; border-radius: 12px;
@@ -53,15 +80,13 @@
             transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10000;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            border: 1px solid #eee;
-            text-align: center;
+            border: 1px solid #eee; text-align: center;
         }
         .info-card.active { transform: translateY(0); }
-        
         .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
 
-        /* SAVED DRAWER */
+        /* SAVED LIST */
         .saved-modal {
             position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px;
             background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out;
@@ -73,26 +98,23 @@
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
 
-        /* SIDE MENU */
-        .side-menu {
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 250px;
-            background: white; z-index: 100000;
-            transform: translateX(-100%); transition: transform 0.3s ease-out;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        /* ICONS & BADGES */
+        .stake-container { position: relative; }
+        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
+        .stake-number {
+            position: absolute; bottom: 0; right: 0; background: black; color: white;
+            border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; border: 1px solid white;
         }
-        .side-menu.open { transform: translateX(0); }
-        .menu-item { padding: 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; }
-        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
-        .menu-overlay.active { display: block; }
-
-        .stake-icon { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #8BC34A; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
+        
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: black; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
         
         .gps-pulse {
             box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
             animation: pulse-blue 2s infinite;
-            border-radius: 50%;
-            cursor: pointer !important;
+            border-radius: 50%; cursor: pointer !important;
         }
         @keyframes pulse-blue {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); }
@@ -103,7 +125,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v37</div>
+    <div class="debug-label">v50</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -113,8 +135,10 @@
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
-    <!-- MENU -->
+    <!-- MENU OVERLAY -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    
+    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" onclick="flyToUser(); toggleMenu();">📍 Go to Current Location</div>
         <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
@@ -125,20 +149,21 @@
         <div class="menu-item" onclick="alert('Support: help@landslide.com')">📞 Contact Us</div>
     </div>
 
-    <!-- TOP BAR -->
+    <!-- TOP BAR (CLEAN) -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()" title="Main Menu">≡</div>
         <div class="search-wrapper">
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()" title="Search Property">GO</div>
         </div>
-        
-        <!-- RULER ICON -->
-        <div class="icon-btn" id="rulerBtn" onclick="toggleMeasureMode()" title="Measure Tool">
-            <svg class="icon-svg" viewBox="0 0 24 24"><path d="M2 7h18v2H2V7zm0 8h18v2H2v-2zm0-4h18v2H2v-2z" transform="rotate(-45, 12, 12)"/></svg>
-        </div>
-
+        <!-- Only Map Switch & GPS here to keep it clean -->
         <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
+        <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
+    </div>
+
+    <!-- FLOATING RULER BUTTON -->
+    <div class="ruler-float-btn" id="rulerBtn" onclick="toggleMeasureMode()" title="Measure Tool">
+        <svg style="width:24px;height:24px;fill:#333" viewBox="0 0 24 24"><path d="M2 7h18v2H2V7zm0 8h18v2H2v-2zm0-4h18v2H2v-2z" transform="rotate(-45, 12, 12)"/></svg>
     </div>
 
     <!-- SAVED LIST -->
@@ -162,7 +187,7 @@
         const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
-        // --- GPS LOGIC ---
+        // --- GPS ---
         let userMarker = null, currentLatLng = null;
         map.locate({ watch: true, enableHighAccuracy: true });
 
@@ -177,7 +202,6 @@
                     className: 'gps-pulse', interactive: true 
                 }).addTo(map);
 
-                // CLICK BLUE DOT
                 userMarker.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
                     if(isMeasuring) {
@@ -196,12 +220,10 @@
             if(currentLatLng) {
                 map.flyTo(currentLatLng, 20);
                 if(!isMeasuring) fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
-            } else {
-                alert("Waiting for GPS signal...");
-            }
+            } else alert("Waiting for GPS...");
         }
 
-        // --- MEASUREMENT LOGIC ---
+        // --- MEASURE (FIXED: KEEPS YELLOW LINE) ---
         let isMeasuring = false;
         let measurePoints = [];
         let measureLayer = L.layerGroup().addTo(map);
@@ -215,13 +237,13 @@
             if(isMeasuring) {
                 btn.classList.add('active'); 
                 box.classList.add('visible'); 
-                // Hide card visually, but KEEP activeLayer (yellow line)
+                // Hide Card (but DO NOT remove activeLayer property line)
                 card.classList.remove('active');
             } else {
                 btn.classList.remove('active');
                 box.classList.remove('visible');
                 clearMeasure();
-                // Restore card if property selected
+                // Restore card if property exists
                 if(currentParcelData) card.classList.add('active');
             }
         }
@@ -229,29 +251,24 @@
         function addMeasurePoint(latlng) {
             L.circleMarker(latlng, { radius: 6, color: '#ff4400', fillColor: 'white', fillOpacity: 1 }).addTo(measureLayer);
             measurePoints.push(latlng);
-
             if(measurePoints.length > 1) {
                 L.polyline(measurePoints, { color: '#ff4400', weight: 4, dashArray: '10, 10' }).addTo(measureLayer);
-                
                 let totalMeters = 0;
                 for(let i=0; i < measurePoints.length - 1; i++) {
                     totalMeters += measurePoints[i].distanceTo(measurePoints[i+1]);
                 }
-                
                 let totalFeet = (totalMeters * 3.28084).toFixed(1);
                 document.getElementById('distVal').innerText = `${totalFeet} ft`;
             }
         }
 
         function clearMeasure() {
-            measureLayer.clearLayers();
-            measurePoints = [];
+            measureLayer.clearLayers(); measurePoints = [];
             document.getElementById('distVal').innerText = "0 ft";
         }
 
-        // --- STAKE LOGIC ---
-        let stakes = [];
-        let stakeMarkers = {}; 
+        // --- STAKES ---
+        let stakes = [], stakeMarkers = {};
         
         function createStake(lat, lng, label) {
             const id = Date.now();
@@ -269,14 +286,8 @@
                 draggable: true,
                 icon: L.divIcon({ className: 'custom-icon', html: html, iconSize: [40, 40], iconAnchor: [5, 40] })
             }).addTo(map);
-            
             flag.bindPopup(`<b>#${s.number} ${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
-            
-            flag.on('dragend', (e) => {
-                const newPos = e.target.getLatLng();
-                s.lat = newPos.lat; s.lng = newPos.lng;
-                saveToStorage();
-            });
+            flag.on('dragend', (e) => { const newPos = e.target.getLatLng(); s.lat = newPos.lat; s.lng = newPos.lng; saveToStorage(); });
             stakeMarkers[s.id] = flag; 
         }
 
@@ -284,14 +295,9 @@
             if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]);
             removeStake(id);
         }
+        function removeStake(id) { stakes = stakes.filter(s => s.id !== id); delete stakeMarkers[id]; saveToStorage(); }
 
-        function removeStake(id) {
-            stakes = stakes.filter(s => s.id !== id);
-            delete stakeMarkers[id];
-            saveToStorage();
-        }
-
-        // --- UI & SEARCH ---
+        // --- CORE LOGIC ---
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function toggleLayer() {
             if (map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); }
@@ -317,7 +323,6 @@
         }
 
         let activeLayer = null, currentParcelData = null, savedItems = [];
-        
         function initApp() { 
             const stored = localStorage.getItem('landslide_saves'); 
             if (stored) {
@@ -333,23 +338,14 @@
             try {
                 const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
                 const json = await res.json();
-                if(json.length > 0) { 
-                    currentParcelData = json[0]; 
-                    loadProperty(json[0]); 
-                } 
+                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } 
             } catch(e) {}
         }
 
         map.on('click', async (e) => {
-            if(isMeasuring) {
-                addMeasurePoint(e.latlng);
-                return;
-            }
-            if(document.getElementById('card').classList.contains('active')) {
-                closeCard();
-            } else {
-                fetchParcelAt(e.latlng.lat, e.latlng.lng);
-            }
+            if(isMeasuring) { addMeasurePoint(e.latlng); return; }
+            if(document.getElementById('card').classList.contains('active')) { closeCard(); } 
+            else { fetchParcelAt(e.latlng.lat, e.latlng.lng); }
         });
 
         function loadProperty(p) {
@@ -359,19 +355,11 @@
             
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) {
-                activeLayer = L.geoJSON(JSON.parse(p.geometry), { 
-                    style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } 
-                }).addTo(map);
-                
-                // Active Layer Click Logic
+                activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
                 activeLayer.on('click', (e) => {
                     L.DomEvent.stopPropagation(e);
-                    if(isMeasuring) {
-                        addMeasurePoint(e.latlng);
-                    } else {
-                        let nextNum = stakes.length + 1;
-                        createStake(e.latlng.lat, e.latlng.lng, "Stake " + nextNum);
-                    }
+                    if(isMeasuring) addMeasurePoint(e.latlng);
+                    else { let nextNum = stakes.length + 1; createStake(e.latlng.lat, e.latlng.lng, "Stake " + nextNum); }
                 });
             }
         }
@@ -379,11 +367,7 @@
         function saveProperty(silent = false) {
             if(activeLayer && currentParcelData) {
                 const exists = savedItems.find(i => i.id === currentParcelData.id);
-                if (!exists) {
-                    savedItems.push(currentParcelData); 
-                    saveToStorage(); 
-                    if(!silent) alert("Property Auto-Saved");
-                }
+                if (!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Auto-Saved"); }
             }
         }
 
@@ -410,10 +394,8 @@
                 const div = document.createElement('div'); div.className = 'saved-item';
                 div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`;
                 stakes.forEach(s => {
-                    const r = document.createElement('div');
-                    r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
-                    r.innerText = `#${s.number} - ${s.label}`;
-                    div.appendChild(r);
+                    const r = document.createElement('div'); r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
+                    r.innerText = `#${s.number} - ${s.label}`; div.appendChild(r);
                 });
                 container.appendChild(div);
             }
@@ -439,8 +421,7 @@
         }
 
         function loadProjectFile(input) {
-            const file = input.files[0];
-            if(!file) return;
+            const file = input.files[0]; if(!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -463,8 +444,7 @@
 
         function exportToCSV() {
             let fileName = prompt("Name your Excel file:", "my_property_data");
-            if (!fileName) return; 
-            if (!fileName.endsWith('.csv')) fileName += '.csv';
+            if (!fileName) return; if (!fileName.endsWith('.csv')) fileName += '.csv';
             let csv = "Type,Name/ID,Details,Lat,Lng\n";
             savedItems.forEach(i => csv += `Property,"${i.owner_name}","${i.address}",,\n`);
             stakes.forEach(s => csv += `Stake,"${s.label}","Stake ID ${s.id}",${s.lat},${s.lng}\n`);
