@@ -27,7 +27,7 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* MEASURE TOOL UI (v49) */
+        /* MEASURE TOOL UI */
         .measure-bar {
             position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.8); color: white;
@@ -38,10 +38,7 @@
         .measure-bar.active { display: flex; }
         .measure-val { font-weight: bold; font-size: 16px; min-width: 60px; }
         .measure-actions { display: flex; gap: 8px; }
-        .m-btn { 
-            width: 30px; height: 30px; border-radius: 50%; border: none; 
-            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
+        .m-btn { width: 30px; height: 30px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .m-save { background: #4CAF50; color: white; }
         .m-close { background: #F44336; color: white; }
 
@@ -57,18 +54,20 @@
         .prop-val { font-size: 13px; font-weight: 800; color: #000; margin-bottom: 2px; line-height: 1.2; }
         .prop-sub { font-size: 11px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* SIDE MENU */
+        /* SIDE MENU (CLEAN v50) */
         .side-menu {
             position: fixed; top: 60px; left: 0; bottom: 0; width: 260px;
             background: white; z-index: 100000;
             transform: translateX(-100%); transition: transform 0.3s ease-out;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; padding-top: 10px;
         }
         .side-menu.open { transform: translateX(0); }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; cursor: pointer; font-size: 15px; }
-        .menu-header { padding: 15px 20px 5px; font-size: 11px; font-weight: 800; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f5f5f5; font-weight: 500; color: #333; cursor: pointer; font-size: 16px; }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
         .menu-overlay.active { display: block; }
+        
+        /* HIDDEN SECTION FOR LOGGED IN USERS */
+        #proFeatures { display: none; border-top: 5px solid #f5f5f5; }
 
         /* SAVED DRAWER */
         .saved-modal {
@@ -102,14 +101,13 @@
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
         
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #9E9E9E; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        /* v50 = TEAL */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #009688; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v49</div>
-
-    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
+    <div class="debug-label">v50</div>
 
     <!-- MEASURE TOOL HUD -->
     <div class="measure-bar" id="measureUI">
@@ -124,22 +122,19 @@
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         
-        <div class="menu-header">Account</div>
-        <div class="menu-item" style="background:#f0f7ff" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
-
-        <div class="menu-header">Map Tools</div>
+        <!-- PUBLIC OPTIONS -->
+        <div class="menu-item" style="color:#007bff; font-weight:bold" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
         <div class="menu-item" onclick="enableCompass(); flyToUser(); toggleMenu();">📍 Go to Current Location</div>
         <div class="menu-item" onclick="startMeasure(); toggleMenu();">📏 Measure Distance</div>
-        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
         <div class="menu-item" onclick="shareLocation()">📡 Share My Location</div>
-
-        <div class="menu-header">Cloud Projects</div>
-        <div class="menu-item" onclick="createNewProject()">➕ Start New Project</div>
-        <div class="menu-item" onclick="saveToCloud()">☁️ Save to Cloud</div>
-        <div class="menu-item" onclick="loadFromCloud()">☁️ Load from Cloud</div>
-        
-        <div class="menu-header">App</div>
         <div class="menu-item" onclick="shareApp()">🔗 Invite Friends</div>
+
+        <!-- HIDDEN UNTIL LOGGED IN -->
+        <div id="proFeatures">
+            <div class="menu-item" onclick="createNewProject()">➕ Start New Project</div>
+            <div class="menu-item" onclick="saveToCloud()">☁️ Save Project</div>
+            <div class="menu-item" onclick="loadFromCloud()">☁️ Open Project</div>
+        </div>
     </div>
 
     <!-- TOP BAR -->
@@ -149,6 +144,7 @@
             <input type="text" class="search-input" id="searchBox" placeholder="Search...">
             <div class="search-go-btn" onclick="performSearch()">GO</div>
         </div>
+        <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
         <div class="icon-btn" onclick="toggleLayer()" title="Switch Map"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg></div>
     </div>
 
@@ -188,109 +184,56 @@
         let currentUser = null, userMarker = null, currentLatLng = null;
         let stakes = [], stakeMarkers = {}, activeLayer = null, currentParcelData = null, savedItems = [];
 
-        // --- MEASURE TOOL LOGIC (NEW v49) ---
+        // --- AUTH ---
+        let isRegistering = false;
+        function openLogin() {
+            if(currentUser) { 
+                if(confirm("Log out? Local data will be cleared.")) { 
+                    currentUser = null; 
+                    updateMenu(); 
+                    clearMap(); 
+                    alert("Logged out.");
+                } 
+            } else { 
+                document.getElementById('loginModal').classList.add('active'); 
+            }
+        }
+        function closeLogin() { document.getElementById('loginModal').classList.remove('active'); }
+        function toggleAuthMode() { isRegistering = !isRegistering; document.getElementById('authTitle').innerText = isRegistering ? "Register" : "Login"; document.getElementById('authLink').innerText = isRegistering ? "Login" : "Register"; }
+        async function handleAuth() { const email = document.getElementById('email').value, pass = document.getElementById('password').value; if(!email || !pass) return alert("Fill all fields"); try { const res = await fetch(isRegistering ? '/api/register' : '/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) }); const data = await res.json(); if(data.success) { currentUser = data.user; updateMenu(); closeLogin(); alert("Welcome!"); } else alert(data.message); } catch(e){ alert("Error"); } }
+        
+        function updateMenu() {
+            const el = document.getElementById('userDisplay');
+            const proSection = document.getElementById('proFeatures');
+            if(currentUser) { el.innerText = "👤 " + currentUser.email; el.style.color = "green"; proSection.style.display = "block"; } 
+            else { el.innerText = "👤 Login / Register"; el.style.color = "007bff"; proSection.style.display = "none"; }
+        }
+
+        // --- MEASURE TOOL ---
         let isMeasuring = false;
         let measurePoints = [];
         let measurePolyline = null;
         let measureMarkers = [];
 
-        function startMeasure() {
-            isMeasuring = true;
-            measurePoints = [];
-            document.getElementById('measureUI').classList.add('active');
-            document.getElementById('measureText').innerText = "0 ft";
-            map.getContainer().style.cursor = 'crosshair';
-            closeCard();
-        }
+        function startMeasure() { isMeasuring = true; measurePoints = []; document.getElementById('measureUI').classList.add('active'); document.getElementById('measureText').innerText = "0 ft"; map.getContainer().style.cursor = 'crosshair'; closeCard(); }
+        function stopMeasure() { isMeasuring = false; document.getElementById('measureUI').classList.remove('active'); map.getContainer().style.cursor = ''; if(measurePolyline) map.removeLayer(measurePolyline); measureMarkers.forEach(m => map.removeLayer(m)); measurePolyline = null; measureMarkers = []; }
+        function saveMeasurement() { if(measurePoints.length < 2) return alert("Draw a line first!"); const dist = calculateTotalDistance(measurePoints); const id = Date.now(); const measureItem = { id: id, type: 'measurement', points: measurePoints, distance: dist, owner_name: `Measure: ${dist}`, address: 'Manual Survey' }; savedItems.push(measureItem); saveToStorage(); drawSavedMeasurement(measureItem); stopMeasure(); alert("Measurement Saved!"); }
+        function drawSavedMeasurement(item) { const poly = L.polyline(item.points, {color: '#4CAF50', weight: 4, dashArray: '10, 10'}).addTo(map); poly.bindPopup(`<b>Distance: ${item.distance}</b>`); stakeMarkers[item.id] = poly; }
+        function calculateTotalDistance(points) { let totalMeters = 0; for(let i=0; i < points.length - 1; i++) { const p1 = L.latLng(points[i]); const p2 = L.latLng(points[i+1]); totalMeters += p1.distanceTo(p2); } return Math.round(totalMeters * 3.28084) + " ft"; }
 
-        function stopMeasure() {
-            isMeasuring = false;
-            document.getElementById('measureUI').classList.remove('active');
-            map.getContainer().style.cursor = '';
-            
-            // Clean up temporary measurement visuals
-            if(measurePolyline) map.removeLayer(measurePolyline);
-            measureMarkers.forEach(m => map.removeLayer(m));
-            measurePolyline = null;
-            measureMarkers = [];
-        }
-
-        function saveMeasurement() {
-            if(measurePoints.length < 2) return alert("Draw a line first!");
-            
-            const dist = calculateTotalDistance(measurePoints);
-            const id = Date.now();
-            
-            // Create a saved item object for the line
-            const measureItem = {
-                id: id,
-                type: 'measurement',
-                points: measurePoints, // array of [lat, lng]
-                distance: dist,
-                owner_name: `Measure: ${dist}`,
-                address: 'Manual Survey'
-            };
-            
-            savedItems.push(measureItem);
-            saveToStorage();
-            
-            // Draw permanent line
-            drawSavedMeasurement(measureItem);
-            
-            stopMeasure();
-            alert("Measurement Saved!");
-        }
-
-        function drawSavedMeasurement(item) {
-            const poly = L.polyline(item.points, {color: '#4CAF50', weight: 4, dashArray: '10, 10'}).addTo(map);
-            poly.bindPopup(`<b>Distance: ${item.distance}</b>`);
-            // Store reference to delete later
-            stakeMarkers[item.id] = poly;
-        }
-
-        function calculateTotalDistance(points) {
-            let totalMeters = 0;
-            for(let i=0; i < points.length - 1; i++) {
-                const p1 = L.latLng(points[i]);
-                const p2 = L.latLng(points[i+1]);
-                totalMeters += p1.distanceTo(p2);
-            }
-            const feet = Math.round(totalMeters * 3.28084);
-            return feet + " ft";
-        }
-
-        // --- MAP CLICK HANDLER (UPDATED) ---
+        // --- MAP CLICK ---
         map.on('click', async (e) => {
-            // 1. MEASURE MODE
             if(isMeasuring) {
-                const latlng = [e.latlng.lat, e.latlng.lng];
-                measurePoints.push(latlng);
-                
-                // Add marker point
-                const dot = L.circleMarker(e.latlng, {radius:4, color:'white', fillColor:'#4CAF50', fillOpacity:1}).addTo(map);
-                measureMarkers.push(dot);
-
-                // Draw/Update Line
-                if(measurePoints.length > 1) {
-                    if(measurePolyline) map.removeLayer(measurePolyline);
-                    measurePolyline = L.polyline(measurePoints, {color: 'white', weight: 3, dashArray: '5, 10'}).addTo(map);
-                    
-                    // Update Text
-                    const dist = calculateTotalDistance(measurePoints);
-                    document.getElementById('measureText').innerText = dist;
-                }
-                return; // Stop here, don't select parcel
+                const latlng = [e.latlng.lat, e.latlng.lng]; measurePoints.push(latlng);
+                const dot = L.circleMarker(e.latlng, {radius:4, color:'white', fillColor:'#4CAF50', fillOpacity:1}).addTo(map); measureMarkers.push(dot);
+                if(measurePoints.length > 1) { if(measurePolyline) map.removeLayer(measurePolyline); measurePolyline = L.polyline(measurePoints, {color: 'white', weight: 3, dashArray: '5, 10'}).addTo(map); document.getElementById('measureText').innerText = calculateTotalDistance(measurePoints); }
+                return;
             }
-
-            // 2. NORMAL MODE (PARCEL SELECT)
-            if(document.getElementById('card').classList.contains('active')) {
-                closeCard();
-            } else {
-                fetchParcelAt(e.latlng.lat, e.latlng.lng);
-            }
+            if(document.getElementById('card').classList.contains('active')) closeCard();
+            else fetchParcelAt(e.latlng.lat, e.latlng.lng);
         });
 
-        // --- STANDARD APP LOGIC ---
+        // --- GPS ---
         map.locate({ watch: true, enableHighAccuracy: true });
         function enableCompass() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(res => { if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation); }); } else { window.addEventListener('deviceorientation', handleOrientation); } }
         function handleOrientation(e) { let heading = e.webkitCompassHeading || Math.abs(e.alpha - 360); const arrow = document.getElementById('userHeadingArrow'); if(arrow) arrow.style.transform = `rotate(${heading}deg)`; }
@@ -304,35 +247,6 @@
             }
         });
         function flyToUser() { if(currentLatLng) { map.flyTo(currentLatLng, 20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng); } else alert("Waiting for GPS..."); }
-
-        // --- AUTH ---
-        let isRegistering = false;
-        function openLogin() { if(currentUser) { if(confirm("Log out? Local data will be cleared.")) { currentUser = null; updateMenuUser(); clearMap(); alert("Logged out."); } } else { document.getElementById('loginModal').classList.add('active'); } }
-        function closeLogin() { document.getElementById('loginModal').classList.remove('active'); }
-        function toggleAuthMode() { isRegistering = !isRegistering; document.getElementById('authTitle').innerText = isRegistering ? "Register" : "Login"; document.getElementById('authLink').innerText = isRegistering ? "Login" : "Register"; }
-        async function handleAuth() { const email = document.getElementById('email').value, pass = document.getElementById('password').value; if(!email || !pass) return alert("Fill all fields"); try { const res = await fetch(isRegistering ? '/api/register' : '/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) }); const data = await res.json(); if(data.success) { currentUser = data.user; updateMenuUser(); closeLogin(); alert("Welcome " + data.user.email); } else alert(data.message); } catch(e){ alert("Error"); } }
-        function updateMenuUser() { const el = document.getElementById('userDisplay'); const pro = document.getElementById('proFeatures'); if(currentUser) { el.innerText = "👤 " + currentUser.email; el.style.color = "green"; pro.style.display="block"; } else { el.innerText = "👤 Login / Register"; el.style.color = "007bff"; pro.style.display="none"; } }
-
-        // --- INIT & LOAD ---
-        function initApp() { 
-            const stored = localStorage.getItem('landslide_saves'); 
-            if (stored) {
-                try {
-                    const allData = JSON.parse(stored);
-                    let allItems = Array.isArray(allData) ? allData : []; 
-                    // Separate types
-                    savedItems = allItems.filter(i => i.type !== 'stake' && i.type !== 'measurement'); // Normal parcels
-                    stakes = allItems.filter(i => i.type === 'stake');
-                    const measures = allItems.filter(i => i.type === 'measurement');
-                    
-                    // Draw everything
-                    stakes.forEach(s => addStakeMarker(s));
-                    savedItems.forEach(p => { /* We don't redraw parcels on load to keep map clean, only list */ });
-                    measures.forEach(m => { savedItems.push(m); drawSavedMeasurement(m); }); // Treat measure as saved item
-                } catch(e){}
-            }
-            updateMenuUser();
-        }
 
         // --- STAKES ---
         function createStake(lat, lng, label) { const id = Date.now(); const stakeData = { id, type: 'stake', lat, lng, label, number: stakes.length+1 }; addStakeMarker(stakeData); stakes.push(stakeData); if(currentParcelData) saveProperty(true); saveToStorage(); }
@@ -360,74 +274,53 @@
             } catch(e) { document.querySelector('.search-go-btn').innerText = "GO"; }
         }
 
-        async function fetchParcelAt(lat, lng) { try { const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`); const json = await res.json(); if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } } catch(e){} }
-        
-        function loadProperty(p) {
-            document.getElementById('owner').innerText = p.owner_name;
-            document.getElementById('address').innerText = p.address;
-            document.getElementById('card').classList.add('active');
-            if(activeLayer) map.removeLayer(activeLayer);
-            if(p.geometry) {
-                activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
-                activeLayer.on('click', (e) => { L.DomEvent.stopPropagation(e); createStake(e.latlng.lat, e.latlng.lng, "Stake " + (stakes.length+1)); });
+        // --- MAP & PARCELS ---
+        function initApp() { 
+            const stored = localStorage.getItem('landslide_saves'); 
+            if (stored) {
+                try {
+                    const allData = JSON.parse(stored);
+                    let allItems = Array.isArray(allData) ? allData : []; 
+                    savedItems = allItems.filter(i => i.type !== 'stake' && i.type !== 'measurement');
+                    stakes = allItems.filter(i => i.type === 'stake');
+                    const measures = allItems.filter(i => i.type === 'measurement');
+                    stakes.forEach(s => addStakeMarker(s));
+                    measures.forEach(m => { savedItems.push(m); drawSavedMeasurement(m); });
+                } catch(e){}
             }
+            updateMenu();
         }
-
+        async function fetchParcelAt(lat, lng) { try { const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`); const json = await res.json(); if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } } catch(e){} }
+        function loadProperty(p) { document.getElementById('owner').innerText = p.owner_name; document.getElementById('address').innerText = p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map); activeLayer.on('click', (e) => { L.DomEvent.stopPropagation(e); createStake(e.latlng.lat, e.latlng.lng, "Stake " + (stakes.length+1)); }); } }
         function saveProperty(silent=false) { if(activeLayer && currentParcelData) { const exists = savedItems.find(i => i.id === currentParcelData.id); if(!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Saved"); } } }
         function saveToStorage() { const combined = [...savedItems, ...stakes]; localStorage.setItem('landslide_saves', JSON.stringify(combined)); }
-        
-        function deleteItem(id, event) { 
-            event.stopPropagation(); 
-            savedItems = savedItems.filter(i => i.id !== id); 
-            // Also remove measurement line if it exists
-            if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]);
-            saveToStorage(); 
-            renderSavedList(); 
-        }
-
-        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
+        function deleteItem(id, event) { event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id); if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]); saveToStorage(); renderSavedList(); }
         function renderSavedList() {
             const container = document.getElementById('savedListContainer'); container.innerHTML = "";
-            savedItems.forEach(item => { 
-                const icon = item.type === 'measurement' ? '📏' : '🏠';
-                const div = document.createElement('div'); div.className = 'saved-item'; 
-                div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${icon} ${item.owner_name}</b><br>${item.address}</div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`; 
-                container.appendChild(div); 
-            });
+            savedItems.forEach(item => { const icon = item.type === 'measurement' ? '📏' : '🏠'; const div = document.createElement('div'); div.className = 'saved-item'; div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${icon} ${item.owner_name}</b><br>${item.address}</div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`; container.appendChild(div); });
             if(stakes.length > 0) { const div = document.createElement('div'); div.className = 'saved-item'; div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`; stakes.forEach(s => { const r = document.createElement('div'); r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666"; r.innerText = `#${s.number} - ${s.label}`; div.appendChild(r); }); container.appendChild(div); }
         }
         function flyToItem(id) { 
             const item = savedItems.find(i => i.id === id); 
             if(item) { 
-                if(item.type === 'measurement') {
-                    // Fly to first point of measurement
-                    map.flyTo(item.points[0], 19);
-                    toggleSavedList();
-                } else {
-                    currentParcelData = item; const geo = JSON.parse(item.geometry); map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList(); 
-                }
+                if(item.type === 'measurement') { map.flyTo(item.points[0], 19); toggleSavedList(); } 
+                else { currentParcelData = item; const geo = JSON.parse(item.geometry); map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList(); }
             } 
         }
 
+        // --- CLOUD ---
+        function createNewProject() { if(confirm("Start new project? Clears current map.")) { clearMap(); toggleMenu(); } }
+        async function saveToCloud() { if(!currentUser) return openLogin(); let name = prompt("Project Name:"); if(!name) return; const data = { properties: savedItems, stakes, date: new Date().toISOString() }; try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); } catch(e) { alert("Error"); } }
+        async function loadFromCloud() { if(!currentUser) return openLogin(); try { const res = await fetch(`/api/cloud/load/${currentUser.id}`); const list = await res.json(); if(list.length === 0) return alert("No saves."); const data = (typeof list[0].data === 'string') ? JSON.parse(list[0].data) : list[0].data; clearMap(); if(data.properties) data.properties.forEach(p => { savedItems.push(p); if(p.type==='measurement') drawSavedMeasurement(p); }); if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Loaded: " + list[0].name); toggleMenu(); if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(e) { alert("Error"); } }
+        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); savedItems.forEach(i => { if(i.type === 'measurement' && stakeMarkers[i.id]) map.removeLayer(stakeMarkers[i.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); renderSavedList(); }
+        
         function shareLocation() { if(!currentLatLng) return alert("Waiting for GPS..."); const link = `https://maps.google.com/?q=${currentLatLng.lat},${currentLatLng.lng}`; const text = `I am staking property here: ${link}`; if (navigator.share) { navigator.share({ title: 'My Location', text: text, url: link }).catch(console.error); } else { prompt("Copy location link:", link); } }
         function shareApp() { if (navigator.share) { navigator.share({ title: 'Landslide App', text: 'Check out Landslide!', url: window.location.href }).catch(console.error); } else { prompt("Copy link:", window.location.href); } }
 
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
         function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function clearMap() { 
-            stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); 
-            // Also clear measurement lines
-            savedItems.forEach(i => { if(i.type === 'measurement' && stakeMarkers[i.id]) map.removeLayer(stakeMarkers[i.id]); });
-            stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); renderSavedList(); 
-        }
-        function createNewProject() { if(confirm("Start new project? Clears current map.")) { clearMap(); toggleMenu(); } }
-        
-        async function saveToCloud() { if(!currentUser) return openLogin(); let name = prompt("Project Name:"); if(!name) return; const data = { properties: savedItems, stakes, date: new Date().toISOString() }; try { await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUser.id, name, data }) }); alert("Saved!"); } catch(e) { alert("Error"); } }
-        async function loadFromCloud() { if(!currentUser) return openLogin(); try { const res = await fetch(`/api/cloud/load/${currentUser.id}`); const list = await res.json(); if(list.length === 0) return alert("No saves."); const data = (typeof list[0].data === 'string') ? JSON.parse(list[0].data) : list[0].data; clearMap(); if(data.properties) data.properties.forEach(p => { savedItems.push(p); if(p.type==='measurement') drawSavedMeasurement(p); }); if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Loaded: " + list[0].name); toggleMenu(); if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(e) { alert("Error"); } }
-        function saveProjectFile() { const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes }; let f = prompt("Project Name:", "Survey"); if(!f) return; const l = document.createElement("a"); l.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); l.download = f + ".json"; document.body.appendChild(l); l.click(); document.body.removeChild(l); toggleMenu(); }
-        function loadProjectFile(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); clearMap(); if(d.properties) d.properties.forEach(p => { savedItems.push(p); if(p.type==='measurement') drawSavedMeasurement(p); }); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu(); if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(x){alert("Error");} }; r.readAsText(f); }
-        function exportToCSV() { let f = prompt("File Name:", "data"); if(!f) return; if(!f.endsWith('.csv')) f+='.csv'; let c = "Type,Name/ID,Details,Lat,Lng\n"; savedItems.forEach(i => c+=`Property,"${i.owner_name}","${i.address}",,\n`); stakes.forEach(s => c+=`Stake,"${s.label}","Stake ID ${s.id}",${s.lat},${s.lng}\n`); const l = document.createElement("a"); l.href = encodeURI("data:text/csv;charset=utf-8," + c); l.download = f; document.body.appendChild(l); l.click(); document.body.removeChild(l); }
+        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
 
         enableCompass(); initApp();
     </script>
