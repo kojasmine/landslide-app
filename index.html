@@ -13,13 +13,13 @@
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
-        /* UI LAYERS */
+        /* APP BAR */
         .app-bar {
             position: fixed; top: 0; left: 0; right: 0; height: 60px;
             background: white; display: flex; align-items: center; padding: 0 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 99999; border-bottom: 1px solid #ddd;
         }
-        .menu-btn { font-size: 28px; padding: 10px 15px; cursor: pointer; color: #333; }
+        .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #333; }
         .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 8px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: bold; cursor: pointer; margin-left: 5px; }
@@ -27,24 +27,31 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #333; }
 
-        /* COMPACT ADDRESS CARD (v40) */
+        /* TINY BOTTOM-RIGHT CARD (v41) */
         .info-card {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150%);
-            width: 85%; max-width: 350px;
-            background: white; border-radius: 50px; /* Pill shape */
-            padding: 10px 25px;
+            position: fixed; 
+            bottom: 30px; 
+            right: 15px; /* Pushed to right */
+            width: auto; 
+            max-width: 180px; /* Small width */
+            
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 10px 15px;
+            
+            transform: translateX(120%); /* Hide off-screen to the right */
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10000;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             border: 1px solid #eee;
-            text-align: center;
-            display: flex; flex-direction: column; justify-content: center;
+            text-align: right; /* Align text right */
         }
-        .info-card.active { transform: translateX(-50%) translateY(0); }
+        .info-card.active { transform: translateX(0); }
         
-        /* Smaller Text */
-        .prop-val { font-size: 14px; font-weight: 800; color: #000; margin-bottom: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .prop-sub { font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Smaller Fonts */
+        .prop-val { font-size: 13px; font-weight: 800; color: #000; margin-bottom: 2px; line-height: 1.2; }
+        .prop-sub { font-size: 11px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* SIDE MENU */
         .side-menu {
@@ -78,32 +85,26 @@
         .login-btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .login-link { color: #007bff; cursor: pointer; font-size: 12px; margin-top: 15px; display: block; }
 
-        /* STAKE ICONS */
+        /* ASSETS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
-        .stake-number {
-            position: absolute; bottom: 0; right: 0;
-            background: black; color: white;
-            border-radius: 50%; width: 18px; height: 18px;
-            font-size: 11px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid white;
-        }
+        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
         
-        /* GPS & COMPASS */
         .gps-marker-wrap { position: relative; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; }
         .gps-dot-core { width: 16px; height: 16px; background-color: #007bff; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index: 2; }
         .gps-arrow { position: absolute; top: -8px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 12px solid #007bff; z-index: 1; transition: transform 0.1s linear; transform-origin: center 20px; }
         
         .leaflet-tooltip.gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
         .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
-
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #00BCD4; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
+        .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
+        @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
+        
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #607D8B; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v40</div>
+    <div class="debug-label">v41</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -112,9 +113,9 @@
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" style="background:#f0f7ff" id="userDisplay" onclick="openLogin()">👤 Login / Register</div>
         <div class="menu-item" onclick="enableCompass(); flyToUser(); toggleMenu();">📍 Go to Current Location</div>
+        <!-- NEW SHARE LOCATION BUTTON -->
+        <div class="menu-item" onclick="shareLocation()">📡 Share My Location</div>
         <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">📁 Saved Properties</div>
-        
-        <!-- INVITE FRIENDS IS HERE -->
         <div class="menu-item" onclick="shareApp()">🔗 Invite Friends</div>
         
         <div style="font-size:11px; color:#999; padding:15px 20px 5px;">PROJECTS</div>
@@ -156,10 +157,10 @@
     <!-- MAP -->
     <div id="map"></div>
 
-    <!-- COMPACT CARD (v40) -->
+    <!-- TINY BOTTOM-RIGHT CARD (v41) -->
     <div class="info-card" id="card">
-        <div class="prop-val" id="owner">Owner</div>
-        <div class="prop-sub" id="address">Address</div>
+        <div class="prop-val" id="owner">...</div>
+        <div class="prop-sub" id="address">...</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -220,16 +221,25 @@
             }
         }
 
-        // --- SHARE APP ---
+        // --- SHARE LOCATION (NEW) ---
+        function shareLocation() {
+            if(!currentLatLng) return alert("Waiting for GPS...");
+            
+            const link = `https://maps.google.com/?q=${currentLatLng.lat},${currentLatLng.lng}`;
+            const text = `I am staking property here: ${link}`;
+            
+            if (navigator.share) {
+                navigator.share({ title: 'My Location', text: text, url: link }).catch(console.error);
+            } else {
+                prompt("Copy location link:", link);
+            }
+        }
+
         function shareApp() {
             if (navigator.share) {
-                navigator.share({
-                    title: 'Landslide App',
-                    text: 'Map your property lines and drop stakes with Landslide!',
-                    url: window.location.href
-                }).catch(console.error);
+                navigator.share({ title: 'Landslide App', text: 'Check out Landslide!', url: window.location.href }).catch(console.error);
             } else {
-                prompt("Copy link to share:", window.location.href);
+                prompt("Copy link:", window.location.href);
             }
         }
 
@@ -298,12 +308,6 @@
             }
         }
 
-        // --- UI TOGGLES ---
-        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
-        function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
-        function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
-
         // --- SAVING ---
         function saveProperty(silent=false) { if(activeLayer && currentParcelData) { const exists = savedItems.find(i => i.id === currentParcelData.id); if(!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Saved"); } } }
         function saveToStorage() { const combined = [...savedItems, ...stakes]; localStorage.setItem('landslide_saves', JSON.stringify(combined)); }
@@ -311,7 +315,7 @@
         function renderSavedList() {
             const container = document.getElementById('savedListContainer'); container.innerHTML = "";
             savedItems.forEach(item => { const div = document.createElement('div'); div.className = 'saved-item'; div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${item.owner_name}</b><br>${item.address}</div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`; container.appendChild(div); });
-            if(stakes.length > 0) { const div = document.createElement('div'); div.className = 'saved-item'; div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`; container.appendChild(div); }
+            if(stakes.length > 0) { const div = document.createElement('div'); div.className = 'saved-item'; div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`; stakes.forEach(s => { const r = document.createElement('div'); r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666"; r.innerText = `#${s.number} - ${s.label}`; div.appendChild(r); }); container.appendChild(div); }
         }
         function flyToItem(id) { const item = savedItems.find(i => i.id === id); if(item) { currentParcelData = item; const geo = JSON.parse(item.geometry); map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList(); } }
 
@@ -328,6 +332,12 @@
         function saveProjectFile() { const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes }; let f = prompt("Project Name:", "Survey"); if(!f) return; const l = document.createElement("a"); l.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); l.download = f + ".json"; document.body.appendChild(l); l.click(); document.body.removeChild(l); toggleMenu(); }
         function loadProjectFile(i) { const f = i.files[0]; if(!f) return; const r = new FileReader(); r.onload = function(e) { try { const d = JSON.parse(e.target.result); clearMap(); if(d.properties) d.properties.forEach(p => savedItems.push(p)); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu(); if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); } catch(x){alert("Error");} }; r.readAsText(f); }
         function exportToCSV() { let f = prompt("File Name:", "data"); if(!f) return; if(!f.endsWith('.csv')) f+='.csv'; let c = "Type,Name/ID,Details,Lat,Lng\n"; savedItems.forEach(i => c+=`Property,"${i.owner_name}","${i.address}",,\n`); stakes.forEach(s => c+=`Stake,${s.label},${s.number},${s.lat},${s.lng}\n`); const l = document.createElement("a"); l.href = encodeURI("data:text/csv;charset=utf-8," + c); l.download = f; document.body.appendChild(l); l.click(); document.body.removeChild(l); }
+        
+        // UI HELPERS
+        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
+        function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
+        function closeCard() { document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
+        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
 
         enableCompass(); initApp();
     </script>
