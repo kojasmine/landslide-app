@@ -6,7 +6,6 @@
     <title>Landslide</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -17,178 +16,145 @@
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
         /* UI LAYERS */
-        .app-bar {
-            position: fixed; top: 0; left: 0; right: 0; height: 60px;
-            background: white; display: flex; align-items: center; padding: 0 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 99999; border-bottom: 1px solid #ddd;
-        }
+        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 99999; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
-        
-        .search-wrapper { flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
-        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
+        .search-wrapper { flex: 1; margin: 0 5px; background: #f0f2f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
+        .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; }
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
-        
-        .top-icons { display: flex; gap: 5px; }
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
-        .icon-btn:hover { background: #f0f0f0; }
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; margin-left: 2px; }
         .icon-svg { width: 24px; height: 24px; fill: #444; }
 
-        /* SIDE MENU */
-        .side-menu {
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 280px;
-            background: white; z-index: 100000;
-            transform: translateX(-100%); transition: transform 0.3s ease-out;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column;
-            padding-top: 10px;
-        }
-        .side-menu.open { transform: translateX(0); }
-        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
-        .menu-overlay.active { display: block; }
-
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
-        .menu-item:hover { background: #f9f9f9; }
-        
-        .icon-login { color: #5E35B1; }
-        .icon-gps { color: #E91E63; }
-        .icon-ruler { color: #757575; }
-        .icon-share { color: #2196F3; }
-        .icon-invite { color: #4CAF50; }
-
-        /* LOGIN MODAL */
-        .login-modal {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); z-index: 100001;
-            display: none; align-items: center; justify-content: center;
-        }
-        .login-box {
-            background: white; width: 300px; padding: 25px; border-radius: 12px;
-            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+        /* LOGIN MODAL (Updated for Email) */
+        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100001; display: none; align-items: center; justify-content: center; }
+        .login-box { background: white; width: 300px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
+
+        /* FLOATING RULER BUTTON */
+        .ruler-float-btn { position: fixed; top: 75px; right: 15px; width: 45px; height: 45px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ccc; }
+        .ruler-float-btn.active { background: #333; border: 2px solid white; }
+        .ruler-float-btn.active .icon-svg { fill: white; }
 
         /* MEASURE BOX */
-        .measure-box {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white;
-        }
+        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; }
         .measure-box.visible { display: flex; align-items: center; gap: 15px; }
         .clear-measure { background: #ff4400; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; margin-left: 5px; }
 
         /* CARD */
-        .info-card {
-            position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; text-align: center;
-        }
+        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; text-align: center; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
 
+        /* SIDE MENU */
+        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 100000; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
+        .side-menu.open { transform: translateX(0); }
+        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99998; display: none; }
+        .menu-overlay.active { display: block; }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
+        .menu-item:hover { background: #f9f9f9; }
+
         /* SAVED LIST */
-        .saved-modal {
-            position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3);
-        }
+        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .saved-modal.active { transform: translateX(0); }
         .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; }
         .saved-list { flex: 1; overflow-y: auto; }
         .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; }
 
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #333; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; }
-        
+        /* ICONS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
-        .stake-number {
-            position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white;
-        }
+        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
         .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
         .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
-        
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #5E35B1; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border: 1px solid white;}
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v58</div>
+    <div class="debug-label">v60</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
-    <!-- MEASURE DISPLAY -->
+    <!-- MEASURE -->
     <div class="measure-box" id="measureBox">
         <span id="distVal">0 ft</span>
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
-    <!-- MENU OVERLAY -->
+    <!-- MENUS -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
-    
-    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
         
         <div class="menu-item" id="loginItem" onclick="openLogin()">
-            <span class="material-icons icon-login">person</span> <span id="loginText">Login / Register</span>
+            <span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span>
         </div>
         
         <div class="menu-item" onclick="flyToUser(); toggleMenu();">
-            <span class="material-icons icon-gps">room</span> Go to Current Location
+            <span class="material-icons" style="color:#E91E63">room</span> Go to Current Location
         </div>
         
-        <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();">
-            <span class="material-icons icon-ruler">straighten</span> Measure Distance
+        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();">
+            <span class="material-icons" style="color:#333">folder_special</span> Saved Properties
         </div>
         
-        <!-- FIX: Share Location opens native share now -->
-        <div class="menu-item" onclick="shareLocation()">
-            <span class="material-icons icon-share">share</span> Share My Location
+        <hr style="width:100%; border:0; border-top:1px solid #eee; margin:5px 0;">
+        
+        <!-- CLOUD SAVE OPTIONS -->
+        <div class="menu-item" onclick="saveToCloud()">
+            <span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account
+        </div>
+        <div class="menu-item" onclick="loadFromCloud()">
+            <span class="material-icons" style="color:#FF9800">cloud_download</span> Load from Account
+        </div>
+        
+        <hr style="width:100%; border:0; border-top:1px solid #eee; margin:5px 0;">
+
+        <div class="menu-item" onclick="exportToCSV()">
+            <span class="material-icons" style="color:#2196F3">share</span> Share My Location
         </div>
         
         <div class="menu-item" onclick="inviteFriends()">
-            <span class="material-icons icon-invite">link</span> Invite Friends
+            <span class="material-icons" style="color:#666">link</span> Invite Friends
         </div>
-
     </div>
 
     <!-- LOGIN MODAL -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
-            <h3>Login</h3>
-            <p>Enter your name to save locally.</p>
-            <input type="text" id="usernameInput" class="login-input" placeholder="Your Name">
-            <button class="login-btn" onclick="performLogin()">Save Profile</button>
-            <button onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:10px; background:none; border:none; text-decoration:underline;">Cancel</button>
+            <h3 style="margin-top:0">Welcome</h3>
+            <!-- Matches server.js "email" -->
+            <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
+            <input type="password" id="passInput" class="login-input" placeholder="Password">
+            <button class="login-btn" onclick="doLogin()">Login</button>
+            <button class="login-btn" style="background:#4CAF50; margin-top:10px" onclick="doRegister()">Create Account</button>
+            <button onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:15px; background:none; border:none; text-decoration:underline; cursor:pointer;">Cancel</button>
         </div>
     </div>
 
-    <!-- TOP BAR -->
     <div class="app-bar">
-        <div class="menu-btn" onclick="toggleMenu()" title="Main Menu">
-            <span class="material-icons">menu</span>
-        </div>
-        <div class="search-wrapper">
-            <input type="text" class="search-input" id="searchBox" placeholder="Search...">
-            <div class="search-go-btn" onclick="performSearch()" title="Search Property">GO</div>
-        </div>
+        <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
+        <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
         <div class="top-icons">
-            <div class="icon-btn" onclick="toggleSavedList()" title="Saved Properties"><span class="material-icons" style="color:#444">folder_open</span></div>
-            <div class="icon-btn" onclick="toggleLayer()" title="Switch Map View"><span class="material-icons" style="color:#444">layers</span></div>
-            <div class="icon-btn" id="gpsBtn" onclick="flyToUser()" title="Go to your current location"><span class="material-icons" style="color:#007bff">my_location</span></div>
+            <div class="icon-btn" onclick="toggleLayer()"><span class="material-icons" style="color:#444">layers</span></div>
+            <div class="icon-btn" id="gpsBtn" onclick="flyToUser()"><span class="material-icons" style="color:#007bff">my_location</span></div>
         </div>
     </div>
 
-    <!-- SAVED LIST -->
+    <div class="ruler-float-btn" id="rulerBtn" onclick="toggleMeasureMode()">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path d="M2 7h18v2H2V7zm0 8h18v2H2v-2zm0-4h18v2H2v-2z" transform="rotate(-45, 12, 12)"/></svg>
+    </div>
+
     <div class="saved-modal" id="savedModal">
-        <div class="saved-header"><span>Saved</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
+        <div class="saved-header"><span>Local Saves</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="saved-list" id="savedListContainer"></div>
     </div>
 
-    <!-- MAP -->
     <div id="map"></div>
-
-    <!-- MINIMAL CARD -->
-    <div class="info-card" id="card">
-        <div class="prop-val" id="owner">...</div>
-        <div class="prop-sub" id="address">...</div>
-    </div>
+    <div class="info-card" id="card"><div class="prop-val" id="owner">...</div><div class="prop-sub" id="address">...</div></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -196,334 +162,260 @@
         const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
-        // --- NEW: NATIVE SOCIAL SHARE ---
-        function shareLocation() {
-            toggleMenu(); // Close menu
-            
-            // Get location (User pos, or default center)
-            const lat = currentLatLng ? currentLatLng.lat : map.getCenter().lat;
-            const lng = currentLatLng ? currentLatLng.lng : map.getCenter().lng;
-            
-            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Landslide Location',
-                    text: 'Here is my survey location:',
-                    url: mapsUrl
-                }).catch((error) => console.log('Error sharing', error));
+        // --- AUTH & CLOUD (MATCHING SERVER v60) ---
+        let currentUserEmail = null;
+        let currentUserId = null;
+
+        function openLogin() {
+            toggleMenu();
+            if(currentUserId) {
+                if(confirm("Logout?")) {
+                    currentUserId = null; currentUserEmail = null;
+                    document.getElementById('loginText').innerText = "Login / Register";
+                    localStorage.removeItem('landslide_auth_id');
+                    localStorage.removeItem('landslide_auth_email');
+                }
             } else {
-                // Fallback for PC
-                alert("GPS Link copied: " + mapsUrl);
-                navigator.clipboard.writeText(mapsUrl);
+                document.getElementById('loginModal').style.display = 'flex';
             }
         }
 
-        // --- LOGIN SYSTEM ---
-        function openLogin() {
-            toggleMenu();
-            document.getElementById('loginModal').style.display = 'flex';
+        async function doRegister() {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passInput').value;
+            if(!email || !pass) return alert("Please fill all fields");
+            
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email, password: pass})
+                });
+                const data = await res.json();
+                if(data.success) { 
+                    alert("Account Created! You can now Login."); 
+                } else { alert(data.message); }
+            } catch(e) { alert("Server Error"); console.error(e); }
         }
-        function performLogin() {
-            const name = document.getElementById('usernameInput').value;
-            if(name) {
-                localStorage.setItem('landslide_user', name);
-                checkLogin();
-                document.getElementById('loginModal').style.display = 'none';
-            }
+
+        async function doLogin() {
+            const email = document.getElementById('emailInput').value;
+            const pass = document.getElementById('passInput').value;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email, password: pass})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    currentUserId = data.user.id;
+                    currentUserEmail = data.user.email;
+                    
+                    // SAVE LOGIN TO PHONE
+                    localStorage.setItem('landslide_auth_id', currentUserId);
+                    localStorage.setItem('landslide_auth_email', currentUserEmail);
+                    
+                    updateMenuLoginText();
+                    document.getElementById('loginModal').style.display = 'none';
+                } else { alert(data.message); }
+            } catch(e) { alert("Connection Error"); }
         }
-        function checkLogin() {
-            const user = localStorage.getItem('landslide_user');
-            if(user) {
-                document.getElementById('loginText').innerText = "Hi, " + user;
+
+        function updateMenuLoginText() {
+            if(currentUserEmail) {
+                document.getElementById('loginText').innerText = currentUserEmail.split('@')[0];
                 document.getElementById('loginText').style.color = "#5E35B1";
             }
         }
 
-        // INVITE FRIENDS
-        function inviteFriends() {
+        async function saveToCloud() {
             toggleMenu();
-            const text = "Use this app for surveying: " + window.location.href;
-            if (navigator.share) {
-                navigator.share({ title: 'Landslide App', text: text, url: window.location.href });
-            } else {
-                navigator.clipboard.writeText(window.location.href);
-                alert("App link copied to clipboard!");
-            }
+            if(!currentUserId) return alert("Please Login/Register first.");
+            
+            const name = prompt("Name this project:");
+            if(!name) return;
+
+            // Combine all local data
+            const payload = {
+                date: new Date(),
+                properties: savedItems,
+                stakes: stakes
+            };
+
+            try {
+                const res = await fetch('/api/cloud/save', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userId: currentUserId, name: name, data: payload })
+                });
+                const json = await res.json();
+                if(json.success) alert("Saved to your Cloud Account!");
+                else alert("Save failed.");
+            } catch(e) { alert("Error saving."); }
         }
 
-        // --- GPS ---
-        let userMarker = null, currentLatLng = null;
-        map.locate({ watch: true, enableHighAccuracy: true });
-
-        map.on('locationfound', (e) => {
-            currentLatLng = e.latlng;
-            if (userMarker) {
-                userMarker.setLatLng(e.latlng);
-            } else {
-                userMarker = L.circleMarker(e.latlng, { 
-                    radius: 12, color: "white", fillColor: "#007bff", 
-                    fillOpacity: 1, zIndexOffset: 1000, 
-                    className: 'gps-pulse', interactive: true 
-                }).addTo(map);
-
-                userMarker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    if(isMeasuring) {
-                        addMeasurePoint(e.latlng);
-                    } else {
-                        let nextNum = stakes.length + 1;
-                        createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + nextNum);
-                    }
-                });
+        async function loadFromCloud() {
+            toggleMenu();
+            if(!currentUserId) return alert("Please Login first.");
+            
+            try {
+                const res = await fetch(`/api/cloud/load/${currentUserId}`);
+                const projects = await res.json(); // Array of projects
                 
-                userMarker.bindTooltip("Tap to Stake", {permanent: true, direction: "bottom", className: "gps-label", offset: [0, 10]});
+                if(projects.length === 0) return alert("No saved projects found.");
+                
+                // Show list of projects (Simplified: loads latest)
+                const latest = projects[0];
+                if(confirm(`Load latest project "${latest.name}" from ${new Date(latest.updated_at).toLocaleDateString()}?`)) {
+                    const data = JSON.parse(latest.data);
+                    
+                    clearMap();
+                    if(data.properties) data.properties.forEach(i => savedItems.push(i));
+                    if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); });
+                    
+                    // Save to local storage so it persists if app closes
+                    saveToStorage();
+                    renderSavedList();
+                    
+                    alert("Cloud Data Loaded!");
+                    if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
+                }
+            } catch(e) { alert("Load Error"); }
+        }
+
+        // --- MAP & GPS ---
+        let userMarker=null, currentLatLng=null;
+        map.locate({watch:true, enableHighAccuracy:true});
+        map.on('locationfound', (e)=>{
+            currentLatLng=e.latlng;
+            if(userMarker) userMarker.setLatLng(e.latlng);
+            else { 
+                userMarker = L.circleMarker(e.latlng, {radius:12,color:"white",fillColor:"#007bff",fillOpacity:1,interactive:true,className:'gps-pulse'}).addTo(map);
+                userMarker.on('click',(ev)=>{ L.DomEvent.stopPropagation(ev); if(isMeasuring) addMeasurePoint(e.latlng); else createStake(e.latlng.lat,e.latlng.lng, "Stake "+(stakes.length+1)); });
+                userMarker.bindTooltip("Tap to Stake",{permanent:true, direction:"bottom", className:"gps-label", offset:[0,10]});
             }
         });
+        function flyToUser(){ if(currentLatLng){map.flyTo(currentLatLng, 20); if(!isMeasuring)fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("Waiting for GPS..."); }
 
-        function flyToUser() {
-            if(currentLatLng) {
-                map.flyTo(currentLatLng, 20);
-                if(!isMeasuring) fetchParcelAt(currentLatLng.lat, currentLatLng.lng);
-            } else alert("Waiting for GPS...");
+        // --- SEARCH ---
+        const input=document.getElementById('searchBox');
+        input.addEventListener('keypress', (e)=>{ if(e.key==='Enter') performSearch(); });
+        async function performSearch(){
+            if(isMeasuring) { alert("Close ruler first"); return; }
+            const q=input.value; if(q.length<2)return; input.blur(); document.querySelector('.search-go-btn').innerText="...";
+            try {
+                const res = await fetch(`/api/search?q=${q}`); const json = await res.json(); document.querySelector('.search-go-btn').innerText="GO";
+                if(json.length>0) { loadProperty(json[0]); map.flyTo([json[0].lat, json[0].lng], 19); } else alert("No results.");
+            } catch(e) { document.querySelector('.search-go-btn').innerText="GO"; }
         }
-
-        // --- MEASURE ---
-        let isMeasuring = false;
-        let measurePoints = [];
-        let measureLayer = L.layerGroup().addTo(map);
-
-        function toggleMeasureMode() {
-            isMeasuring = !isMeasuring;
-            const box = document.getElementById('measureBox');
-            const card = document.getElementById('card');
-            
-            if(isMeasuring) {
-                box.classList.add('visible'); 
-                card.classList.remove('active'); 
-            } else {
-                box.classList.remove('visible');
-                clearMeasure();
-                if(currentParcelData) card.classList.add('active'); 
-            }
-        }
-
-        function addMeasurePoint(latlng) {
-            L.circleMarker(latlng, { radius: 6, color: '#ff4400', fillColor: 'white', fillOpacity: 1 }).addTo(measureLayer);
-            measurePoints.push(latlng);
-            if(measurePoints.length > 1) {
-                L.polyline(measurePoints, { color: '#ff4400', weight: 4, dashArray: '10, 10' }).addTo(measureLayer);
-                let totalMeters = 0;
-                for(let i=0; i < measurePoints.length - 1; i++) {
-                    totalMeters += measurePoints[i].distanceTo(measurePoints[i+1]);
-                }
-                let totalFeet = (totalMeters * 3.28084).toFixed(1);
-                document.getElementById('distVal').innerText = `${totalFeet} ft`;
-            }
-        }
-
-        function clearMeasure() {
-            measureLayer.clearLayers(); measurePoints = [];
-            document.getElementById('distVal').innerText = "0 ft";
-        }
-
-        // --- STAKES ---
-        let stakes = [], stakeMarkers = {};
-        
-        function createStake(lat, lng, label) {
-            const id = Date.now();
-            const num = stakes.length + 1;
-            const stakeData = { id: id, type: 'stake', lat: lat, lng: lng, label: label, number: num };
-            addStakeMarker(stakeData);
-            stakes.push(stakeData);
-            if(currentParcelData) saveProperty(true); 
-            saveToStorage();
-        }
-
-        function addStakeMarker(s) {
-            const html = `<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number || '?'}</div></div>`;
-            const flag = L.marker([s.lat, s.lng], {
-                draggable: true,
-                icon: L.divIcon({ className: 'custom-icon', html: html, iconSize: [40, 40], iconAnchor: [5, 40] })
-            }).addTo(map);
-            flag.bindPopup(`<b>#${s.number} ${s.label}</b><br><button onclick="window.removeStakeByBtn(${s.id})">Delete</button>`);
-            flag.on('dragend', (e) => { const newPos = e.target.getLatLng(); s.lat = newPos.lat; s.lng = newPos.lng; saveToStorage(); });
-            stakeMarkers[s.id] = flag; 
-        }
-
-        window.removeStakeByBtn = function(id) {
-            if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]);
-            removeStake(id);
-        }
-        function removeStake(id) { stakes = stakes.filter(s => s.id !== id); delete stakeMarkers[id]; saveToStorage(); }
 
         // --- CORE LOGIC ---
-        function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
-        function toggleLayer() {
-            if (map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); }
-            else { map.removeLayer(street); map.addLayer(satellite); }
-        }
-
-        const input = document.getElementById('searchBox');
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        let activeLayer=null, currentParcelData=null, savedItems=[], stakes=[], stakeMarkers={};
         
-        async function performSearch() {
-            if(isMeasuring) { alert("Please close Ruler first."); return; }
-            const q = input.value; if(q.length < 2) return; input.blur();
-            document.querySelector('.search-go-btn').innerText = "...";
-            try {
-                const res = await fetch(`/api/search?q=${q}`);
-                const json = await res.json();
-                document.querySelector('.search-go-btn').innerText = "GO";
-                if(json.length > 0) {
-                    loadProperty(json[0]);
-                    map.flyTo([json[0].lat, json[0].lng], 19);
-                } else alert("No results.");
-            } catch(e) { document.querySelector('.search-go-btn').innerText = "GO"; }
+        async function fetchParcelAt(lat,lng){
+            try{ const res=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`); const json=await res.json(); if(json.length>0){ currentParcelData=json[0]; loadProperty(json[0]); } }catch(e){}
         }
-
-        let activeLayer = null, currentParcelData = null, savedItems = [];
-        function initApp() { 
-            const stored = localStorage.getItem('landslide_saves'); 
-            if (stored) {
-                const allData = JSON.parse(stored);
-                let allItems = Array.isArray(allData) ? allData : []; 
-                savedItems = allItems.filter(i => i.type !== 'stake');
-                const savedStakes = allItems.filter(i => i.type === 'stake');
-                savedStakes.forEach(s => { addStakeMarker(s); stakes.push(s); });
-            }
-            checkLogin();
-        }
-
-        async function fetchParcelAt(lat, lng) {
-            try {
-                const res = await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);
-                const json = await res.json();
-                if(json.length > 0) { currentParcelData = json[0]; loadProperty(json[0]); } 
-            } catch(e) {}
-        }
-
-        map.on('click', async (e) => {
+        
+        map.on('click', async(e)=>{
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
-            if(document.getElementById('card').classList.contains('active')) { closeCard(); } 
-            else { fetchParcelAt(e.latlng.lat, e.latlng.lng); }
+            if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);
         });
 
-        function loadProperty(p) {
-            document.getElementById('owner').innerText = p.owner_name;
-            document.getElementById('address').innerText = p.address;
-            document.getElementById('card').classList.add('active');
-            
+        function loadProperty(p){
+            document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active');
             if(activeLayer) map.removeLayer(activeLayer);
             if(p.geometry) {
-                activeLayer = L.geoJSON(JSON.parse(p.geometry), { style: { color: "#ffcc00", weight: 4, fillOpacity: 0.1 } }).addTo(map);
-                activeLayer.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    if(isMeasuring) addMeasurePoint(e.latlng);
-                    else { let nextNum = stakes.length + 1; createStake(e.latlng.lat, e.latlng.lng, "Stake " + nextNum); }
-                });
+                activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);
+                activeLayer.on('click',(e)=>{ L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else createStake(e.latlng.lat,e.latlng.lng,"Stake "+(stakes.length+1)); });
             }
         }
 
-        function saveProperty(silent = false) {
-            if(activeLayer && currentParcelData) {
-                const exists = savedItems.find(i => i.id === currentParcelData.id);
-                if (!exists) { savedItems.push(currentParcelData); saveToStorage(); if(!silent) alert("Property Auto-Saved"); }
+        function createStake(lat,lng,label){
+            const id=Date.now(); const s={id, type:'stake', lat, lng, label, number:stakes.length+1};
+            addStakeMarker(s); stakes.push(s); 
+            if(currentParcelData) {
+                if(!savedItems.find(i=>i.id===currentParcelData.id)) { savedItems.push(currentParcelData); }
+            }
+            saveToStorage();
+        }
+        function addStakeMarker(s){
+            const html=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number||'?'}</div></div>`;
+            const flag=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'custom-icon', html:html, iconSize:[40,40], iconAnchor:[5,40]})}).addTo(map);
+            flag.bindPopup(`<b>#${s.number} ${s.label}</b><br><button onclick="window.removeStake(${s.id})">Delete</button>`);
+            flag.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); });
+            stakeMarkers[s.id]=flag;
+        }
+        window.removeStake=function(id){ 
+            if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); 
+        }
+
+        // --- STATE & UTILS ---
+        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
+        function initApp() {
+            // Restore Auth
+            if(localStorage.getItem('landslide_auth_email')) {
+                currentUserId = localStorage.getItem('landslide_auth_id');
+                currentUserEmail = localStorage.getItem('landslide_auth_email');
+                updateMenuLoginText();
+            }
+            // Restore Data
+            const stored = localStorage.getItem('landslide_saves');
+            if(stored) {
+                const all = JSON.parse(stored);
+                savedItems = all.filter(i=>i.type!=='stake');
+                stakes = []; // Reset and re-add to avoid dupe visual markers
+                all.filter(i=>i.type==='stake').forEach(s=> { stakes.push(s); addStakeMarker(s); });
             }
         }
-
-        function saveToStorage() {
-            const combined = [...savedItems, ...stakes];
-            localStorage.setItem('landslide_saves', JSON.stringify(combined));
-        }
-
-        function deleteItem(id, event) {
-            event.stopPropagation(); savedItems = savedItems.filter(i => i.id !== id);
-            saveToStorage(); renderSavedList();
-        }
-
-        function toggleSavedList() { renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
-        
-        function renderSavedList() {
-            const container = document.getElementById('savedListContainer'); container.innerHTML = "";
-            savedItems.forEach(item => {
-                const div = document.createElement('div'); div.className = 'saved-item';
-                div.innerHTML = `<div onclick="flyToItem(${item.id})" style="flex:1"><b>${item.owner_name}</b><br>${item.address}</div><div class="trash-btn" onclick="deleteItem(${item.id}, event)">🗑️</div>`;
-                container.appendChild(div);
-            });
-            if(stakes.length > 0) {
-                const div = document.createElement('div'); div.className = 'saved-item';
-                div.innerHTML = `<div><b>🚩 ${stakes.length} Stakes</b></div>`;
-                stakes.forEach(s => {
-                    const r = document.createElement('div'); r.style.padding = "5px 10px"; r.style.fontSize="12px"; r.style.color="#666";
-                    r.innerText = `#${s.number} - ${s.label}`; div.appendChild(r);
-                });
-                container.appendChild(div);
-            }
-        }
-
-        function flyToItem(id) {
-            const item = savedItems.find(i => i.id === id);
-            if(item) {
-                currentParcelData = item; const geo = JSON.parse(item.geometry);
-                map.flyTo([geo.coordinates[0][0][0][1], geo.coordinates[0][0][0][0]], 19); loadProperty(item); toggleSavedList();
-            }
-        }
-
-        function exportToCSV() {
-            toggleMenu(); // Close menu first
-            
-            // ASK FOR EXCEL/CSV SAVE (Kept for compatibility)
-            let fileName = prompt("Save file as:", "landslide_export");
-            if (!fileName) return; 
-            if (!fileName.endsWith('.csv')) fileName += '.csv';
-            
-            let csv = "Type,Name/ID,Details,Lat,Lng\n";
-            savedItems.forEach(i => csv += `Property,"${i.owner_name}","${i.address}",,\n`);
-            stakes.forEach(s => csv += `Stake,"${s.label}","Stake ID ${s.id}",${s.lat},${s.lng}\n`);
-            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = fileName;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
-
-        function closeCard() { 
-            document.getElementById('card').classList.remove('active'); 
-            if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } 
-        }
-        
-        function loadProjectFile(input) {
-            const file = input.files[0]; if(!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    clearMap();
-                    if(data.properties) data.properties.forEach(p => savedItems.push(p));
-                    if(data.stakes) data.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); });
-                    saveToStorage(); renderSavedList(); alert("Project Loaded!"); toggleMenu();
-                    if(stakes.length > 0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
-                } catch(err) { alert("Error loading file."); }
-            };
-            reader.readAsText(file);
-        }
-
-        function saveProjectFile() {
-            const data = { date: new Date().toLocaleDateString(), properties: savedItems, stakes: stakes };
-            let fileName = prompt("Name your project:", "Survey_Project");
-            if(!fileName) return;
-            const link = document.createElement("a");
-            link.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-            link.download = fileName + ".json";
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            toggleMenu();
-        }
-
         function clearMap() {
             stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); });
             stakes = []; savedItems = []; stakeMarkers = {};
-            localStorage.removeItem('landslide_saves');
         }
-        
-        initApp(); 
+
+        // --- MEASURE ---
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){ 
+            isMeasuring=!isMeasuring; const box=document.getElementById('measureBox'); const card=document.getElementById('card');
+            if(isMeasuring){ box.classList.add('visible'); card.classList.remove('active'); document.getElementById('rulerBtn').classList.add('active');}
+            else{ box.classList.remove('visible'); clearMeasure(); if(currentParcelData)card.classList.add('active'); document.getElementById('rulerBtn').classList.remove('active');}
+        }
+        function addMeasurePoint(ll){
+            L.circleMarker(ll, {radius:6, color:'#ff4400', fillColor:'white', fillOpacity:1}).addTo(measureLayer);
+            measurePoints.push(ll);
+            if(measurePoints.length>1){
+                L.polyline(measurePoints, {color:'#ff4400',weight:4,dashArray:'10, 10'}).addTo(measureLayer);
+                let d=0; for(let i=0;i<measurePoints.length-1;i++)d+=measurePoints[i].distanceTo(measurePoints[i+1]);
+                document.getElementById('distVal').innerText=(d*3.28084).toFixed(1)+" ft";
+            }
+        }
+        function clearMeasure(){ measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft"; }
+
+        // --- UI ---
+        function toggleMenu(){ document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
+        function toggleLayer(){ if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);} }
+        function toggleSavedList(){
+            const con=document.getElementById('savedListContainer'); con.innerHTML="";
+            savedItems.forEach(i=> con.innerHTML += `<div class="saved-item" onclick="flyToItem(${i.id})"><div><b>${i.owner_name}</b><br>${i.address}</div><div class="trash-btn" onclick="deleteItem(${i.id}, event)">🗑️</div></div>`);
+            if(stakes.length>0) con.innerHTML+=`<div><b>🚩 ${stakes.length} Stakes</b></div>`;
+            document.getElementById('savedModal').classList.toggle('active');
+        }
+        function deleteItem(id,e){ e.stopPropagation(); savedItems=savedItems.filter(i=>i.id!==id); saveToStorage(); toggleSavedList(); }
+        function flyToItem(id){ 
+            const i=savedItems.find(x=>x.id===id); if(i){ 
+                currentParcelData=i; map.flyTo([JSON.parse(i.geometry).coordinates[0][0][0][1], JSON.parse(i.geometry).coordinates[0][0][0][0]],19); loadProperty(i); toggleSavedList(); 
+            }
+        }
+        function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer){map.removeLayer(activeLayer);activeLayer=null;} }
+        function inviteFriends(){ 
+            toggleMenu(); const url=window.location.href; 
+            if(navigator.share)navigator.share({title:'Landslide',url}); else {navigator.clipboard.writeText(url);alert("Copied link!");} 
+        }
+        function shareLocation(){
+            toggleMenu(); const lat=currentLatLng?currentLatLng.lat:map.getCenter().lat; const lng=currentLatLng?currentLatLng.lng:map.getCenter().lng;
+            const url=`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+            if(navigator.share)navigator.share({title:'My Loc',url}); else {navigator.clipboard.writeText(url);alert("Loc copied!");}
+        }
+        function exportToCSV() { /* Simple export logic from prev versions can go here */ alert("Feature moved to 'Share My Location'"); }
+
+        initApp();
     </script>
 </body>
 </html>
