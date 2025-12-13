@@ -12,59 +12,54 @@
     
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
-        
-        /* FORCE MAP TO FILL SCREEN */
-        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background: #222; }
+        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
-        /* APP BAR */
+        /* UI LAYERS */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
-        
         .top-icons { display: flex; gap: 5px; }
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
         .icon-btn:hover { background: #f0f0f0; }
-        .icon-svg { width: 24px; height: 24px; fill: #444; }
 
-        /* MEASURE BOX */
-        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
-        .measure-box.visible { display: flex; align-items: center; gap: 15px; }
-        .clear-measure { background: #ff4400; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; margin-left: 5px; }
-
-        /* SIDE MENU */
+        /* MENU & MODALS */
         .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 200001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200000; display: none; }
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
 
-        /* LISTS & MODALS */
         .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 100001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .saved-modal.active { transform: translateX(0); }
         .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .saved-list { flex: 1; overflow-y: auto; }
         .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
-        .trash-btn { padding: 15px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
+        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
 
-        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100001; display: none; align-items: center; justify-content: center; }
+        /* LOGIN */
+        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200002; display: none; align-items: center; justify-content: center; }
         .login-box { background: white; width: 300px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
 
         /* INFO CARD */
-        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
         .info-card.active { transform: translateY(0); }
-        .prop-info { flex: 1; }
-        .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
+        .prop-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
         .direction-btn { width: 45px; height: 45px; background: #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,123,255,0.4); cursor: pointer; margin-left: 10px; }
 
-        /* BADGE: ORANGE v93 */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FF9800; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+        /* MEASURE */
+        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
+        .measure-box.visible { display: flex; align-items: center; gap: 15px; }
+        .clear-measure { background: #ff4400; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; margin-left: 5px; }
 
-        /* GPS STYLES */
+        /* BADGE: RED v94 */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #D50000; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+
+        /* GPS WITH TRIANGLE */
         .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
         .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
@@ -75,6 +70,8 @@
         
         .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
         .leaflet-tooltip-bottom:before { display: none; }
+        
+        /* PHOTOS IN POPUP */
         .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 200px; }
         .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-top: 5px; font-size: 12px; }
@@ -83,7 +80,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v93</div>
+    <div class="debug-label">v94</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="handleStakePhoto(this)">
@@ -94,6 +91,7 @@
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
+    <!-- MENUS -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
@@ -101,7 +99,7 @@
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share My Location</div>
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
-        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();"><span class="material-icons" style="color:#333">folder_open</span> Current Session</div>
+        <!-- Removed "Current Session" menu item here -->
         <div class="menu-item" onclick="saveToCloud()"><span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account</div>
         <div class="menu-item" onclick="openListCloudProjects()"><span class="material-icons" style="color:#FF9800">cloud_download</span> Open from Account</div>
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
@@ -123,16 +121,12 @@
         <div class="menu-btn" onclick="toggleMenu()" title="Main Menu"><span class="material-icons">menu</span></div>
         <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
         <div class="top-icons">
-            <div class="icon-btn" onclick="toggleSavedList()" title="Local List"><span class="material-icons" style="color:#444">list</span></div>
+            <!-- Removed Folder Icon from Top Right -->
             <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
         </div>
     </div>
 
-    <div class="saved-modal" id="savedModal">
-        <div class="saved-header"><span>Current Session</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
-        <div class="saved-list" id="savedListContainer"></div>
-    </div>
-
+    <!-- CLOUD LIST -->
     <div class="saved-modal" id="projectsModal" style="z-index:100002;">
         <div class="saved-header"><span style="color:#FF9800">Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="saved-list" id="projectsListContainer"></div>
@@ -146,83 +140,121 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // --- SAFE ESRI TILES (Fixed v93) ---
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
-        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+        // GOOGLE HYBRID (Zoom 21) - DEEP ZOOM RESTORED
+        const satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21 });
+        const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21 });
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
         let currentUserId=null, currentUserEmail=null, currentProjectID=null, currentProjectName=null;
         let activeLayer=null, currentParcelData=null, savedItems=[], stakes=[], stakeMarkers={}, availableProjects=[];
         let userMarker=null, currentLatLng=null, selectedStakeId=null;
 
-        function enableCompass() { toggleMenu(); if (typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',handleOrientation);flyToUser();});} else {window.addEventListener('deviceorientation', handleOrientation); flyToUser();} }
-        function handleOrientation(e) { const el = document.getElementById('gpsArrow'); if(el) { const rot = e.webkitCompassHeading || Math.abs(e.alpha - 360); el.style.transform = `rotate(${rot}deg)`; } }
+        // --- HYBRID PHOTO LOGIC ---
+        function requestStakePhoto(id){ selectedStakeId=id; document.getElementById('stakeCamInput').click(); }
         
+        function handleStakePhoto(input){
+            if (input.files[0] && selectedStakeId) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image(); img.src = e.target.result;
+                    img.onload = function() {
+                        const cvs=document.createElement('canvas'), ctx=cvs.getContext('2d');
+                        // Compress heavily
+                        const w=600; const sc=w/img.width; cvs.width=w; cvs.height=img.height*sc; ctx.drawImage(img,0,0,cvs.width,cvs.height);
+                        const comp=cvs.toDataURL('image/jpeg',0.5); 
+                        saveImageLocally(comp, selectedStakeId); 
+                        selectedStakeId=null;
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        function saveImageLocally(data, sid){
+            try { 
+                const k="img_"+Date.now()+Math.random().toString(36).substr(2,4); 
+                localStorage.setItem(k,data); 
+                const st=stakes.find(s=>s.id===sid); 
+                if(st){ if(!st.photos)st.photos=[]; st.photos.push(k); updateStakePopup(st); saveToStorage(); }
+            } catch(e){alert("Phone storage full!");}
+        }
+
+        // --- POPUP UPDATE ---
+        function updateStakePopup(s){
+            if(!stakeMarkers[s.id])return;
+            let ph=""; if(s.photos && s.photos.length) s.photos.forEach(k=>{const src=localStorage.getItem(k); if(src) ph+=`<img src="${src}" class="popup-img" onclick="/*expand*/">`;});
+            
+            const c = `<div style="min-width:140px">
+                <b>#${s.number} ${s.label}</b><br>
+                <div class="popup-photos">${ph}</div>
+                <div style="margin-top:10px;display:flex;gap:5px">
+                    <div class="popup-btn" onclick="requestStakePhoto(${s.id})"><span class="material-icons" style="font-size:14px">add_a_photo</span> Add</div>
+                    <div class="popup-btn popup-delete" onclick="window.delStake(${s.id})">Delete</div>
+                </div>
+            </div>`;
+            stakeMarkers[s.id].setPopupContent(c);
+        }
+
+        // --- CORE FEATURES ---
+        function enableCompass(){ toggleMenu(); if (typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',handleOrientation);flyToUser();});} else {window.addEventListener('deviceorientation', handleOrientation); flyToUser();} }
+        function handleOrientation(e){ const el=document.getElementById('gpsArrow'); if(el) { const rot = e.webkitCompassHeading || Math.abs(e.alpha - 360); el.style.transform=`rotate(${rot}deg)`; } }
         map.locate({watch:true, enableHighAccuracy:true});
         map.on('locationfound', (e)=>{ currentLatLng=e.latlng; if(!userMarker){ const html=`<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`; userMarker=L.marker(e.latlng, {icon:L.divIcon({className:'cg',html:html,iconSize:[40,40],iconAnchor:[20,20]}), zIndexOffset:1000}).addTo(map); userMarker.on('click',(ev)=>{ L.DomEvent.stopPropagation(ev); if(isMeasuring)addMeasurePoint(e.latlng); else {let n=getNextStakeNumber();createStake(currentLatLng.lat,currentLatLng.lng,"Stake "+n);} }); userMarker.bindTooltip("Tap to Stake", {permanent:true,direction:"bottom",className:"gps-label",offset:[0,24]}); } else userMarker.setLatLng(e.latlng); });
-        
-        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS waiting...");}
-        
-        function requestStakePhoto(id) { selectedStakeId=id; document.getElementById('stakeCamInput').click(); }
-        function handleStakePhoto(input){ if (input.files && input.files[0] && selectedStakeId) { const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.src = e.target.result; img.onload = function() { const cvs=document.createElement('canvas'), ctx=cvs.getContext('2d'); const w=500, sc=w/img.width; cvs.width=w; cvs.height=img.height*sc; ctx.drawImage(img,0,0,cvs.width,cvs.height); const comp=cvs.toDataURL('image/jpeg',0.5); saveImageLocally(comp, selectedStakeId); selectedStakeId=null; } }; reader.readAsDataURL(input.files[0]); } }
-        function saveImageLocally(data, sid){ try{ const k="img_"+Date.now()+Math.random(); localStorage.setItem(k,data); const st=stakes.find(s=>s.id===sid); if(st){ if(!st.photos)st.photos=[]; st.photos.push(k); updateStakePopup(st); saveToStorage(); } } catch(e){alert("Phone Storage Full!");} }
-        function updateStakePopup(s){ if(!stakeMarkers[s.id])return; let ph=""; if(s.photos) s.photos.forEach(k=>{const src=localStorage.getItem(k); if(src) ph+=`<img src="${src}" class="popup-img" onclick="/*zoom*/">`;}); stakeMarkers[s.id].setPopupContent(`<div style="min-width:140px"><b>#${s.number} ${s.label}</b><br><div style="font-size:12px;color:#666">${new Date(s.id).toLocaleTimeString()}</div><div class="popup-photos">${ph}</div><div style="margin-top:10px;display:flex;gap:5px"><div class="popup-btn" onclick="requestStakePhoto(${s.id})"><span class="material-icons" style="font-size:14px">add_a_photo</span> Add</div><div class="popup-btn popup-delete" onclick="window.delStake(${s.id})">Delete</div></div></div>`); }
+        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS...");}
 
-        // Cloud
-        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name=currentProjectName, id=currentProjectID; if (id) { if(!confirm(`Overwrite "${name}"? Cancel for new.`)) { id=null; name=null; } } if(!name) name = prompt("Project Name:"); if(!name) return; try { const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id, name, data:{properties:savedItems, stakes:stakes} }) }); const json = await res.json(); if(json.success) { alert(json.mode==='create'?"Created New!":"Updated!"); currentProjectName=name; if(json.mode==='create')currentProjectID=json.newId; } else alert(json.message); } catch(e) { alert("Save error"); } }
-        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login first"); document.getElementById('projectsListContainer').innerHTML="Loading..."; document.getElementById('projectsModal').classList.add('active'); try { const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`); availableProjects=await r.json(); renderCloudProjects(); } catch(e){toggleProjectsList();} }
+        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name=currentProjectName, id=currentProjectID; if (id) { if(!confirm(`Overwrite "${name}"?`)) { id=null; name=null; } } if(!name) name = prompt("Name:"); if(!name) return; try { 
+            // STORE ONLY IDs (Small)
+            const payload={ date: new Date(), properties:savedItems, stakes:stakes };
+            const res=await fetch('/api/cloud/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId, id, name, data:payload})}); 
+            const json=await res.json(); 
+            if(json.success){alert("Saved!"); currentProjectName=name; if(json.mode==='create')currentProjectID=json.newId;} else alert(json.message);
+        } catch(e) { alert("Save error"); } }
+        
+        // --- MAP & SEARCH ---
+        const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
+        async function performSearch(){ if(isMeasuring){alert("Close ruler");return;} const q=input.value; if(q.length<2)return; input.blur(); try{const r=await fetch(`/api/search?q=${q}`); const j=await r.json(); if(j.length>0){loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19);}}catch(e){} }
+        async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
+        map.on('click', async(e)=>{ if(isMeasuring)addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat,e.latlng.lng);});
+        
+        function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer)map.removeLayer(activeLayer); if(p.geometry){activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click',(e)=>{L.DomEvent.stopPropagation(e);if(isMeasuring)addMeasurePoint(e.latlng);else{let n=getNextStakeNumber();createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);}});}}
+        
+        // STAKES
+        function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber()}; addStakeMarker(s); stakes.push(s); saveToStorage(); }
+        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||parseInt(s.label.replace('Stake ',''))||0;if(n>max)max=n;});return max+1;}
+        function addStakeMarker(s){ const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`; const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); stakeMarkers[s.id]=f; updateStakePopup(s); f.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); }); }
+        window.delStake=function(id){ if(stakeMarkers[id])map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
+        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
+        function clearMap(){stakes.forEach(s=>{if(stakeMarkers[s.id])map.removeLayer(stakeMarkers[s.id]);}); stakes=[]; savedItems=[]; stakeMarkers={}; localStorage.removeItem('landslide_saves');}
+        
+        // LOGIN
+        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
+        function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex';}
+        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
+        
+        async function openListCloudProjects(){toggleMenu();if(!currentUserId)return alert("Login first"); document.getElementById('projectsListContainer').innerHTML="Loading...";document.getElementById('projectsModal').classList.add('active'); try{const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`);availableProjects=await r.json();renderCloudProjects();}catch(e){}}
         function renderCloudProjects(){const c=document.getElementById('projectsListContainer');c.innerHTML=""; availableProjects.forEach((p,i)=>{ c.innerHTML+=`<div class="drawer-item"><div onclick="loadSpecificProject(${i})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id},event)">🗑️</div></div>`; }); }
         async function deleteCloudProject(pid,e){e.stopPropagation();if(!confirm("Delete?"))return; await fetch(`/api/cloud/delete/${pid}`,{method:'DELETE'}); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects();}
-        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{stakes.push(s);addStakeMarker(s)});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();renderSavedList();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
-        function toggleProjectsList(){ document.getElementById('projectsModal').classList.toggle('active'); }
+        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{stakes.push(s);addStakeMarker(s)});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
+        
+        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText="Hi, "+currentUserEmail.split('@')[0];}
+        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
+        function toggleProjectsList(){document.getElementById('projectsModal').classList.toggle('active');}
+        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
+        function closeCard(){document.getElementById('card').classList.remove('active');if(activeLayer){map.removeLayer(activeLayer);activeLayer=null;}}
+        function shareLocation(){toggleMenu();if(currentLatLng)navigator.clipboard.writeText(`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`);else alert("GPS...");}
+        function inviteFriends(){toggleMenu();if(navigator.share)navigator.share({title:'App',url:window.location.href});}
+        function exportToCSV(){alert("Use Share Location");toggleMenu();}
+        function getDirectionsToSelected() { let lat, lng; if (currentParcelData && currentParcelData.geometry) { const geo=JSON.parse(currentParcelData.geometry); lat=geo.coordinates[0][0][0][1]; lng=geo.coordinates[0][0][0][0]; } else if (currentLatLng) { lat=currentLatLng.lat; lng=currentLatLng.lng; } else return alert("Select property first."); window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`); }
 
+        // MEASURE
         let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
         function toggleMeasureMode(){ isMeasuring=!isMeasuring; const b=document.getElementById('measureBox'), c=document.getElementById('card'); if(isMeasuring){ b.classList.add('visible'); c.classList.remove('active'); } else { b.classList.remove('visible'); clearMeasure(); if(currentParcelData) c.classList.add('active'); } }
         function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let m=0; for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = `${(m*3.28084).toFixed(1)} ft`; } }
         function clearMeasure() { measureLayer.clearLayers(); measurePoints = []; document.getElementById('distVal').innerText="0 ft"; }
-        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||parseInt(s.label.replace('Stake ',''))||0;if(n>max)max=n;});return max+1;}
-        function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber()}; addStakeMarker(s); stakes.push(s); if(currentParcelData && !savedItems.find(i=>i.id===currentParcelData.id)) savedItems.push(currentParcelData); saveToStorage(); }
-        function addStakeMarker(s){ const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`; const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); f.bindPopup("..."); updateStakePopup(s); f.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); }); stakeMarkers[s.id]=f; }
-        window.delStake=function(id){ if(stakeMarkers[id])map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
-        
-        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
-        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
-        function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex';}
-        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
-        
-        function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
-        function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
-        function toggleSavedList(){ renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
-        function renderSavedList(){const c=document.getElementById('savedListContainer'); c.innerHTML=""; savedItems.forEach(i=>c.innerHTML+=`<div class="drawer-item" onclick="flyToItem(${i.id})"><div><b>${i.owner_name}</b><br>${i.address}</div><div class="trash-btn" onclick="delItem(${i.id},event)">🗑️</div></div>`); if(stakes.length>0)c.innerHTML+=`<div style="padding:15px"><b>🚩 ${stakes.length} Stakes</b></div>`;}
-        function delItem(id,e){e.stopPropagation(); savedItems=savedItems.filter(i=>i.id!==id); saveToStorage(); toggleSavedList();}
-        function flyToItem(id){const i=savedItems.find(x=>x.id===id);if(i){currentParcelData=i;map.flyTo([JSON.parse(i.geometry).coordinates[0][0][0][1],JSON.parse(i.geometry).coordinates[0][0][0][0]],19);loadProperty(i);toggleSavedList();}}
-        function closeCard(){document.getElementById('card').classList.remove('active');if(activeLayer){map.removeLayer(activeLayer);activeLayer=null;}}
-        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); renderSavedList(); }
-        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
-        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
-        const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
-        async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
-        async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
-        map.on('click', async(e)=>{if(isMeasuring) addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);});
-        function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
-        function getDirectionsToSelected() {
-            let lat, lng; if (currentParcelData && currentParcelData.geometry) { const geo=JSON.parse(currentParcelData.geometry); lat=geo.coordinates[0][0][0][1]; lng=geo.coordinates[0][0][0][0]; } else if (currentLatLng) { lat=currentLatLng.lat; lng=currentLatLng.lng; } else return alert("Select property first."); window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);
-        }
-        function exportToCSV() { toggleMenu(); alert("Requires Premium"); }
-        function loadProjectFile(){} function saveProjectFile(){}
+        function loadProjectFile(){}
 
         function initApp() {
-            // SAFE LOADER
-            try {
-                if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
-                const s=localStorage.getItem('landslide_saves'); 
-                if(s && s!=="null") { 
-                    const all=JSON.parse(s); 
-                    savedItems=all.filter(i=>i.type!=='stake'); 
-                    all.filter(i=>i.type==='stake').forEach(x=>{ stakes.push(x);addStakeMarker(x); }); 
-                }
-            } catch(e) { console.log("Clean init"); localStorage.removeItem('landslide_saves'); }
+            if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
+            const s=localStorage.getItem('landslide_saves'); if(s) { const all=JSON.parse(s); savedItems=all.filter(i=>i.type!=='stake'); stakes=[]; all.filter(i=>i.type==='stake').forEach(x=>{ if(x.type==='photo'){}else{stakes.push(x);addStakeMarker(x);} }); }
             if (typeof DeviceOrientationEvent !== 'undefined') enableCompass();
         }
         initApp();
