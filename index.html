@@ -11,13 +11,13 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
+        /* BASE */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
         /* UI LAYERS */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
-        
         .search-wrapper { flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
@@ -27,109 +27,91 @@
         .icon-btn:hover { background: #f0f0f0; }
         .icon-svg { width: 24px; height: 24px; fill: #444; }
 
-        /* NEW AI CAMERA BUTTON (Bottom Center) */
-        .ai-cam-btn {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: white; color: #333;
-            padding: 10px 20px; border-radius: 30px;
-            font-size: 14px; font-weight: 700;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            z-index: 10001; cursor: pointer;
-            border: 1px solid #ddd; display: flex; align-items: center; gap: 8px;
-            white-space: nowrap;
-        }
-        .ai-cam-btn:active { transform: translateX(-50%) scale(0.95); background: #f5f5f5; }
-
         /* MEASURE BOX */
-        .measure-box { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 16px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
+        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
         .measure-box.visible { display: flex; align-items: center; gap: 15px; }
         .clear-measure { background: #ff4400; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; margin-left: 5px; }
 
-        /* CARD (With Drive Button) */
-        .info-card { 
-            position: fixed; bottom: 20px; left: 15px; right: 15px; 
-            background: white; border-radius: 12px; padding: 15px; 
-            transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); 
-            border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;
-        }
+        /* CARD */
+        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .info-card.active { transform: translateY(0); }
         .prop-info { flex: 1; }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
-        
-        .drive-btn { 
-            background: #2196F3; color: white; 
-            padding: 10px 15px; border-radius: 8px; font-size: 13px; font-weight: bold;
-            display: flex; align-items: center; gap: 5px; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(33, 150, 243, 0.3);
-        }
-        .drive-btn:active { transform: scale(0.95); }
+        .direction-btn { width: 45px; height: 45px; background: #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,123,255,0.4); cursor: pointer; margin-left: 10px; }
 
         /* SIDE MENU */
         .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 200001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
         .side-menu.open { transform: translateX(0); }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200000; display: none; }
         .menu-overlay.active { display: block; }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
-
-        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
-        .saved-modal.active { transform: translateX(0); }
-        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .saved-list { flex: 1; overflow-y: auto; }
-        .saved-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
-        .trash-btn { padding: 15px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
-
+        
+        /* MODALS */
         .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100001; display: none; align-items: center; justify-content: center; }
         .login-box { background: white; width: 300px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
+        
+        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
+        .saved-modal.active { transform: translateX(0); }
+        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .saved-list { flex: 1; overflow-y: auto; }
+        .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
+        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
 
-        /* DEBUG v83 - BLACK */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #333; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #607D8B; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
 
-        /* ICONS */
+        /* MARKERS */
+        .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
+        .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
+        .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
+
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
+        
         .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
-        .leaflet-tooltip-bottom:before { display: none; }
+        .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
-        .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
-        .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
-        .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
+
+        /* POPUP PHOTOS */
+        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 200px; }
+        .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        .popup-btn { 
+            display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; 
+            padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-top: 5px; font-size: 12px;
+        }
+        .popup-delete { color: red; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v83</div>
+    <div class="debug-label">v84</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(this)">
+    
+    <!-- CAMERA INPUT for Stakes -->
+    <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="handleStakePhoto(this)">
 
-    <!-- MEASURE -->
     <div class="measure-box" id="measureBox">
         <span style="font-size:14px; margin-right:5px; font-weight:400;">Tap map to measure:</span>
         <span id="distVal" style="color:#4CAF50">0 ft</span>
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
-    <!-- AI CAMERA BUTTON (Center Bottom) -->
-    <div class="ai-cam-btn" onclick="openCamera()">
-        <span class="material-icons">camera_enhance</span> Take Picture & Analyze
-    </div>
-
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
-        <div class="menu-item" onclick="flyToUser(); toggleMenu();"><span class="material-icons" style="color:#E91E63">my_location</span> Go to Current Location</div>
+        <div class="menu-item" onclick="enableCompass()"><span class="material-icons" style="color:#E91E63">my_location</span> Go to Current Location</div>
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share My Location</div>
+        
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
-        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();"><span class="material-icons" style="color:#333">folder_open</span> Current Session</div>
         <div class="menu-item" onclick="saveToCloud()"><span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account</div>
         <div class="menu-item" onclick="openListCloudProjects()"><span class="material-icons" style="color:#FF9800">cloud_download</span> Open from Account</div>
+        
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
         <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
     </div>
@@ -149,15 +131,8 @@
         <div class="menu-btn" onclick="toggleMenu()" title="Main Menu"><span class="material-icons">menu</span></div>
         <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
         <div class="top-icons">
-            <!-- SAVED AND LAYERS -->
-            <div class="icon-btn" onclick="toggleSavedList()" title="Saved"><span class="material-icons" style="color:#444">folder_open</span></div>
             <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
         </div>
-    </div>
-
-    <div class="saved-modal" id="savedModal">
-        <div class="saved-header"><span>Current Session</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
-        <div class="saved-list" id="savedListContainer"></div>
     </div>
 
     <div class="saved-modal" id="projectsModal" style="z-index:100002;">
@@ -166,17 +141,13 @@
     </div>
 
     <div id="map"></div>
-    
-    <!-- BOTTOM INFO CARD WITH DRIVE BUTTON -->
     <div class="info-card" id="card">
         <div class="prop-info">
             <div class="prop-val" id="owner">...</div>
             <div class="prop-sub" id="address">...</div>
         </div>
-        <!-- DRIVE BUTTON HERE -->
-        <div class="drive-btn" onclick="getDirectionsToSelected()">
-            <span class="material-icons" style="font-size:18px;">directions_car</span>
-            Drive From Here
+        <div class="direction-btn" onclick="getDirectionsToSelected()" title="Drive Here">
+            <span class="material-icons">directions_car</span>
         </div>
     </div>
 
@@ -187,92 +158,146 @@
         const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
 
         let currentUserId=null, currentUserEmail=null, currentProjectID=null, currentProjectName=null;
-        let activeLayer=null, currentParcelData=null, savedItems=[], stakes=[], stakeMarkers={}, availableProjects=[], photoMarkers={};
+        let activeLayer=null, currentParcelData=null, savedItems=[], stakes=[], stakeMarkers={}, availableProjects=[];
+        let userMarker=null, currentLatLng=null;
+        
+        let selectedStakeId = null; // Track which stake needs a photo
 
-        // --- NEW BUTTON FUNCTIONS ---
-        function getDirectionsToSelected() {
-            let lat, lng;
-            if (currentParcelData && currentParcelData.geometry) {
-                const geo = JSON.parse(currentParcelData.geometry); lat = geo.coordinates[0][0][0][1]; lng = geo.coordinates[0][0][0][0];
-            } else if (currentLatLng) { lat=currentLatLng.lat; lng=currentLatLng.lng; } else return alert("Select property first.");
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);
+        // --- NEW: STAKE PHOTO LOGIC ---
+        function requestStakePhoto(stakeId) {
+            selectedStakeId = stakeId;
+            document.getElementById('stakeCamInput').click();
         }
-        function openCamera(){ document.getElementById('cameraInput').click(); }
-        function handlePhotoUpload(input){
-            if(input.files && input.files[0]){
-                alert("Analyzing...");
-                setTimeout(()=>{
-                    const lat=currentLatLng?currentLatLng.lat:map.getCenter().lat;
-                    const lng=currentLatLng?currentLatLng.lng:map.getCenter().lng;
-                    const res=["Granite Rock","Corner Pin","Fence Post"][Math.floor(Math.random()*3)];
-                    const id=Date.now(); const s={id, type:'photo', lat, lng, label:"📷 "+res, analysis:res};
-                    addPhotoMarker(s); stakes.push(s); saveToStorage(); alert(`AI: ${res}`);
-                },1500);
+
+        function handleStakePhoto(input) {
+            if (input.files && input.files[0] && selectedStakeId) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgData = e.target.result;
+                    // Find stake and add photo
+                    const stake = stakes.find(s => s.id === selectedStakeId);
+                    if (stake) {
+                        if(!stake.photos) stake.photos = [];
+                        stake.photos.push(imgData);
+                        // Update UI
+                        updateStakePopup(stake);
+                        saveToStorage();
+                    }
+                    selectedStakeId = null; // Reset
+                }
+                reader.readAsDataURL(input.files[0]);
             }
         }
-        function addPhotoMarker(s){
-            const icon=L.divIcon({className:'stake-icon',html:'📷',iconSize:[35,35]});
-            const m=L.marker([s.lat,s.lng],{icon:icon}).addTo(map);
-            m.bindPopup(`<b>${s.analysis}</b><br><button onclick="window.delStake(${s.id})">Delete</button>`);
-            stakeMarkers[s.id]=m;
+        
+        // Helper to redraw popup content dynamic
+        function updateStakePopup(s) {
+            if(!stakeMarkers[s.id]) return;
+            
+            let photosHtml = "";
+            if(s.photos && s.photos.length > 0) {
+                photosHtml = `<div class="popup-photos">`;
+                s.photos.forEach(p => {
+                    photosHtml += `<img src="${p}" class="popup-img" onclick="window.open('${p}')">`;
+                });
+                photosHtml += `</div>`;
+            }
+
+            const popupContent = `
+                <div style="min-width:150px">
+                    <b>#${s.number} ${s.label}</b><br>
+                    <div style="font-size:12px;color:#666">${new Date(s.id).toLocaleTimeString()}</div>
+                    ${photosHtml}
+                    <div style="margin-top:10px;display:flex;gap:5px;">
+                        <div class="popup-btn" onclick="requestStakePhoto(${s.id})">
+                            <span class="material-icons" style="font-size:16px">add_a_photo</span> Add
+                        </div>
+                        <div class="popup-btn popup-delete" onclick="window.delStake(${s.id})">
+                            <span class="material-icons" style="font-size:16px">delete</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            stakeMarkers[s.id].setPopupContent(popupContent);
         }
 
-        // --- CORE ---
-        function enableCompass() { toggleMenu(); if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',handleOrientation);flyToUser();});} else {window.addEventListener('deviceorientation', handleOrientation); flyToUser();} }
-        function handleOrientation(e) { const el = document.getElementById('gpsArrow'); if(el) { const rot = e.webkitCompassHeading || Math.abs(e.alpha - 360); el.style.transform = `rotate(${rot}deg)`; } }
-        let userMarker=null, currentLatLng=null;
-        map.locate({watch:true, enableHighAccuracy:true});
-        map.on('locationfound', (e)=>{ currentLatLng=e.latlng; if(!userMarker){ const html=`<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`; userMarker=L.marker(e.latlng, {icon:L.divIcon({className:'cg',html:html,iconSize:[40,40],iconAnchor:[20,20]}), zIndexOffset:1000}).addTo(map); userMarker.on('click',(ev)=>{ L.DomEvent.stopPropagation(ev); if(isMeasuring)addMeasurePoint(e.latlng); else {let n=getNextStakeNumber();createStake(currentLatLng.lat,currentLatLng.lng,"Stake "+n);} }); userMarker.bindTooltip("Tap to Stake", {permanent:true,direction:"bottom",className:"gps-label",offset:[0,24]}); } else userMarker.setLatLng(e.latlng); });
-        
-        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name=currentProjectName, id=currentProjectID; if (id) { if(!confirm(`Overwrite "${name}"? Cancel for new.`)) { id=null; name=null; } } if(!name) name = prompt("Project Name:"); if(!name) return; try { const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id, name, data:{properties:savedItems, stakes:stakes} }) }); const json = await res.json(); if(json.success) { alert(json.mode==='create'?"Created New!":"Updated!"); currentProjectName=name; if(json.mode==='create')currentProjectID=json.newId; } else { alert(json.message); if(json.message.includes("exists")) saveToCloud(); } } catch(e) { alert("Save error"); } }
-        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login first"); document.getElementById('projectsListContainer').innerHTML="Loading..."; document.getElementById('projectsModal').classList.add('active'); try { const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`); availableProjects=await r.json(); renderCloudProjects(); } catch(e){toggleProjectsList();} }
-        function renderCloudProjects(){const c=document.getElementById('projectsListContainer');c.innerHTML=""; availableProjects.forEach((p,i)=>{ c.innerHTML+=`<div class="drawer-item"><div onclick="loadSpecificProject(${i})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id},event)">🗑️</div></div>`; }); }
-        async function deleteCloudProject(pid,e){e.stopPropagation();if(!confirm("Delete?"))return; await fetch(`/api/cloud/delete/${pid}`,{method:'DELETE'}); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects();}
-        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{if(s.type==='photo')addPhotoMarker(s);else{stakes.push(s);addStakeMarker(s)}});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();renderSavedList();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
-        function toggleProjectsList(){ document.getElementById('projectsModal').classList.toggle('active'); }
-        
-        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
-        function toggleMeasureMode(){ isMeasuring=!isMeasuring; const b=document.getElementById('measureBox'), c=document.getElementById('card'); if(isMeasuring){ b.classList.add('visible'); c.classList.remove('active'); } else { b.classList.remove('visible'); clearMeasure(); if(currentParcelData) c.classList.add('active'); } }
-        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let m=0; for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = `${(m*3.28084).toFixed(1)} ft`; } }
-        function clearMeasure() { measureLayer.clearLayers(); measurePoints = []; document.getElementById('distVal').innerText="0 ft"; }
-        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS...");}
-        
-        // Stakes
+        function addStakeMarker(s) {
+            const h = `<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`;
+            const f = L.marker([s.lat, s.lng], { draggable: true, icon: L.divIcon({ className:'ci', html:h, iconSize:[40,40], iconAnchor:[20,20] }) }).addTo(map);
+            
+            stakeMarkers[s.id] = f;
+            
+            // Initialize popup content immediately
+            f.bindPopup("Loading..."); 
+            updateStakePopup(s); 
+
+            f.on('dragend', (e) => { const n = e.target.getLatLng(); s.lat = n.lat; s.lng = n.lng; saveToStorage(); });
+        }
+
+        function createStake(lat, lng, label) {
+            const id = Date.now();
+            // Start fresh array for photos
+            const s = { id, type: 'stake', lat, lng, label, number: getNextStakeNumber(), photos: [] };
+            addStakeMarker(s);
+            stakes.push(s);
+            if(currentParcelData && !savedItems.find(i=>i.id===currentParcelData.id)) savedItems.push(currentParcelData); 
+            saveToStorage();
+        }
+
         function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||parseInt(s.label.replace('Stake ',''))||0;if(n>max)max=n;});return max+1;}
-        function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber()}; addStakeMarker(s); stakes.push(s); if(currentParcelData && !savedItems.find(i=>i.id===currentParcelData.id)) savedItems.push(currentParcelData); saveToStorage(); }
-        function addStakeMarker(s){ const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`; const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); f.bindPopup(`<b>#${s.number}</b><br><button onclick="window.delStake(${s.id})">Delete</button>`); f.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); }); stakeMarkers[s.id]=f; }
         window.delStake=function(id){ if(stakeMarkers[id])map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
-        
-        // Menus
+
+        // --- CORE UI ---
         function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
         function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
+        function getDirectionsToSelected() {
+            let lat, lng;
+            if (currentParcelData && currentParcelData.geometry) { const geo=JSON.parse(currentParcelData.geometry); lat=geo.coordinates[0][0][0][1]; lng=geo.coordinates[0][0][0][0]; } else if (currentLatLng) { lat=currentLatLng.lat; lng=currentLatLng.lng; } else return alert("Select a property first.");
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);
+        }
+        function enableCompass() { toggleMenu(); if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',handleOrientation);flyToUser();});} else {window.addEventListener('deviceorientation', handleOrientation); flyToUser();} }
+        function handleOrientation(e) { const el = document.getElementById('gpsArrow'); if(el) { const rot = e.webkitCompassHeading || Math.abs(e.alpha - 360); el.style.transform = `rotate(${rot}deg)`; } }
+        
+        map.locate({watch:true, enableHighAccuracy:true});
+        map.on('locationfound', (e)=>{ currentLatLng=e.latlng; if(!userMarker){ const html=`<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`; userMarker=L.marker(e.latlng, {icon:L.divIcon({className:'cg',html:html,iconSize:[40,40],iconAnchor:[20,20]}), zIndexOffset:1000}).addTo(map); userMarker.on('click',(ev)=>{L.DomEvent.stopPropagation(ev); if(isMeasuring)addMeasurePoint(e.latlng); else {let n=getNextStakeNumber();createStake(currentLatLng.lat,currentLatLng.lng,"Stake "+n);} }); userMarker.bindTooltip("Tap to Stake", {permanent:true,direction:"bottom",className:"gps-label",offset:[0,24]}); } else userMarker.setLatLng(e.latlng); });
+        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS waiting...");}
+        
+        // --- SEARCH & CLICK ---
         const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
         async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
         async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
         map.on('click', async(e)=>{if(isMeasuring) addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);});
         function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
 
-        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
-        function renderSavedList() { const c = document.getElementById('savedListContainer'); c.innerHTML=""; savedItems.forEach(i=> c.innerHTML+=`<div class="drawer-item" onclick="flyToItem(${i.id})"><div><b>${i.owner_name}</b><br>${i.address}</div><div class="trash-btn" onclick="delItem(${i.id},event)">🗑️</div></div>`); if(stakes.length>0) c.innerHTML+=`<div style="padding:15px"><b>🚩 ${stakes.length} Stakes</b></div>`; }
-        function toggleSavedList(){ renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
-        function delItem(id,e){ e.stopPropagation(); savedItems=savedItems.filter(i=>i.id!==id); saveToStorage(); toggleSavedList(); }
-        function flyToItem(id){ const i=savedItems.find(x=>x.id===id); if(i){ currentParcelData=i; map.flyTo([JSON.parse(i.geometry).coordinates[0][0][0][1], JSON.parse(i.geometry).coordinates[0][0][0][0]],19); loadProperty(i); toggleSavedList(); } }
-        function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); renderSavedList(); }
-        function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
-        function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
-        function exportToCSV() { toggleMenu(); alert("Use Share Location"); } 
-        function loadProjectFile(i){} function saveProjectFile(){}
-        
+        // --- AUTH/CLOUD ---
+        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name=currentProjectName, id=currentProjectID; if (id) { if(!confirm(`Overwrite "${name}"? Cancel for new.`)) { id=null; name=null; } } if(!name) name = prompt("Project Name:"); if(!name) return; try { const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id, name, data:{properties:savedItems, stakes:stakes} }) }); const json = await res.json(); if(json.success) { alert(json.mode==='create'?"Created New!":"Updated!"); currentProjectName=name; if(json.mode==='create')currentProjectID=json.newId; } else alert(json.message); } catch(e) { alert("Save error"); } }
+        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login first"); document.getElementById('projectsListContainer').innerHTML="Loading..."; document.getElementById('projectsModal').classList.add('active'); try { const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`); availableProjects=await r.json(); renderCloudProjects(); } catch(e){toggleProjectsList();} }
+        function renderCloudProjects(){const c=document.getElementById('projectsListContainer');c.innerHTML=""; availableProjects.forEach((p,i)=>{ c.innerHTML+=`<div class="drawer-item"><div onclick="loadSpecificProject(${i})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id},event)">🗑️</div></div>`; }); }
+        async function deleteCloudProject(pid,e){e.stopPropagation();if(!confirm("Delete?"))return; await fetch(`/api/cloud/delete/${pid}`,{method:'DELETE'}); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects();}
+        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{stakes.push(s);addStakeMarker(s)});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
+        function toggleProjectsList(){ document.getElementById('projectsModal').classList.toggle('active'); }
         async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
         function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
-        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
         function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex';}
+        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
+
+        // --- MEASURE ---
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){ isMeasuring=!isMeasuring; const b=document.getElementById('measureBox'), c=document.getElementById('card'); if(isMeasuring){ b.classList.add('visible'); c.classList.remove('active'); } else { b.classList.remove('visible'); clearMeasure(); if(currentParcelData) c.classList.add('active'); } }
+        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let m=0; for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = `${(m*3.28084).toFixed(1)} ft`; } }
+        function clearMeasure() { measureLayer.clearLayers(); measurePoints = []; document.getElementById('distVal').innerText="0 ft"; }
+
+        function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
+        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
+        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
+        function exportToCSV() { let f=prompt("Name file:", "survey"); if(!f)return; if(!f.endsWith('.csv'))f+='.csv'; let c="Type,Data,Lat,Lng\n"; stakes.forEach(s=>c+=`Stake,${s.label},${s.lat},${s.lng}\n`); const l=document.createElement("a"); l.href=encodeURI("data:text/csv;charset=utf-8,"+c); l.download=f; document.body.appendChild(l); l.click(); document.body.removeChild(l); toggleMenu(); }
+        function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
+        function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
+        function loadProjectFile(){} function saveProjectFile(){}
 
         function initApp() {
             if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
-            const s=localStorage.getItem('landslide_saves'); if(s) { const all=JSON.parse(s); savedItems=all.filter(i=>i.type!=='stake'); stakes=[]; all.filter(i=>i.type==='stake').forEach(x=>{ if(x.type==='photo')addPhotoMarker(x); else{stakes.push(x);addStakeMarker(x);} }); }
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { document.body.addEventListener('click', ()=>{ DeviceOrientationEvent.requestPermission(); }, {once:true}); } else window.addEventListener('deviceorientation', handleOrientation);
+            const s=localStorage.getItem('landslide_saves'); if(s) { const all=JSON.parse(s); savedItems=all.filter(i=>i.type!=='stake'); stakes=[]; all.filter(i=>i.type==='stake').forEach(x=>{ if(x.type==='photo'){}else{stakes.push(x);addStakeMarker(x);} }); }
+            if (typeof DeviceOrientationEvent !== 'undefined') enableCompass();
         }
         initApp();
     </script>
