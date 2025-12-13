@@ -30,32 +30,31 @@
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
         
+        /* v74 Badge = RED */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: red; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+
         .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
         .measure-box.visible { display: flex; align-items: center; gap: 15px; }
+        
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; text-align: center; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; line-height: 1.2; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
 
-        /* LISTS */
         .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .saved-modal.active { transform: translateX(0); }
-        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; }
         .saved-list { flex: 1; overflow-y: auto; }
         .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
         .trash-btn { padding: 15px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee;}
 
-        /* LOGIN */
         .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100001; display: none; align-items: center; justify-content: center; }
         .login-box { background: white; width: 300px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
 
-        /* BADGE: YELLOW = v73 */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FFD600; color: black; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
-        
-        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-container { position: relative; }
+        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
         .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
         .leaflet-tooltip-bottom:before { border-bottom-color: rgba(0, 123, 255, 0.9); }
@@ -68,7 +67,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v73</div>
+    <div class="debug-label">v74</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -112,7 +111,7 @@
     </div>
 
     <div class="saved-modal" id="savedModal">
-        <div class="saved-header"><span>Current Session</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
+        <div class="saved-header"><span>Local Saves</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="saved-list" id="savedListContainer"></div>
     </div>
 
@@ -133,16 +132,15 @@
         let currentUserId = null, currentUserEmail = null, currentProjectID = null, currentProjectName = null;
         let activeLayer = null, currentParcelData = null, savedItems = [], stakes = [], stakeMarkers = {}, availableProjects = [];
 
-        // --- AUTH & CLOUD (FIXED: DELETE CACHE & SAVE NEW) ---
+        // --- AUTH & CLOUD (FIXED: DELETE & DUPLICATE) ---
         async function openListCloudProjects() {
             toggleMenu(); if(!currentUserId) return alert("Login first");
             document.getElementById('projectsListContainer').innerHTML = "<div style='padding:20px'>Loading...</div>";
             document.getElementById('projectsModal').classList.add('active');
             
-            // THE FIX: ADD TIMESTAMP to bust cache
-            const ts = Date.now();
+            // CACHE BUSTER ?t=... ensure fresh list
             try {
-                const res = await fetch(`/api/cloud/load/${currentUserId}?t=${ts}`);
+                const res = await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`);
                 availableProjects = await res.json();
                 renderCloudProjects();
             } catch(e) { alert("Load error"); toggleProjectsList(); }
@@ -151,6 +149,7 @@
         function renderCloudProjects() {
             const c = document.getElementById('projectsListContainer'); c.innerHTML="";
             if(availableProjects.length === 0) { c.innerHTML="<div style='padding:20px'>No projects.</div>"; return; }
+            
             availableProjects.forEach((p, idx) => {
                 const div = document.createElement('div'); div.className = 'drawer-item';
                 div.innerHTML = `
@@ -162,43 +161,57 @@
         }
 
         async function deleteCloudProject(pid, event) {
-            event.stopPropagation(); if(!confirm("Delete forever?")) return;
-            // Immediate UI update
-            event.target.parentElement.style.opacity = "0.5"; 
+            event.stopPropagation(); if(!confirm("Permanently delete?")) return;
             try {
-                await fetch(`/api/cloud/delete/${pid}`, { method: 'DELETE' });
-                // Force Refresh
-                openListCloudProjects(); // Reload list from server
+                const res = await fetch(`/api/cloud/delete/${pid}`, { method: 'DELETE' });
+                const json = await res.json();
+                if(json.success) {
+                    // Update Local List immediately so it vanishes
+                    availableProjects = availableProjects.filter(p => p.id !== pid);
+                    renderCloudProjects();
+                    alert("Deleted.");
+                } else alert("Delete failed.");
             } catch(e) { alert("Error deleting"); }
         }
 
         async function saveToCloud() {
             toggleMenu(); if(!currentUserId) return alert("Login first");
-            let name = currentProjectName; let id = currentProjectID;
+            let name = currentProjectName, id = currentProjectID;
             
-            if (id) {
-                // We have an ID, user can overwrite or save new
+            // If editing, confirm overwrite
+            if (id && name) {
                 if (!confirm(`Overwrite existing project: "${name}"? \nClick Cancel to save as a NEW file.`)) {
-                    id = null; // Forces new insert
-                    name = prompt("Enter NEW Name:", name + " Copy");
+                    id = null; // New File
+                    name = null;
                 }
-            } else {
-                name = prompt("Project Name:");
+            }
+            
+            if(!name) {
+                name = prompt("Enter Project Name:");
+                if(!name) return; // Cancelled
             }
 
-            if(!name) return;
-
+            const payload = { date: new Date(), properties: savedItems, stakes: stakes };
+            
             try {
                 const res = await fetch('/api/cloud/save', {
                     method:'POST', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ userId:currentUserId, id: id, name: name, data:{properties:savedItems, stakes:stakes} })
+                    body: JSON.stringify({ userId:currentUserId, id: id, name: name, data: payload })
                 });
                 const json = await res.json();
+                
                 if(json.success) {
                     alert(json.mode==='create'?"Created New Project!":"Updated!");
                     currentProjectName=name; 
-                    if(json.mode==='create') currentProjectID = json.newId; // Capture the NEW ID
-                } else alert(json.message);
+                    if(json.mode==='create') currentProjectID = json.newId; // Remember new ID
+                } else {
+                    // ERROR (e.g. Duplicate Name)
+                    alert(json.message); // "Name exists"
+                    if(json.message.includes("exists")) {
+                        // Let user try again immediately
+                        saveToCloud(); 
+                    }
+                }
             } catch(e) { alert("Save error"); }
         }
 
@@ -213,6 +226,7 @@
             alert(`"${p.name}" Loaded!`);
             if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19);
         }
+        
         function toggleProjectsList() { document.getElementById('projectsModal').classList.toggle('active'); }
 
         // --- MAP UTILS ---
@@ -239,17 +253,9 @@
         
         async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
         function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
-        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
         function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex';}
-
-        const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
-        async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
-        map.on('click', async(e)=>{if(isMeasuring) addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);});
-        async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
-        function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
-
-        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
-        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
+        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
+        
         function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS...");}
         function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
         function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
