@@ -11,9 +11,11 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
+        /* BASE */
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; }
 
+        /* UI LAYERS */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; user-select: none; -webkit-tap-highlight-color: transparent;}
         .search-wrapper { flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
@@ -45,17 +47,16 @@
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
 
-        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 10001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
-        .saved-modal.active { transform: translateX(0); }
-        .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .saved-list { flex: 1; overflow-y: auto; }
-        .saved-item, .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
+        /* Cloud Drawer Only */
+        .drawer-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 200001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
+        .drawer-modal.active { transform: translateX(0); }
+        .drawer-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .drawer-list { flex: 1; overflow-y: auto; }
+        .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
         .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
 
-        /* DEBUG: v77 BROWN */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #795548; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #555; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
 
-        /* GPS WITH TRIANGLE (VISIBLE DEFAULT) */
         .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
         .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
@@ -64,9 +65,8 @@
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
         
-        /* Updated Label Offset & Style */
         .gps-label { 
-            background-color: rgba(255, 255, 255, 0.9); /* Lighter background */
+            background-color: rgba(255, 255, 255, 0.9); 
             border: 1px solid #007bff;
             color: #007bff; 
             font-weight: 800; 
@@ -75,15 +75,14 @@
             border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .leaflet-tooltip-bottom:before { display: none; } /* Hide the little triangle of the tooltip */
-        
+        .leaflet-tooltip-bottom:before { display: none; }
         .gps-pulse { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); animation: pulse-blue 2s infinite; border-radius: 50%; cursor: pointer !important; }
         @keyframes pulse-blue { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(33, 150, 243, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(33, 150, 243, 0); } }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v77</div>
+    <div class="debug-label">v78</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -95,13 +94,13 @@
 
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     
+    <!-- SIDE MENU: REMOVED "Current Session" -->
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
         <div class="menu-item" onclick="enableCompass()"><span class="material-icons" style="color:#E91E63">my_location</span> Go to Current Location</div>
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share My Location</div>
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
-        <div class="menu-item" onclick="toggleSavedList(); toggleMenu();"><span class="material-icons" style="color:#333">folder_open</span> Current Session</div>
         <div class="menu-item" onclick="saveToCloud()"><span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account</div>
         <div class="menu-item" onclick="openListCloudProjects()"><span class="material-icons" style="color:#FF9800">cloud_download</span> Open from Account</div>
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
@@ -123,19 +122,15 @@
         <div class="menu-btn" onclick="toggleMenu()" title="Main Menu"><span class="material-icons">menu</span></div>
         <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
         <div class="top-icons">
-            <div class="icon-btn" onclick="toggleSavedList()" title="Local List"><span class="material-icons" style="color:#444">list</span></div>
+            <!-- REMOVED FOLDER ICON HERE -->
             <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
         </div>
     </div>
 
-    <div class="saved-modal" id="savedModal">
-        <div class="saved-header"><span>Current Session</span><span onclick="toggleSavedList()" style="cursor:pointer; font-size:20px;">✕</span></div>
-        <div class="saved-list" id="savedListContainer"></div>
-    </div>
-
-    <div class="saved-modal" id="projectsModal" style="z-index:100002;">
-        <div class="saved-header"><span style="color:#FF9800">Your Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer; font-size:20px;">✕</span></div>
-        <div class="saved-list" id="projectsListContainer"></div>
+    <!-- CLOUD PROJECT DRAWER -->
+    <div class="drawer-modal" id="projectsModal" style="z-index:100002;">
+        <div class="drawer-header"><span style="color:#FF9800">Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer; font-size:20px;">✕</span></div>
+        <div class="drawer-list" id="projectsListContainer"></div>
     </div>
 
     <div id="map"></div>
@@ -153,7 +148,7 @@
         function enableCompass() {
             toggleMenu();
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(res => { if (res === 'granted') { window.addEventListener('deviceorientation', handleOrientation); flyToUser(); } else alert("Compass disabled (Permission denied)"); });
+                DeviceOrientationEvent.requestPermission().then(res => { if (res === 'granted') { window.addEventListener('deviceorientation', handleOrientation); flyToUser(); } else alert("Compass disabled"); });
             } else { window.addEventListener('deviceorientation', handleOrientation); flyToUser(); }
             flyToUser();
         }
@@ -166,63 +161,105 @@
         map.locate({ watch: true, enableHighAccuracy: true });
         
         map.on('locationfound', (e)=>{
-            currentLatLng=e.latlng;
+            currentLatLng = e.latlng;
             if(!userMarker) {
                 const html = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
                 const icon = L.divIcon({ className:'custom-gps', html:html, iconSize:[40,40], iconAnchor:[20,20] });
+                
                 userMarker = L.marker(e.latlng, { icon:icon, zIndexOffset:1000 }).addTo(map);
                 
-                userMarker.on('click', (ev)=>{ L.DomEvent.stopPropagation(ev); if(isMeasuring) addMeasurePoint(e.latlng); else { let n = getNextStakeNumber(); createStake(currentLatLng.lat, currentLatLng.lng, "Stake "+n); } });
+                userMarker.on('click', (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    if(isMeasuring) { addMeasurePoint(e.latlng); }
+                    else {
+                        let n = getNextStakeNumber();
+                        createStake(currentLatLng.lat, currentLatLng.lng, "Stake "+n);
+                    }
+                });
 
-                // FIXED: Increased offset to [0, 24] to push text down away from arrow
                 userMarker.bindTooltip("Tap to Stake", {permanent:true, direction:"bottom", className:"gps-label", offset:[0,24]});
-            } else {
-                userMarker.setLatLng(e.latlng);
-            }
+            } else { userMarker.setLatLng(e.latlng); }
         });
 
-        // ... [REST OF FUNCTIONS ARE SAME] ...
-        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name = currentProjectName; let id = currentProjectID; if (id) { if (!confirm(`Overwrite existing project: "${name}"? \nClick Cancel to save as a NEW file.`)) { id = null; name = prompt("Enter NEW Name:", name + " Copy"); } } else { name = prompt("Project Name:"); } if(!name) return; try { const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id: id, name: name, data:{properties:savedItems, stakes:stakes} }) }); const json = await res.json(); if(json.success) { alert(json.mode==='create'?"Created New Project!":"Updated!"); currentProjectName=name; if(json.mode==='create') currentProjectID = json.newId; } else { alert(json.message); if(json.message.includes("exists")) saveToCloud(); } } catch(e) { alert("Save error"); } }
-        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login first"); document.getElementById('projectsListContainer').innerHTML = "<div style='padding:20px'>Loading...</div>"; document.getElementById('projectsModal').classList.add('active'); try { const res = await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`); availableProjects = await res.json(); renderCloudProjects(); } catch(e) { alert("Load error"); toggleProjectsList(); } }
-        function renderCloudProjects() { const c = document.getElementById('projectsListContainer'); c.innerHTML=""; if(availableProjects.length === 0) { c.innerHTML="<div style='padding:20px'>No projects.</div>"; return; } availableProjects.forEach((p, idx) => { const div = document.createElement('div'); div.className = 'drawer-item'; div.innerHTML = `<div onclick="loadSpecificProject(${idx})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px;color:#666">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id}, event)">🗑️</div>`; c.appendChild(div); }); }
-        async function deleteCloudProject(pid, event) { event.stopPropagation(); if(!confirm("Permanently delete?")) return; try { await fetch(`/api/cloud/delete/${pid}`, { method: 'DELETE' }); availableProjects = availableProjects.filter(p => p.id !== pid); renderCloudProjects(); } catch(e) { alert("Error deleting"); } }
-        function loadSpecificProject(idx) { const p = availableProjects[idx]; if(!p) return; const d = typeof p.data === 'string' ? JSON.parse(p.data) : p.data; clearMap(); if(d.properties) d.properties.forEach(i=>savedItems.push(i)); if(d.stakes) d.stakes.forEach(s=>{ stakes.push(s); addStakeMarker(s); }); currentProjectID = p.id; currentProjectName = p.name; saveToStorage(); renderSavedList(); toggleProjectsList(); alert(`"${p.name}" Loaded!`); if(stakes.length>0) map.flyTo([stakes[0].lat, stakes[0].lng], 19); }
+        // --- CLOUD OPS ---
+        async function saveToCloud() {
+            toggleMenu(); if(!currentUserId) return alert("Login first");
+            let name = currentProjectName; let id = currentProjectID;
+            if (id) { if(!confirm(`Overwrite "${name}"? Cancel for new.`)) { id=null; name=null; } }
+            if(!name) name = prompt("Project Name:"); if(!name) return;
+            try {
+                const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id, name, data:{properties:savedItems, stakes:stakes} }) });
+                const json = await res.json();
+                if(json.success) { alert(json.mode==='create'?"Created New!":"Updated!"); currentProjectName=name; if(json.mode==='create') currentProjectID = json.newId; } else { alert(json.message); if(json.message.includes("exists")) saveToCloud(); }
+            } catch(e) { alert("Save error"); }
+        }
+
+        async function openListCloudProjects() {
+            toggleMenu(); if(!currentUserId) return alert("Login first");
+            document.getElementById('projectsListContainer').innerHTML = "<div style='padding:20px'>Loading...</div>";
+            document.getElementById('projectsModal').classList.add('active');
+            try {
+                const res = await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`);
+                availableProjects = await res.json();
+                renderCloudProjects();
+            } catch(e) { alert("Load error"); toggleProjectsList(); }
+        }
+        function renderCloudProjects() {
+            const c=document.getElementById('projectsListContainer'); c.innerHTML="";
+            if(availableProjects.length === 0) { c.innerHTML="<div style='padding:20px'>No projects.</div>"; return; }
+            availableProjects.forEach((p, idx)=>{
+                const div = document.createElement('div'); div.className='drawer-item';
+                div.innerHTML = `<div onclick="loadSpecificProject(${idx})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px;color:#666">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id}, event)">🗑️</div>`;
+                c.appendChild(div);
+            });
+        }
+        async function deleteCloudProject(pid, ev) {
+            ev.stopPropagation(); if(!confirm("Permanently delete?")) return;
+            try { await fetch(`/api/cloud/delete/${pid}`, { method: 'DELETE' }); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects(); } catch(e){ alert("Error"); }
+        }
+        function loadSpecificProject(idx) {
+            const p=availableProjects[idx]; const d=typeof p.data==='string'?JSON.parse(p.data):p.data;
+            clearMap(); if(d.properties)d.properties.forEach(i=>savedItems.push(i)); if(d.stakes)d.stakes.forEach(s=>{stakes.push(s);addStakeMarker(s)});
+            currentProjectID=p.id; currentProjectName=p.name; saveToStorage(); toggleProjectsList(); alert("Loaded!");
+            if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);
+        }
         function toggleProjectsList() { document.getElementById('projectsModal').classList.toggle('active'); }
-        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||parseInt(s.label.replace('Stake ',''))||0;if(n>max)max=n;});return max+1;}
-        function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber()}; addStakeMarker(s); stakes.push(s); if(currentParcelData && !savedItems.find(i=>i.id===currentParcelData.id)) savedItems.push(currentParcelData); saveToStorage(); }
-        function addStakeMarker(s){ const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`; const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); f.bindPopup(`<b>#${s.number}</b><br><button onclick="window.delStake(${s.id})">Delete</button>`); f.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); }); stakeMarkers[s.id]=f; }
-        window.delStake=function(id){ if(stakeMarkers[id])map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
-        
+
+        // --- MAP UTILS ---
         let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
         function toggleMeasureMode(){ isMeasuring=!isMeasuring; const b=document.getElementById('measureBox'), c=document.getElementById('card'); if(isMeasuring){ b.classList.add('visible'); c.classList.remove('active'); } else { b.classList.remove('visible'); clearMeasure(); if(currentParcelData) c.classList.add('active'); } }
         function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let m=0; for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = `${(m*3.28084).toFixed(1)} ft`; } }
         function clearMeasure() { measureLayer.clearLayers(); measurePoints = []; document.getElementById('distVal').innerText="0 ft"; }
 
-        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
-        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
+        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||parseInt(s.label.replace('Stake ',''))||0;if(n>max)max=n;});return max+1;}
+        function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber()}; addStakeMarker(s); stakes.push(s); if(currentParcelData && !savedItems.find(i=>i.id===currentParcelData.id)) savedItems.push(currentParcelData); saveToStorage(); }
+        function addStakeMarker(s){ const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`; const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); f.bindPopup(`<b>#${s.number}</b><br><button onclick="window.delStake(${s.id})">Delete</button>`); f.on('dragend',(e)=>{ const n=e.target.getLatLng(); s.lat=n.lat; s.lng=n.lng; saveToStorage(); }); stakeMarkers[s.id]=f; }
+        window.delStake=function(id){ if(stakeMarkers[id])map.removeLayer(stakeMarkers[id]); stakes=stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
+
+        // --- AUTH & OTHER ---
+        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
+        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
+        function openLogin(){ toggleMenu(); if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex'; }
+        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
+        
         function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS...");}
         function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
         function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); renderSavedList(); }
-        function loadProjectFile(i){} function saveProjectFile(){}
+        function exportToCSV() { toggleMenu(); alert("Feature requires Premium"); }
+        function loadProjectFile(){} function saveProjectFile(){}
         
-        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
-        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
-        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
-        function openLogin(){ toggleMenu(); if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex'; }
+        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
+        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
 
         const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
         async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
         async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
         map.on('click', async(e)=>{if(isMeasuring) addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);});
         function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
+        
         function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
-        function renderSavedList() { const c = document.getElementById('savedListContainer'); c.innerHTML=""; savedItems.forEach(i=> c.innerHTML+=`<div class="drawer-item" onclick="flyToItem(${i.id})"><div><b>${i.owner_name}</b><br>${i.address}</div><div class="trash-btn" onclick="delItem(${i.id},event)">🗑️</div></div>`); if(stakes.length>0) c.innerHTML+=`<div style="padding:15px"><b>🚩 ${stakes.length} Stakes</b></div>`; }
-        function toggleSavedList(){ renderSavedList(); document.getElementById('savedModal').classList.toggle('active'); }
-        function delItem(id,e){ e.stopPropagation(); savedItems=savedItems.filter(i=>i.id!==id); saveToStorage(); toggleSavedList(); }
-        function flyToItem(id){ const i=savedItems.find(x=>x.id===id); if(i){ currentParcelData=i; map.flyTo([JSON.parse(i.geometry).coordinates[0][0][0][1], JSON.parse(i.geometry).coordinates[0][0][0][0]],19); loadProperty(i); toggleSavedList(); } }
         function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function exportToCSV() { toggleMenu(); alert("Use Share Location"); } 
+        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
 
         function initApp() {
             if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
