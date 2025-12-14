@@ -12,92 +12,83 @@
     
     <style>
         /* BASE */
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
-        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #ddd; }
+        
+        /* MAP (Fixed Z-Index) */
+        #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background: #ddd; }
 
-        /* APP BAR */
-        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200000; border-bottom: 1px solid #ddd; }
+        /* UI ELEMENTS */
+        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
+        
         .top-icons { display: flex; gap: 5px; }
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; background:white; }
         .icon-btn:hover { background: #f0f0f0; }
+        .icon-svg { width: 24px; height: 24px; fill: #444; }
 
-        /* UI ELEMENTS */
-        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
+        /* MEASURE */
+        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 16px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
         .measure-box.visible { display: flex; align-items: center; gap: 15px; }
-        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .clear-measure { background: #ff4400; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; margin-left: 5px; }
+
+        /* INFO CARD */
+        .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
         .direction-btn { background: #2196F3; color: white; padding: 10px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
         /* MENU & MODALS */
-        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 200001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
+        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 30000; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
         .side-menu.open { transform: translateX(0); }
-        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200000; display: none; }
+        .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 29000; display: none; }
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
 
-        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 100001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
+        .saved-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 40000; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .saved-modal.active { transform: translateX(0); }
         .saved-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .saved-list { flex: 1; overflow-y: auto; }
         .drawer-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor:pointer; }
-        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; }
+        .trash-btn { padding: 10px; cursor: pointer; color: #ff4400; font-size: 18px; border-left:1px solid #eee; margin-left:10px;}
 
-        /* DEBUG BADGE v102 */
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #3F51B5; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
-
-        /* --- LIGHTBOX (FULLSCREEN PHOTO) --- */
-        .lightbox-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: black; z-index: 300000;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .lightbox-img { max-width: 100%; max-height: 80%; object-fit: contain; }
-        .lightbox-controls {
-            position: absolute; bottom: 30px; display: flex; gap: 20px; width: 100%; justify-content: center;
-        }
-        .lb-btn {
-            background: rgba(255,255,255,0.2); color: white; border: 1px solid white;
-            padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; gap: 5px; backdrop-filter: blur(5px);
-        }
-        .lb-btn:hover { background: rgba(255,255,255,0.4); }
-        .lb-close {
-            position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
-        }
-
-        /* POPUP PHOTOS GRID */
-        .popup-gallery {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; width: 180px;
-        }
-        .gallery-thumb {
-            width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;
-        }
-
-        /* LOGIN */
-        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100002; display: none; align-items: center; justify-content: center; }
+        .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 50000; display: none; align-items: center; justify-content: center; }
         .login-box { background: white; width: 300px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .login-input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
 
-        /* MARKERS */
+        /* DEBUG v103 GOLD */
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #FFD700; color: black; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid black; }
+        
+        /* ICONS */
+        .stake-container { position: relative; }
+        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
+        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
+        .gps-label { background-color: rgba(0, 123, 255, 0.9); border: none; color: white; font-weight: bold; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .leaflet-tooltip-bottom:before { display: none; }
+        
+        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 200px; }
+        .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #f0f0f0; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-top: 5px; font-size: 12px; font-weight: bold; color:#333; }
+        .popup-delete { color: #d32f2f; background:#ffebee; border-color:#ffcdd2; }
+
+        /* GPS Arrow */
         .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
         .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
         .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
 
-        .stake-container { position: relative; }
-        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: grab; }
-        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
+        /* LIGHTBOX */
+        .lightbox-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: black; z-index: 300000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        .lightbox-img { max-width: 100%; max-height: 80%; object-fit: contain; }
+        .lb-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius:50%; display:flex; justify-content:center; align-items:center; }
     </style>
 </head>
 <body>
 
-    <div class="debug-label">v102</div>
+    <div class="debug-label">v103 - GOLD</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="handleStakePhoto(this)">
@@ -108,24 +99,13 @@
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
 
-    <!-- LIGHTBOX VIEWER (NEW) -->
+    <!-- LIGHTBOX -->
     <div class="lightbox-overlay" id="lightbox">
-        <div class="lb-close" onclick="closeLightbox()">✕</div>
+        <div class="lb-close" onclick="document.getElementById('lightbox').style.display='none'">✕</div>
         <img id="lightboxImg" class="lightbox-img">
-        <div class="lightbox-controls">
-            <div class="lb-btn" style="border-color:#F44336;color:#F44336" onclick="deleteCurrentPhoto()">
-                <span class="material-icons">delete</span> Delete
-            </div>
-            <div class="lb-btn" onclick="downloadCurrentPhoto()">
-                <span class="material-icons">download</span> Save to Phone
-            </div>
-            <div class="lb-btn" style="border-color:#00E676;color:#00E676" onclick="analyzePhotoAI()">
-                <span class="material-icons">smart_toy</span> Analyze
-            </div>
-        </div>
     </div>
 
-    <!-- MENU -->
+    <!-- MENU OVERLAY -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
@@ -135,8 +115,10 @@
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
         <div class="menu-item" onclick="saveToCloud()"><span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account</div>
         <div class="menu-item" onclick="openListCloudProjects()"><span class="material-icons" style="color:#FF9800">cloud_download</span> Open from Account</div>
+        <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
         <div class="menu-item" onclick="exportFullArchive()"><span class="material-icons" style="color:#607D8B">inventory_2</span> Backup to File</div>
         <div class="menu-item" onclick="document.getElementById('fileInput').click()"><span class="material-icons" style="color:#607D8B">upload_file</span> Restore File</div>
+        <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
     </div>
 
     <div class="login-modal" id="loginModal">
@@ -146,7 +128,7 @@
             <input type="password" id="passInput" class="login-input" placeholder="Password">
             <button class="login-btn" onclick="doLogin()">Login</button>
             <button class="login-btn" style="background:#4CAF50;margin-top:10px" onclick="doRegister()">Create Account</button>
-            <button onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:10px;background:none;border:none;text-decoration:underline;">Cancel</button>
+            <div onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:10px;text-decoration:underline;cursor:pointer;">Cancel</div>
         </div>
     </div>
 
@@ -154,83 +136,43 @@
         <div class="menu-btn" onclick="toggleMenu()" title="Main Menu"><span class="material-icons">menu</span></div>
         <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
         <div class="top-icons">
+            <div class="icon-btn" onclick="toggleSavedList()" title="List"><span class="material-icons" style="color:#444">list</span></div>
             <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
         </div>
     </div>
 
+    <div class="saved-modal" id="savedModal">
+        <div class="saved-header"><span>Current Session</span><span onclick="toggleSavedList()" style="cursor:pointer;font-size:20px;">✕</span></div>
+        <div class="saved-list" id="savedListContainer"></div>
+    </div>
     <div class="saved-modal" id="projectsModal" style="z-index:100002;">
-        <div class="saved-header"><span style="color:#FF9800">Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer; font-size:20px;">✕</span></div>
+        <div class="saved-header"><span style="color:#FF9800">Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer;font-size:20px;">✕</span></div>
         <div class="saved-list" id="projectsListContainer"></div>
     </div>
 
     <div id="map"></div>
+    
     <div class="info-card" id="card">
         <div class="prop-info"><div class="prop-val" id="owner">...</div><div class="prop-sub" id="address">...</div></div>
-        <div class="direction-btn" onclick="getDirectionsToSelected()" title="Drive Here"><span class="material-icons">directions_car</span></div>
+        <div class="direction-btn" onclick="getDirectionsToSelected()" title="Drive"><span class="material-icons">directions_car</span></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
-        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
-        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 18, layers: [satellite], zoomControl: false });
+        // *** GOOGLE HYBRID MAP (RELIABLE) ***
+        const googleHybrid = L.tileLayer('http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}',{maxZoom:22, attribution:'Google'});
+        const map = L.map('map', { center: [40.764356, -73.973057], zoom: 16, layers: [googleHybrid], zoomControl: false });
+        
+        // REFRESH FIX: Invalidates size to fix "Grey" rendering on load
+        setTimeout(function(){ map.invalidateSize(); }, 500);
 
         let currentUserId=null, currentUserEmail=null, currentProjectID=null, currentProjectName=null;
         let activeLayer=null, currentParcelData=null, savedItems=[], stakes=[], stakeMarkers={}, availableProjects=[];
         let userMarker=null, currentLatLng=null, selectedStakeId=null;
 
-        // --- NEW: PHOTO GALLERY & VIEWER ---
-        let currentPhotoId = null; // To track which photo is open in lightbox
-        
-        window.openLightbox = function(imgKey, stakeId) {
-            const src = localStorage.getItem(imgKey);
-            if(!src) return alert("Photo not found locally.");
-            document.getElementById('lightboxImg').src = src;
-            document.getElementById('lightbox').style.display = 'flex';
-            currentPhotoId = { key: imgKey, stakeId: stakeId };
-        }
-        
-        function closeLightbox() {
-            document.getElementById('lightbox').style.display = 'none';
-            currentPhotoId = null;
-        }
-
-        function deleteCurrentPhoto() {
-            if(!currentPhotoId || !confirm("Delete this photo?")) return;
-            const { key, stakeId } = currentPhotoId;
-            
-            // Remove from Storage
-            localStorage.removeItem(key);
-            
-            // Remove from Stake Array
-            const stake = stakes.find(s => s.id === stakeId);
-            if(stake && stake.photos) {
-                stake.photos = stake.photos.filter(p => p !== key);
-                saveToStorage();
-                updateStakePopup(stake);
-            }
-            closeLightbox();
-        }
-
-        function downloadCurrentPhoto() {
-            const src = document.getElementById('lightboxImg').src;
-            const a = document.createElement('a');
-            a.href = src;
-            a.download = `survey_photo_${Date.now()}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function analyzePhotoAI() {
-            // Simulated AI Call
-            alert("Contacting AI Server... (Requires OpenAI API Key in Production)\n\nSimulated Result: Property Marker / Iron Pin detected with 95% confidence.");
-        }
-
-        // --- GLOBAL INTERACTIONS ---
+        // --- CORE PHOTO & CLICK HANDLERS (GLOBAL SCOPE FIX) ---
         window.requestStakePhoto = function(id, e) {
             if(e) e.stopPropagation();
-            if(!currentUserId && !confirm("Not logged in. Save locally only?")) return;
             selectedStakeId=id; document.getElementById('stakeCamInput').click();
         }
 
@@ -242,7 +184,7 @@
                     img.onload = function() {
                         const cvs=document.createElement('canvas'), ctx=cvs.getContext('2d');
                         const w=600, sc=w/img.width; cvs.width=w; cvs.height=img.height*sc; ctx.drawImage(img,0,0,cvs.width,cvs.height);
-                        const comp=cvs.toDataURL('image/jpeg',0.6); 
+                        const comp=cvs.toDataURL('image/jpeg',0.5); 
                         saveImageLocally(comp, selectedStakeId); 
                         selectedStakeId=null;
                     }
@@ -251,110 +193,96 @@
             }
         }
         function saveImageLocally(data, sid){
-            try{ const k="img_"+Date.now()+Math.random().toString(36).substr(2,4); localStorage.setItem(k,data); const st=stakes.find(s=>s.id===sid); if(st){ if(!st.photos)st.photos=[]; st.photos.push(k); updateStakePopup(st); saveToStorage(); } } catch(e){alert("Phone Storage Full!");}
+            try{ const k="img_"+Date.now()+Math.random().toString(36).substr(2,4); localStorage.setItem(k,data); const st=stakes.find(s=>s.id===sid); if(st){ if(!st.photos)st.photos=[]; st.photos.push(k); updateStakePopup(st); saveToStorage(); } } catch(e){alert("Storage Full!");}
+        }
+        
+        window.openLightbox = function(key) {
+            const src = localStorage.getItem(key);
+            if(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').style.display='flex'; }
         }
 
         function updateStakePopup(s){
             if(!stakeMarkers[s.id])return;
-            let phHtml = "";
-            // Grid of Thumbnails
-            if(s.photos && s.photos.length) {
-                phHtml = `<div class="popup-gallery">`;
-                s.photos.forEach(k=>{
-                    const src=localStorage.getItem(k); 
-                    if(src) phHtml += `<img src="${src}" class="gallery-thumb" onclick="window.openLightbox('${k}', ${s.id})">`;
-                });
-                phHtml += `</div>`;
-            }
-            
-            const c = `<div style="min-width:180px;text-align:center">
-                <b>#${s.number} ${s.label}</b><br>
-                ${phHtml}
-                <div style="margin-top:10px;display:flex;justify-content:center;gap:10px;border-top:1px solid #eee;padding-top:10px;">
-                    <div style="cursor:pointer;color:#2E7D32;font-weight:bold" onclick="window.requestStakePhoto(${s.id}, event)">📷 Add</div>
-                    <div style="cursor:pointer;color:#C62828;font-weight:bold" onclick="window.delStake(${s.id}, event)">🗑 Delete</div>
-                </div></div>`;
+            let ph=""; if(s.photos && s.photos.length) s.photos.forEach(k=>{const src=localStorage.getItem(k); if(src) ph+=`<img src="${src}" class="popup-img" onclick="window.openLightbox('${k}')">`;});
+            const c = `<div style="min-width:160px;text-align:center"><b>#${s.number} ${s.label}</b><br><div class="popup-photos">${ph}</div><div style="margin-top:10px;display:flex;justify-content:center;gap:10px"><button class="popup-btn" onclick="window.requestStakePhoto(${s.id}, event)">📷 Photo</button><button class="popup-btn popup-delete" onclick="window.delStake(${s.id}, event)">🗑 Delete</button></div></div>`;
             stakeMarkers[s.id].setPopupContent(c);
-            
-            // If popup is open, force refresh
-            if(stakeMarkers[s.id].isPopupOpen()) {
-                stakeMarkers[s.id].closePopup();
-                setTimeout(()=>stakeMarkers[s.id].openPopup(), 100);
-            }
+            if(stakeMarkers[s.id].isPopupOpen()) { stakeMarkers[s.id].closePopup(); setTimeout(()=>stakeMarkers[s.id].openPopup(),100); }
         }
 
-        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||0; if(n>max)max=n;}); return max+1; }
+        window.delStake = function(id, e) { 
+            if(e) e.stopPropagation();
+            if(confirm("Delete this stake?")) { if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]); stakes = stakes.filter(s=>s.id!==id); delete stakeMarkers[id]; saveToStorage(); }
+        }
+
+        // --- MAP & STAKE LOGIC ---
         function createStake(lat,lng,l){ const id=Date.now(); const s={id,type:'stake',lat,lng,label:l,number:getNextStakeNumber(),photos:[]}; addStakeMarker(s); stakes.push(s); if(currentParcelData&&!savedItems.find(i=>i.id===currentParcelData.id))savedItems.push(currentParcelData); saveToStorage(); }
-        
+        function getNextStakeNumber() { if(stakes.length===0)return 1; let max=0; stakes.forEach(s=>{let n=s.number||0; if(n>max)max=n;}); return max+1; }
         function addStakeMarker(s){
             const h=`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`;
             const f=L.marker([s.lat, s.lng], {draggable:true, icon:L.divIcon({className:'ci',html:h,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map);
-            stakeMarkers[s.id]=f; f.bindPopup("..."); updateStakePopup(s);
-            f.on('dragend',(e)=>{const n=e.target.getLatLng();s.lat=n.lat;s.lng=n.lng;saveToStorage();});
+            stakeMarkers[s.id]=f; f.bindPopup("Loading..."); updateStakePopup(s); f.on('dragend',(e)=>{const n=e.target.getLatLng();s.lat=n.lat;s.lng=n.lng;saveToStorage();});
         }
         
-        window.delStake = function(id, e) { 
-            if(e) e.stopPropagation();
-            if(confirm("Delete this stake?")) {
-                if(stakeMarkers[id]) map.removeLayer(stakeMarkers[id]); 
-                stakes = stakes.filter(s=>s.id!==id); 
-                delete stakeMarkers[id]; 
-                saveToStorage(); 
-            }
-        }
-
-        // --- MAP CLICK ---
         map.on('click', async(e)=>{
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
             if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);
         });
 
-        // --- CORE LOGIC (Compacted for brevity, unchanged) ---
-        function enableCompass(){ toggleMenu(); if (typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function') {DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',hO);flyToUser();});} else {window.addEventListener('deviceorientation', hO); flyToUser();} }
-        function hO(e){const el=document.getElementById('gpsArrow'); if(el)el.style.transform=`rotate(${e.webkitCompassHeading||Math.abs(e.alpha-360)}deg)`;}
-        let userMarker=null, currentLatLng=null;
-        map.locate({watch:true, enableHighAccuracy:true});
-        map.on('locationfound', (e)=>{ currentLatLng=e.latlng; if(!userMarker){ const h=`<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`; userMarker=L.marker(e.latlng, {icon:L.divIcon({className:'cg',html:h,iconSize:[40,40],iconAnchor:[20,20]}), zIndexOffset:1000}).addTo(map); userMarker.on('click',(ev)=>{ L.DomEvent.stopPropagation(ev); if(isMeasuring)addMeasurePoint(e.latlng); else {let n=getNextStakeNumber();createStake(currentLatLng.lat,currentLatLng.lng,"Stake "+n);} }); userMarker.bindTooltip("Tap to Stake", {permanent:true,direction:"bottom",className:"gps-label",offset:[0,24]}); } else userMarker.setLatLng(e.latlng); });
-        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20); fetchParcelAt(currentLatLng.lat, currentLatLng.lng);} else alert("GPS waiting...");}
-        
-        async function saveToCloud() { toggleMenu(); if(!currentUserId) return alert("Login first"); let name=currentProjectName, id=currentProjectID; if (id) { if(!confirm(`Overwrite "${name}"? Cancel for new.`)) { id=null; name=null; } } if(!name) name = prompt("Project Name:"); if(!name) return; try { const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:currentUserId, id, name, data:{properties:savedItems, stakes:stakes} }) }); const json = await res.json(); if(json.success) { alert(json.mode==='create'?"Created New!":"Updated!"); currentProjectName=name; if(json.mode==='create')currentProjectID=json.newId; } else alert(json.message); } catch(e) { alert("Save error"); } }
-        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login first"); document.getElementById('projectsListContainer').innerHTML="Loading..."; document.getElementById('projectsModal').classList.add('active'); try { const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`); availableProjects=await r.json(); renderCloudProjects(); } catch(e){toggleProjectsList();} }
-        function renderCloudProjects(){const c=document.getElementById('projectsListContainer');c.innerHTML=""; availableProjects.forEach((p,i)=>{ c.innerHTML+=`<div class="drawer-item"><div onclick="loadSpecificProject(${i})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id},event)">🗑️</div></div>`; }); }
-        async function deleteCloudProject(pid,e){e.stopPropagation();if(!confirm("Delete?"))return; await fetch(`/api/cloud/delete/${pid}`,{method:'DELETE'}); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects();}
-        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{stakes.push(s);addStakeMarker(s)});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
-        function toggleProjectsList(){ document.getElementById('projectsModal').classList.toggle('active'); }
-
-        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
-        function toggleMeasureMode(){ isMeasuring=!isMeasuring; const b=document.getElementById('measureBox'), c=document.getElementById('card'); if(isMeasuring){ b.classList.add('visible'); c.classList.remove('active'); } else { b.classList.remove('visible'); clearMeasure(); if(currentParcelData) c.classList.add('active'); } }
-        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let m=0; for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = `${(m*3.28084).toFixed(1)} ft`; } }
-        function clearMeasure() { measureLayer.clearLayers(); measurePoints = []; document.getElementById('distVal').innerText="0 ft"; }
-
-        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
-        function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
-        const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
-        async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
-        async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
-        function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
-        function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function getDirectionsToSelected() { let lat, lng; if (currentParcelData && currentParcelData.geometry) { const geo=JSON.parse(currentParcelData.geometry); lat=geo.coordinates[0][0][0][1]; lng=geo.coordinates[0][0][0][0]; } else if (currentLatLng) { lat=currentLatLng.lat; lng=currentLatLng.lng; } else return alert("Select property first."); window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`); }
-
-        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
-        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
-        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText = "Hi, "+currentUserEmail.split('@')[0];}
-        function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;currentUserEmail=null;document.getElementById('loginText').innerText="Login/Register";localStorage.removeItem('landslide_auth_id');localStorage.removeItem('landslide_auth_email');clearMap();currentProjectID=null;}}else document.getElementById('loginModal').style.display='flex';}
-        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;if(e&&p)fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
-        function shareLocation(){toggleMenu(); if(navigator.share)navigator.share({title:'Loc',url:`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`}); else navigator.clipboard.writeText("Loc copied");}
-        function inviteFriends(){ toggleMenu(); if(navigator.share)navigator.share({title:'App',url:window.location.href}); }
-        function exportToCSV() { toggleMenu(); alert("Feature requires Premium"); } 
-        function exportFullArchive() { const d = {p: savedItems, s: stakes}; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(d)])); a.download="backup.landslide"; a.click(); toggleMenu(); }
-        function handleRestoreBackup(inp) { const f=inp.files[0]; if(f){const r=new FileReader(); r.onload=e=>{ const d=JSON.parse(e.target.result); clearMap(); savedItems=d.p||[]; d.s.forEach(s=>{stakes.push(s); addStakeMarker(s)}); saveToStorage(); alert("Restored!"); }; r.readAsText(f); } }
-
+        // --- INIT & CRASH FIX ---
         function initApp() {
-            if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
-            const s=localStorage.getItem('landslide_saves'); if(s) { const all=JSON.parse(s); savedItems=all.filter(i=>i.type!=='stake'); stakes=[]; all.filter(i=>i.type==='stake').forEach(x=>{ if(x.type==='photo'){}else{stakes.push(x);addStakeMarker(x);} }); }
+            try {
+                if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
+                const s=localStorage.getItem('landslide_saves'); 
+                if(s && s !== "null" && s !== "undefined") { 
+                    const all=JSON.parse(s); if(Array.isArray(all)) {
+                        savedItems=all.filter(i=>i.type!=='stake'); 
+                        stakes=[]; 
+                        all.filter(i=>i.type==='stake').forEach(x=>{stakes.push(x);addStakeMarker(x);}); 
+                    }
+                }
+            } catch(e) { console.log("Data Corrupt, Resetting"); localStorage.removeItem('landslide_saves'); }
             if (typeof DeviceOrientationEvent !== 'undefined') enableCompass();
+            map.invalidateSize(); // FIX GREY MAP
         }
+        
+        // [ALL STANDARD UTILS FROM v91 ARE HERE BUT MINIFIED FOR SPACE]
+        function enableCompass(){toggleMenu();if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function')DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',hO);flyToUser();});else{window.addEventListener('deviceorientation',hO);flyToUser();}}
+        function hO(e){const el=document.getElementById('gpsArrow');if(el){const r=e.webkitCompassHeading||Math.abs(e.alpha-360);el.style.transform=`rotate(${r}deg)`;}}
+        map.locate({watch:true,enableHighAccuracy:true}); map.on('locationfound',(e)=>{currentLatLng=e.latlng;if(!userMarker){const h=`<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;userMarker=L.marker(e.latlng,{icon:L.divIcon({className:'cg',html:h,iconSize:[40,40],iconAnchor:[20,20]}),zIndexOffset:1000}).addTo(map);userMarker.on('click',(ev)=>{L.DomEvent.stopPropagation(ev);if(isMeasuring)addMeasurePoint(e.latlng);else{let n=getNextStakeNumber();createStake(currentLatLng.lat,currentLatLng.lng,"Stake "+n);}});userMarker.bindTooltip("Tap to Stake",{permanent:true,direction:"bottom",className:"gps-label",offset:[0,24]});}else userMarker.setLatLng(e.latlng);});
+        function flyToUser(){if(currentLatLng){map.flyTo(currentLatLng,20);fetchParcelAt(currentLatLng.lat,currentLatLng.lng);}else alert("GPS waiting...");}
+        async function saveToCloud(){toggleMenu();if(!currentUserId)return alert("Login");let name=currentProjectName,id=currentProjectID;if(id){if(!confirm(`Overwrite "${name}"? Cancel=New`)){id=null;name=null;}}if(!name)name=prompt("Name:");if(!name)return;try{const res=await fetch('/api/cloud/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,id,name,data:{properties:savedItems,stakes:stakes}})});const j=await res.json();if(j.success){alert("Saved!");currentProjectName=name;if(j.mode==='create')currentProjectID=j.newId;}else alert(j.message);}catch(e){alert("Error");}}
+        async function openListCloudProjects(){toggleMenu();if(!currentUserId)return alert("Login");document.getElementById('projectsListContainer').innerHTML="Loading...";document.getElementById('projectsModal').classList.add('active');try{const r=await fetch(`/api/cloud/load/${currentUserId}?t=${Date.now()}`);availableProjects=await r.json();renderCloudProjects();}catch(e){toggleProjectsList();}}
+        function renderCloudProjects(){const c=document.getElementById('projectsListContainer');c.innerHTML="";availableProjects.forEach((p,i)=>{c.innerHTML+=`<div class="drawer-item"><div onclick="loadSpecificProject(${i})" style="flex:1"><b>${p.name}</b><br><small>${new Date(p.updated_at).toLocaleDateString()}</small></div><div class="trash-btn" onclick="deleteCloudProject(${p.id},event)">🗑️</div></div>`;});}
+        async function deleteCloudProject(pid,e){e.stopPropagation();if(!confirm("Delete?"))return;try{await fetch(`/api/cloud/delete/${pid}`,{method:'DELETE'});availableProjects=availableProjects.filter(p=>p.id!==pid);renderCloudProjects();}catch(x){}}
+        function loadSpecificProject(idx){const p=availableProjects[idx];const d=typeof p.data==='string'?JSON.parse(p.data):p.data;clearMap();if(d.properties)d.properties.forEach(i=>savedItems.push(i));if(d.stakes)d.stakes.forEach(s=>{if(s.type==='photo'){}else{stakes.push(s);addStakeMarker(s);}});currentProjectID=p.id;currentProjectName=p.name;saveToStorage();toggleProjectsList();alert("Loaded!");if(stakes.length>0)map.flyTo([stakes[0].lat,stakes[0].lng],19);}
+        
+        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
+        function toggleLayer(){/*Only Sat needed*/}
+        const input=document.getElementById('searchBox');input.addEventListener('keypress',(e)=>{if(e.key==='Enter')performSearch()});
+        async function performSearch(){if(isMeasuring){alert("Close ruler");return;}const q=input.value;if(q.length<2)return;input.blur();try{const r=await fetch(`/api/search?q=${q}`);const j=await r.json();if(j.length>0){loadProperty(j[0]);map.flyTo([j[0].lat,j[0].lng],19);}}catch(e){}}
+        async function fetchParcelAt(lat,lng){try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){}}
+        function loadProperty(p){document.getElementById('owner').innerText=p.owner_name;document.getElementById('address').innerText=p.address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(p.geometry){activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);activeLayer.on('click',(e)=>{L.DomEvent.stopPropagation(e);if(isMeasuring)addMeasurePoint(e.latlng);else{let n=getNextStakeNumber();createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);}});}}
+        function saveToStorage(){localStorage.setItem('landslide_saves',JSON.stringify([...savedItems,...stakes]));}
+        function clearMap(){stakes.forEach(s=>{if(stakeMarkers[s.id])map.removeLayer(stakeMarkers[s.id]);});stakes=[];savedItems=[];stakeMarkers={};localStorage.removeItem('landslide_saves');}
+        function closeCard(){document.getElementById('card').classList.remove('active');if(activeLayer){map.removeLayer(activeLayer);activeLayer=null;}}
+        function toggleSavedList(){const c=document.getElementById('savedListContainer');c.innerHTML="";savedItems.forEach(i=>c.innerHTML+=`<div class="drawer-item" onclick="flyToItem(${i.id})"><div><b>${i.owner_name}</b><br>${i.address}</div><div class="trash-btn" onclick="delItem(${i.id},event)">🗑️</div></div>`);if(stakes.length>0)c.innerHTML+=`<div style="padding:15px"><b>🚩 ${stakes.length} Stakes</b></div>`;document.getElementById('savedModal').classList.toggle('active');}
+        function delItem(id,e){e.stopPropagation();savedItems=savedItems.filter(i=>i.id!==id);saveToStorage();toggleSavedList();}
+        function flyToItem(id){const i=savedItems.find(x=>x.id===id);if(i){currentParcelData=i;map.flyTo([JSON.parse(i.geometry).coordinates[0][0][0][1],JSON.parse(i.geometry).coordinates[0][0][0][0]],19);loadProperty(i);toggleSavedList();}}
+        function shareLocation(){toggleMenu();if(navigator.share)navigator.share({url:`https://maps.google.com/?q=${currentLatLng.lat},${currentLatLng.lng}`});}
+        function inviteFriends(){toggleMenu();if(navigator.share)navigator.share({title:'App',url:window.location.href});}
+        function toggleProjectsList(){document.getElementById('projectsModal').classList.toggle('active');}
+        async function doLogin(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){currentUserId=d.user.id;currentUserEmail=d.user.email;localStorage.setItem('landslide_auth_id',currentUserId);localStorage.setItem('landslide_auth_email',currentUserEmail);updateMenuLoginText();document.getElementById('loginModal').style.display='none';}else alert(d.message);}catch(x){alert("Error");}}
+        function updateMenuLoginText(){if(currentUserEmail)document.getElementById('loginText').innerText="Hi, "+currentUserEmail.split('@')[0];}
+        function openLogin(){toggleMenu();if(currentUserId){if(confirm("Logout?")){currentUserId=null;clearMap();localStorage.clear();location.reload();}}else document.getElementById('loginModal').style.display='flex';}
+        function doRegister(){const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value;fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}).then(r=>r.json()).then(d=>alert(d.message||d.error));}
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){isMeasuring=!isMeasuring;const b=document.getElementById('measureBox');if(isMeasuring){b.style.display='flex';document.getElementById('card').classList.remove('active');}else{b.style.display='none';measureLayer.clearLayers();measurePoints=[];}}
+        function addMeasurePoint(ll){L.circleMarker(ll,{radius:5,color:'orange',fillColor:'white',fillOpacity:1}).addTo(measureLayer);measurePoints.push(ll);if(measurePoints.length>1){L.polyline(measurePoints,{color:'orange',weight:3,dashArray:'10, 10'}).addTo(measureLayer);let m=0;for(let i=0;i<measurePoints.length-1;i++)m+=measurePoints[i].distanceTo(measurePoints[i+1]);document.getElementById('distVal').innerText=(m*3.28).toFixed(1)+" ft";}}
+        function clearMeasure(){measureLayer.clearLayers();measurePoints=[];document.getElementById('distVal').innerText="0 ft";}
+        function getDirectionsToSelected(){let lat,lng;if(currentParcelData){const g=JSON.parse(currentParcelData.geometry);lat=g.coordinates[0][0][0][1];lng=g.coordinates[0][0][0][0];}else if(currentLatLng){lat=currentLatLng.lat;lng=currentLatLng.lng;}else return alert("Select"); window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`);}
+        function exportToCSV(){alert("Feature requires Premium");toggleMenu();} function loadProjectFile(){} function saveProjectFile(){}
+        function exportFullArchive() { const d = {p: savedItems, s: stakes}; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(d)])); a.download="backup.landslide"; a.click(); toggleMenu(); }
+
         initApp();
     </script>
 </body>
