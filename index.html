@@ -48,7 +48,7 @@
         .login-btn { width: 100%; padding: 10px; background: #5E35B1; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top:5px; }
 
         /* Cloud Drawer Only */
-        .drawer-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 200001; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
+        .drawer-modal { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 300000; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.3); }
         .drawer-modal.active { transform: translateX(0); }
         .drawer-header { padding: 20px; background: #333; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .drawer-list { flex: 1; overflow-y: auto; }
@@ -82,7 +82,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v78</div>
+    <div class="debug-label">v102</div>
 
     <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadProjectFile(this)">
 
@@ -97,7 +97,7 @@
     <!-- SIDE MENU: REMOVED "Current Session" -->
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
-        <div class="menu-item" onclick="enableCompass()"><span class="material-icons" style="color:#E91E63">my_location</span> Go to Current Location</div>
+        <div class="menu-item" onclick="enableCompass()"><span class="material-icons" style="color:#E91E63">my_location</span> Current Location Property Line</div>
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share My Location</div>
         <hr style="width:100%;border:0;border-top:1px solid #eee;margin:5px 0;">
@@ -128,7 +128,7 @@
     </div>
 
     <!-- CLOUD PROJECT DRAWER -->
-    <div class="drawer-modal" id="projectsModal" style="z-index:100002;">
+    <div class="drawer-modal" id="projectsModal">
         <div class="drawer-header"><span style="color:#FF9800">Cloud Projects</span><span onclick="toggleProjectsList()" style="cursor:pointer; font-size:20px;">✕</span></div>
         <div class="drawer-list" id="projectsListContainer"></div>
     </div>
@@ -195,7 +195,7 @@
         }
 
         async function openListCloudProjects() {
-            toggleMenu(); if(!currentUserId) return alert("Login first");
+            closeMenu(); if(!currentUserId) return alert("Login first");
             document.getElementById('projectsListContainer').innerHTML = "<div style='padding:20px'>Loading...</div>";
             document.getElementById('projectsModal').classList.add('active');
             try {
@@ -205,15 +205,39 @@
             } catch(e) { alert("Load error"); toggleProjectsList(); }
         }
         function renderCloudProjects() {
-            const c=document.getElementById('projectsListContainer'); c.innerHTML="";
-            if(availableProjects.length === 0) { c.innerHTML="<div style='padding:20px'>No projects.</div>"; return; }
-            availableProjects.forEach((p, idx)=>{
-                const div = document.createElement('div'); div.className='drawer-item';
-                div.innerHTML = `<div onclick="loadSpecificProject(${idx})" style="flex:1"><b>${p.name}</b><br><span style="font-size:12px;color:#666">${new Date(p.updated_at).toLocaleDateString()}</span></div><div class="trash-btn" onclick="deleteCloudProject(${p.id}, event)">🗑️</div>`;
-                c.appendChild(div);
-            });
-        }
-        async function deleteCloudProject(pid, ev) {
+    const c = document.getElementById('projectsListContainer');
+    c.innerHTML = "";
+    if (!Array.isArray(availableProjects) || availableProjects.length === 0) {
+        c.innerHTML = "<div style='padding:20px'>No projects.</div>";
+        return;
+    }
+
+    availableProjects.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'drawer-item';
+
+        const left = document.createElement('div');
+        left.style.flex = '1';
+        left.style.cursor = 'pointer';
+        left.innerHTML = `<b>${p.name}</b><br><span style="font-size:12px;color:#666">${new Date(p.updated_at).toLocaleDateString()}</span>`;
+        left.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            loadSpecificProject(idx);
+        });
+
+        const trash = document.createElement('div');
+        trash.className = 'trash-btn';
+        trash.textContent = '🗑️';
+        trash.title = 'Delete';
+        trash.addEventListener('click', (ev) => deleteCloudProject(p.id, ev));
+
+        row.appendChild(left);
+        row.appendChild(trash);
+        c.appendChild(row);
+    });
+}
+
+async function deleteCloudProject(pid, ev) {
             ev.stopPropagation(); if(!confirm("Permanently delete?")) return;
             try { await fetch(`/api/cloud/delete/${pid}`, { method: 'DELETE' }); availableProjects=availableProjects.filter(p=>p.id!==pid); renderCloudProjects(); } catch(e){ alert("Error"); }
         }
@@ -248,24 +272,55 @@
         function exportToCSV() { toggleMenu(); alert("Feature requires Premium"); }
         function loadProjectFile(){} function saveProjectFile(){}
         
-        function toggleMenu(){document.getElementById('sideMenu').classList.toggle('open');document.getElementById('menuOverlay').classList.toggle('active');}
+        function openMenu(){
+    document.getElementById('sideMenu').classList.add('open');
+    document.getElementById('menuOverlay').classList.add('active');
+}
+function closeMenu(){
+    document.getElementById('sideMenu').classList.remove('open');
+    document.getElementById('menuOverlay').classList.remove('active');
+}
+function toggleMenu(){
+    const open = document.getElementById('sideMenu').classList.contains('open');
+    if(open) closeMenu(); else openMenu();
+}
         function toggleLayer(){if(map.hasLayer(satellite)){map.removeLayer(satellite);map.addLayer(street);}else{map.removeLayer(street);map.addLayer(satellite);}}
 
         const input=document.getElementById('searchBox'); input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
         async function performSearch(){ if(isMeasuring) { alert("Close ruler"); return; } const q=input.value; if(q.length<2) return; input.blur(); try { const res=await fetch(`/api/search?q=${q}`); const j=await res.json(); if(j.length>0) { loadProperty(j[0]); map.flyTo([j[0].lat,j[0].lng],19); } } catch(e){} }
         async function fetchParcelAt(lat,lng){ try{const r=await fetch(`/api/parcels?lat=${lat}&lng=${lng}`);const j=await r.json();if(j.length>0){currentParcelData=j[0];loadProperty(j[0]);}}catch(e){} }
         map.on('click', async(e)=>{if(isMeasuring) addMeasurePoint(e.latlng); else if(document.getElementById('card').classList.contains('active')) closeCard(); else fetchParcelAt(e.latlng.lat, e.latlng.lng);});
-        function loadProperty(p){ document.getElementById('owner').innerText=p.owner_name; document.getElementById('address').innerText=p.address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(p.geometry) { activeLayer=L.geoJSON(JSON.parse(p.geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); activeLayer.on('click', (e)=>{L.DomEvent.stopPropagation(e); if(isMeasuring)addMeasurePoint(e.latlng); else { let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); } }); } }
-        
-        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify([...savedItems, ...stakes])); }
-        function closeCard(){ document.getElementById('card').classList.remove('active'); if(activeLayer) { map.removeLayer(activeLayer); activeLayer = null; } }
-        function clearMap() { stakes.forEach(s => { if(stakeMarkers[s.id]) map.removeLayer(stakeMarkers[s.id]); }); stakes = []; savedItems = []; stakeMarkers = {}; localStorage.removeItem('landslide_saves'); }
+        function loadProperty(p){
+    document.getElementById('owner').innerText = p.owner_name ?? "";
+    document.getElementById('address').innerText = p.address ?? "";
+    document.getElementById('card').classList.add('active');
 
-        function initApp() {
-            if(localStorage.getItem('landslide_auth_email')) { currentUserId=localStorage.getItem('landslide_auth_id'); currentUserEmail=localStorage.getItem('landslide_auth_email'); updateMenuLoginText(); }
-            const s=localStorage.getItem('landslide_saves'); if(s) { const all=JSON.parse(s); savedItems=all.filter(i=>i.type!=='stake'); all.filter(i=>i.type==='stake').forEach(x=>{stakes.push(x);addStakeMarker(x)}); }
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { document.body.addEventListener('click', ()=>{ DeviceOrientationEvent.requestPermission(); }, {once:true}); } else window.addEventListener('deviceorientation', handleOrientation);
-        }
+    if(activeLayer) { try { map.removeLayer(activeLayer); } catch(_){} activeLayer = null; }
+
+    if(!p || !p.geometry) return;
+
+    let geo = p.geometry;
+    try {
+        if (typeof geo === 'string') geo = JSON.parse(geo);
+    } catch (err) {
+        console.warn("Bad geometry JSON", err, p.geometry);
+        return;
+    }
+
+    try {
+        activeLayer = L.geoJSON(geo, { style: { color:"#ffcc00", weight:4, fillOpacity:0.1 } }).addTo(map);
+        activeLayer.on('click', (e)=>{
+            L.DomEvent.stopPropagation(e);
+            if(isMeasuring) addMeasurePoint(e.latlng);
+            else {
+                let n=getNextStakeNumber();
+                createStake(e.latlng.lat, e.latlng.lng, "Stake "+n);
+            }
+        });
+    } catch (err) {
+        console.warn("GeoJSON draw error", err);
+    }
+}
         initApp();
     </script>
 </body>

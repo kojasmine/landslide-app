@@ -9,6 +9,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files (optional public/ folder)
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
+
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
@@ -18,6 +23,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
+
+
+// Simple config endpoint used by some frontends
+app.get('/api/config', (_req, res) => {
+    res.json({
+        status: "ok",
+        version: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "local"
+    });
+});
 // --- AUTH ---
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
