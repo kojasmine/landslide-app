@@ -4,8 +4,10 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs'); 
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const https = require('https');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -17,35 +19,32 @@ app.use(express.static(__dirname));
 
 // --- 1. CONFIGURATION ---
 
-// Database Config
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Cloudinary Config
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key:    process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Multer Config (Storage in memory temporarily)
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- 2. ROUTES ---
+// --- 2. CORE ROUTES ---
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-// Config check
 app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "cloudinary-enabled" });
+    res.json({ status: "ok", version: "1.0.1" });
 });
 
-// --- AUTHENTICATION ---
+// --- 3. AUTHENTICATION ---
+
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -70,7 +69,8 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- CLOUD PROJECT SAVE ---
+// --- 4. CLOUD PROJECTS ---
+
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
@@ -107,62 +107,30 @@ app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// --- CLOUDINARY IMAGE ROUTES ---
+// --- 5. IMAGE UPLOAD ---
 
-// Upload Endpoint
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: "No image provided" });
-
-    // Use a stream to upload buffer directly to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
-        { 
-            folder: "land_survey_app", // Keeps your Cloudinary organized
-            resource_type: "image"
-        },
+        { folder: "land_survey_app", resource_type: "image" },
         (error, result) => {
-            if (error) {
-                console.error("Cloudinary Error:", error);
-                return res.status(500).json({ success: false, message: "Upload failed" });
-            }
-            // Return the secure URL to the frontend
+            if (error) return res.status(500).json({ success: false, message: "Upload failed" });
             res.json({ success: true, url: result.secure_url, public_id: result.public_id });
         }
     );
-
-    // Pipe the file buffer from memory to the upload stream
     const bufferStream = require('stream').Readable.from(req.file.buffer);
     bufferStream.pipe(uploadStream);
 });
 
-// Delete Image Endpoint
 app.delete('/api/image/:filename', async (req, res) => {
     const filename = req.params.filename;
-    // Note: Cloudinary needs the 'public_id' to delete.
-    // Since we store the full URL in frontend, extracting the exact public_id 
-    // without the folder path might be tricky depending on how URL is parsed.
-    // For now, we will assume the filename passed includes the folder if needed 
-    // or we construct it. This is a basic implementation:
-    
-    // We try to guess the public_id based on the filename (removing extension)
     const publicId = "land_survey_app/" + filename.split('.')[0]; 
-
-    try {
-        await cloudinary.uploader.destroy(publicId);
-        res.json({ success: true });
-    } catch (e) {
-        // Even if it fails, we return success so frontend removes it from UI
-        console.error("Delete error", e);
-        res.json({ success: true });
-    }
+    try { await cloudinary.uploader.destroy(publicId); res.json({ success: true }); } 
+    catch (e) { res.json({ success: true }); }
 });
 
+// --- 6. AI ANALYSIS (WORKING) ---
 
-
-// --- AI ANALYSIS ROUTE (ROBUST VERSION) ---
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const https = require('https'); // Use built-in https instead of fetch
-
-// Robust image downloader
 function downloadImage(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (res) => {
@@ -177,37 +145,8 @@ function downloadImage(url) {
     });
 }
 
-
-// --- DIAGNOSTIC: LIST AVAILABLE MODELS ---
-async function listModels() {
-    try {
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Note: We need to access the model manager, but the simple SDK might not expose it easily 
-        // in older versions. Let's try a direct fetch to be safe.
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
-        const data = await response.json();
-        console.log("=== AVAILABLE GOOGLE MODELS ===");
-        if(data.models) {
-            data.models.forEach(m => console.log(m.name));
-        } else {
-            console.log("No models found or error:", data);
-        }
-        console.log("===============================");
-    } catch (e) {
-        console.log("Error listing models:", e);
-    }
-}
-// Call this once when server starts
-listModels();
-
-
-
 app.post('/api/ai/analyze', async (req, res) => {
     const { filename } = req.body;
-    
-    // Log what is happening so we can see it in Render Logs
-    console.log(`[AI Request] Analyzing: ${filename}`);
-
     if (!filename) return res.status(400).json({ error: "No filename provided" });
 
     let imageUrl = filename;
@@ -216,95 +155,31 @@ app.post('/api/ai/analyze', async (req, res) => {
     }
 
     try {
-        // Initialize Google AI
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        // Using "gemini-flash-latest" as it works with the free tier and avoids 404s
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-        // Download image using the robust function
-        console.log(`[AI Request] Downloading image...`);
         const imageBuffer = await downloadImage(imageUrl);
         
-        console.log(`[AI Request] Sending to Gemini...`);
-        const prompt = "Analyze this land survey photo. Describe the terrain, vegetation, and any man-made markers.";
-        
         const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: imageBuffer.toString("base64"),
-                    mimeType: "image/jpeg",
-                },
-            },
+            "Analyze this land survey photo. Describe the terrain, vegetation, and any man-made markers.",
+            { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } },
         ]);
 
         const response = await result.response;
-        const analysis = response.text();
-        
-        console.log(`[AI Request] Success!`);
-        res.json({ analysis: analysis });
-
-    } catch (error) {
-        console.error("AI SERVER ERROR DETAILS:", error); // This will show up in logs
-        res.status(500).json({ error: "Analysis failed. See server logs for details." });
-    }
-});
-
-
-// Helper to download image from Cloudinary as a buffer
-async function fetchImageToBuffer(url) {
-    const response = await fetch(url);
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-}
-
-app.post('/api/ai/analyze', async (req, res) => {
-    const { filename } = req.body;
-    if (!filename) return res.status(400).json({ error: "No filename provided" });
-
-    // 1. Get the full Cloudinary URL
-    let imageUrl = filename;
-    if (!filename.startsWith('http')) {
-        imageUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/land_survey_app/${filename}`;
-    }
-
-    try {
-        // 2. Initialize Google AI
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Use 'gemini-1.5-flash' which is fast and free for this use case
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
-        // 3. Download the image data (Gemini needs the raw data, not just a URL)
-        const imageBuffer = await fetchImageToBuffer(imageUrl);
-
-        // 4. Send to Google
-        const prompt = "Analyze this land survey photo. Describe the terrain (flat, sloped), vegetation (dense, sparse), and any visible man-made objects like fences, stakes, or buildings. Keep it brief.";
-        
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: imageBuffer.toString("base64"),
-                    mimeType: "image/jpeg",
-                },
-            },
-        ]);
-
-        const response = await result.response;
-        const analysis = response.text();
-        
-        res.json({ analysis: analysis });
+        res.json({ analysis: response.text() });
 
     } catch (error) {
         console.error("AI Error:", error);
-        res.status(500).json({ error: "AI analysis failed. Check server logs." });
+        res.status(500).json({ error: error.message || "AI Analysis Failed" });
     }
 });
 
-// --- MAP DATA ROUTES ---
+// --- 7. MAP DATA ---
+
 app.get('/api/search', async (req, res) => {
     let { q } = req.query; if (!q || q.length < 1) return res.json([]);
     let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
-
     const query = `
         SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, 
                ST_X(ST_Centroid(p.geom)) as lng, ST_Y(ST_Centroid(p.geom)) as lat, ST_AsGeoJSON(p.geom) as geometry
@@ -322,5 +197,36 @@ app.get('/api/parcels', async (req, res) => {
     try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
 });
 
+// --- 8. START SERVER ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server on ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server on ${PORT}`);
+    // uncomment the line below to debug models on startup
+    // listModels(); 
+});
+
+
+// =========================================================
+// =================  DEBUG & UTILITIES  ===================
+// =========================================================
+
+/* 
+   TOOL: Check which Google Models are available to your key.
+   Use this if "AI Analyze" starts giving 404 errors again.
+*/
+async function listModels() {
+    console.log("Checking available Google Models...");
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
+        const data = await response.json();
+        console.log("=== AVAILABLE GOOGLE MODELS ===");
+        if (data.models) {
+            data.models.forEach(m => console.log(m.name));
+        } else {
+            console.log("ERROR LISTING MODELS:", data);
+        }
+        console.log("===============================");
+    } catch (e) {
+        console.log("Connection Error:", e.message);
+    }
+}
