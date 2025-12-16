@@ -1,2 +1,15 @@
-Backup/ 
-Backup/ 
+# Dependencies
+node_modules/
+
+# Environment variables (SECRETS)
+.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+
+# Backups
+Backup/

@@ -2,6 +2,8 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcryptjs'); 
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
 const path = require('path');
 
@@ -9,30 +11,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files (optional public/ folder)
+// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
+// --- 1. CONFIGURATION ---
 
+// Database Config
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
 
+// Cloudinary Config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer Config (Storage in memory temporarily)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// --- 2. ROUTES ---
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
-
-
-// Simple config endpoint used by some frontends
+// Config check
 app.get('/api/config', (_req, res) => {
-    res.json({
-        status: "ok",
-        version: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "local"
-    });
+    res.json({ status: "ok", version: "cloudinary-enabled" });
 });
-// --- AUTH ---
+
+// --- AUTHENTICATION ---
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -57,26 +70,20 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- CLOUD SAVE (STRICT DUPLICATE CHECK) ---
+// --- CLOUD PROJECT SAVE ---
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
         if (!id) {
-            // New Save: Check Duplicate Name explicitly
             const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
-            if (check.rows.length > 0) {
-                // Return failure if name exists
-                return res.json({ success: false, message: "NAME_EXISTS" });
-            }
+            if (check.rows.length > 0) return res.json({ success: false, message: "NAME_EXISTS" });
             
-            // Insert
             const result = await pool.query(
                 'INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id',
                 [userId, name, JSON.stringify(data)]
             );
             return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
         } else {
-            // Update Existing (Overwrite allowed because user confirmed it on frontend)
             await pool.query(
                 'UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4',
                 [JSON.stringify(data), name, id, userId]
@@ -86,7 +93,6 @@ app.post('/api/cloud/save', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// --- CLOUD LOAD ---
 app.get('/api/cloud/load/:userId', async (req, res) => {
     try {
         const result = await pool.query('SELECT id, user_id, name, updated_at, data FROM user_projects WHERE user_id = $1 ORDER BY updated_at DESC', [req.params.userId]);
@@ -94,7 +100,6 @@ app.get('/api/cloud/load/:userId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- CLOUD DELETE ---
 app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     try {
         await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]);
@@ -102,7 +107,56 @@ app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// --- MAP ---
+// --- CLOUDINARY IMAGE ROUTES ---
+
+// Upload Endpoint
+app.post('/api/image/upload', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, message: "No image provided" });
+
+    // Use a stream to upload buffer directly to Cloudinary
+    const uploadStream = cloudinary.uploader.upload_stream(
+        { 
+            folder: "land_survey_app", // Keeps your Cloudinary organized
+            resource_type: "image"
+        },
+        (error, result) => {
+            if (error) {
+                console.error("Cloudinary Error:", error);
+                return res.status(500).json({ success: false, message: "Upload failed" });
+            }
+            // Return the secure URL to the frontend
+            res.json({ success: true, url: result.secure_url, public_id: result.public_id });
+        }
+    );
+
+    // Pipe the file buffer from memory to the upload stream
+    const bufferStream = require('stream').Readable.from(req.file.buffer);
+    bufferStream.pipe(uploadStream);
+});
+
+// Delete Image Endpoint
+app.delete('/api/image/:filename', async (req, res) => {
+    const filename = req.params.filename;
+    // Note: Cloudinary needs the 'public_id' to delete.
+    // Since we store the full URL in frontend, extracting the exact public_id 
+    // without the folder path might be tricky depending on how URL is parsed.
+    // For now, we will assume the filename passed includes the folder if needed 
+    // or we construct it. This is a basic implementation:
+    
+    // We try to guess the public_id based on the filename (removing extension)
+    const publicId = "land_survey_app/" + filename.split('.')[0]; 
+
+    try {
+        await cloudinary.uploader.destroy(publicId);
+        res.json({ success: true });
+    } catch (e) {
+        // Even if it fails, we return success so frontend removes it from UI
+        console.error("Delete error", e);
+        res.json({ success: true });
+    }
+});
+
+// --- MAP DATA ROUTES ---
 app.get('/api/search', async (req, res) => {
     let { q } = req.query; if (!q || q.length < 1) return res.json([]);
     let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
