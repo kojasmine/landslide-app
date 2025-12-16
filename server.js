@@ -177,6 +177,31 @@ function downloadImage(url) {
     });
 }
 
+
+// --- DIAGNOSTIC: LIST AVAILABLE MODELS ---
+async function listModels() {
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        // Note: We need to access the model manager, but the simple SDK might not expose it easily 
+        // in older versions. Let's try a direct fetch to be safe.
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
+        const data = await response.json();
+        console.log("=== AVAILABLE GOOGLE MODELS ===");
+        if(data.models) {
+            data.models.forEach(m => console.log(m.name));
+        } else {
+            console.log("No models found or error:", data);
+        }
+        console.log("===============================");
+    } catch (e) {
+        console.log("Error listing models:", e);
+    }
+}
+// Call this once when server starts
+listModels();
+
+
+
 app.post('/api/ai/analyze', async (req, res) => {
     const { filename } = req.body;
     
