@@ -197,6 +197,54 @@ app.get('/api/parcels', async (req, res) => {
     try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
 });
 
+
+// --- HIKE TRACKING ROUTES ---
+
+// Save a completed hike
+app.post('/api/hikes/save', async (req, res) => {
+    const { userId, name, distance, path, stakes } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]
+        );
+        res.json({ success: true, newId: result.rows[0].id });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Load user's hikes
+app.get('/api/hikes/list/:userId', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, name, distance_ft, start_time FROM user_hikes WHERE user_id = $1 ORDER BY start_time DESC', 
+            [req.params.userId]
+        );
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Load specific hike details
+app.get('/api/hikes/get/:hikeId', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM user_hikes WHERE id = $1', [req.params.hikeId]);
+        if (result.rows.length > 0) res.json(result.rows[0]);
+        else res.status(404).json({ message: "Hike not found" });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Delete a hike
+app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.hikeId]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+
 // --- 8. START SERVER ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

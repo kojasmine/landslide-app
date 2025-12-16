@@ -17,6 +17,24 @@
     /* Fix map z-index */
     #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
 
+    /* HIKE RECORDER UI */
+    .hike-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 15px; border-radius: 12px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 80%; max-width: 300px; border: 1px solid #444; }
+    .hike-panel.active { display: flex; }
+    .hike-stats { display: flex; gap: 20px; margin-bottom: 10px; }
+    .stat-box { text-align: center; }
+    .stat-val { font-size: 20px; font-weight: bold; color: #4CAF50; }
+    .stat-label { font-size: 11px; color: #ccc; }
+    .hike-controls { display: flex; gap: 10px; width: 100%; }
+    .hike-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-stop { background: #ff4400; color: white; }
+    .btn-save { background: #2196F3; color: white; }
+    
+    /* HIKE LIST MODAL */
+    .hike-modal { position: fixed; top: 0; left: 0; bottom: 0; width: 300px; background: white; z-index: 200005; transform: translateX(-100%); transition: transform 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+    .hike-modal.open { transform: translateX(0); }
+    .hike-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+    .hike-item:hover { background: #f9f9f9; }
+
     /* UI */
     .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200000; border-bottom: 1px solid #ddd; }
     .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
@@ -89,6 +107,10 @@
     .img-ai { color: #4CAF50; }
     .img-close { color: #ccc; }
 
+
+
+
+
 </style>
 ```
 
@@ -107,11 +129,33 @@
     <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
 </div>
 
+<!-- ACTIVE HIKE RECORDER -->
+<div class="hike-panel" id="hikePanel">
+    <div class="hike-stats">
+        <div class="stat-box"><div class="stat-val" id="hikeDist">0.00</div><div class="stat-label">MILES</div></div>
+        <div class="stat-box"><div class="stat-val" id="hikeTime">00:00</div><div class="stat-label">TIME</div></div>
+    </div>
+    <div class="hike-controls">
+        <button class="hike-btn btn-stop" onclick="stopHikeRecording()">⏹ Stop & Clear</button>
+        <button class="hike-btn btn-save" onclick="finishAndSaveHike()">💾 Save</button>
+    </div>
+</div>
+
+<!-- SAVED HIKES DRAWER -->
+<div class="hike-modal" id="hikeModal">
+    <div class="saved-header" style="background:#2196F3">
+        <span>🥾 My Hikes</span>
+        <span onclick="toggleHikeModal()" style="cursor:pointer;font-size:20px">✕</span>
+    </div>
+    <div class="saved-list" id="hikeListContainer"></div>
+</div>
+
 <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
 <div class="side-menu" id="sideMenu">
     <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
     <div class="menu-item" onclick="enableCompass()"><span class="material-icons" style="color:#E91E63">my_location</span> Current Location Boundary</div>
-        <div class="menu-item" onclick="toggleHikeTrack()"><span class="material-icons" style="color:#FF9800">hiking</span> Track My Hike</div>
+        <div class="menu-item" onclick="startHikeRecording()"><span class="material-icons" style="color:#FF9800">hiking</span> Start New Hike</div>
+<div class="menu-item" onclick="openHikeList()"><span class="material-icons" style="color:#2196F3">history</span> Saved Hikes</div>
     <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
     <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share My Location</div>
 <div class="menu-item" onclick="saveToCloud()"><span class="material-icons" style="color:#4CAF50">cloud_upload</span> Save to Account</div>
@@ -675,38 +719,198 @@ let hikeLine = null;
 let hikePoints = [];
 let hikeWatchId = null;
 
-function toggleHikeTrack(){
-    if(!('geolocation' in navigator)) return alert('Geolocation not available');
-    hikeTracking = !hikeTracking;
+// --- ADVANCED HIKE TRACKER ---
+let hikeWatchId = null;
+let hikePath = [];      // Array of [lat, lng]
+let hikeStakes = [];    // Array of stake objects dropped DURING the hike
+let hikePolyline = null;
+let hikeStartTime = null;
+let hikeTimerInterval = null;
 
-    if(hikeTracking){
-        // start
-        hikePoints = [];
-        if(hikeLine){ try{ map.removeLayer(hikeLine); }catch(e){} }
-        hikeLine = null;
+function startHikeRecording() {
+    toggleMenu();
+    if(!currentUserId) { alert("Please login to save hikes."); openLogin(); return; }
+    
+    // Reset Data
+    hikePath = [];
+    hikeStakes = [];
+    if(hikePolyline) map.removeLayer(hikePolyline);
+    hikePolyline = L.polyline([], {color: '#FF9800', weight: 5}).addTo(map);
+    
+    // Clear existing stakes from map to start fresh (Optional - depends if you want clean map)
+    // clearMap(); 
 
-        hikeWatchId = navigator.geolocation.watchPosition((pos)=>{
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            hikePoints.push([lat,lng]);
-            if(!hikeLine){
-                hikeLine = L.polyline(hikePoints, { weight: 4 }).addTo(map);
-            }else{
-                hikeLine.setLatLngs(hikePoints);
-            }
-            // keep view on user
-            map.panTo([lat,lng], { animate: true });
-        }, (err)=>{
-            console.error(err);
-            alert('Cannot get GPS location.');
-            stopHikeTrack();
-        }, { enableHighAccuracy:true, maximumAge:5000, timeout:15000 });
+    // Start GPS
+    if(!navigator.geolocation) return alert("GPS not supported");
+    
+    hikeStartTime = Date.now();
+    document.getElementById('hikePanel').classList.add('active');
+    
+    hikeWatchId = navigator.geolocation.watchPosition(updateHikePosition, 
+        (err) => alert("GPS Error: " + err.message), 
+        { enableHighAccuracy: true, maximumAge: 1000 }
+    );
+    
+    hikeTimerInterval = setInterval(updateHikeTimer, 1000);
+}
 
-        alert('Hike tracking started');
-    }else{
-        stopHikeTrack();
-        alert('Hike tracking stopped');
+function updateHikePosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const latlng = [lat, lng];
+
+    hikePath.push(latlng);
+    hikePolyline.setLatLngs(hikePath);
+    map.panTo(latlng);
+
+    // Calculate total distance
+    let distMeters = 0;
+    for(let i=0; i<hikePath.length-1; i++) {
+        distMeters += map.distance(hikePath[i], hikePath[i+1]);
     }
+    const miles = (distMeters * 0.000621371).toFixed(2);
+    document.getElementById('hikeDist').innerText = miles;
+}
+
+function updateHikeTimer() {
+    const diff = Math.floor((Date.now() - hikeStartTime) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    document.getElementById('hikeTime').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+}
+
+// Hook into your existing createStake function!
+const originalCreateStake = createStake;
+createStake = function(lat, lng, label) {
+    // Call original logic to put it on map
+    originalCreateStake(lat, lng, label);
+    
+    // If hiking, add this NEW stake to the hike collection too
+    if (hikeWatchId) {
+        // Find the stake object we just added (it's the last one in global 'stakes')
+        const newStake = stakes[stakes.length - 1];
+        hikeStakes.push(newStake);
+    }
+};
+
+async function finishAndSaveHike() {
+    if(hikePath.length < 2) return alert("Hike too short to save.");
+    
+    const name = prompt("Name this hike:", "Morning Hike " + new Date().toLocaleDateString());
+    if(!name) return;
+
+    const miles = document.getElementById('hikeDist').innerText; // approximate
+
+    const payload = {
+        userId: currentUserId,
+        name: name,
+        distance: parseFloat(miles) * 5280, // convert back to feet if needed, or keep miles
+        path: hikePath,
+        stakes: hikeStakes // These include photos because your photo logic updates the 'stakes' object reference!
+    };
+
+    try {
+        const res = await fetch('/api/hikes/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.success) {
+            alert("Hike Saved!");
+            stopHikeRecording();
+        } else {
+            alert("Save failed: " + data.message);
+        }
+    } catch(e) { alert("Network error saving hike"); }
+}
+
+function stopHikeRecording() {
+    if(hikeWatchId) navigator.geolocation.clearWatch(hikeWatchId);
+    if(hikeTimerInterval) clearInterval(hikeTimerInterval);
+    hikeWatchId = null;
+    document.getElementById('hikePanel').classList.remove('active');
+    // Keep the line on the map until user manually clears or loads something else
+}
+
+// --- VIEW SAVED HIKES ---
+
+function toggleHikeModal() { document.getElementById('hikeModal').classList.toggle('open'); }
+
+async function openHikeList() {
+    toggleMenu();
+    if(!currentUserId) return alert("Login required");
+    
+    document.getElementById('hikeListContainer').innerHTML = "Loading...";
+    toggleHikeModal();
+    
+    const res = await fetch(`/api/hikes/list/${currentUserId}`);
+    const list = await res.json();
+    
+    const container = document.getElementById('hikeListContainer');
+    container.innerHTML = "";
+    
+    list.forEach(h => {
+        const date = new Date(h.start_time).toLocaleDateString();
+        const dist = (h.distance_ft / 5280).toFixed(2); // assuming stored in feet, or adjust if miles
+        
+        container.innerHTML += `
+        <div class="hike-item">
+            <div onclick="loadHike(${h.id})">
+                <b>${h.name}</b><br>
+                <span style="color:#666; font-size:12px;">📅 ${date} • 📏 ${dist} mi</span>
+            </div>
+            <div style="margin-top:5px; display:flex; gap:10px;">
+                 <button style="padding:4px;" onclick="getDirectionsToHikeStart(${h.id})">🚗 Go to Start</button>
+                 <button style="padding:4px;color:red;" onclick="deleteHike(${h.id})">🗑</button>
+            </div>
+        </div>`;
+    });
+}
+
+async function loadHike(id) {
+    const res = await fetch(`/api/hikes/get/${id}`);
+    const hike = await res.json();
+    
+    clearMap(); // Clear current map
+    toggleHikeModal();
+    
+    // Draw Path
+    const path = hike.path_json; // Database returns JSON object directly via pg
+    L.polyline(path, {color: 'blue', weight: 5}).addTo(map);
+    
+    // Draw Stakes
+    const savedStakes = hike.stakes_json;
+    if(savedStakes && savedStakes.length > 0) {
+        savedStakes.forEach(s => {
+            stakes.push(s);
+            addStakeMarker(s); // Uses your existing function
+        });
+    }
+    
+    // Zoom to hike
+    if(path.length > 0) map.fitBounds(L.polyline(path).getBounds());
+}
+
+async function getDirectionsToHikeStart(id) {
+    // We need to fetch the full details to get the first coordinate
+    const res = await fetch(`/api/hikes/get/${id}`);
+    const hike = await res.json();
+    const path = hike.path_json;
+    
+    if(path && path.length > 0) {
+        const start = path[0]; // [lat, lng]
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${start[0]},${start[1]}`;
+        window.open(url, '_blank');
+    } else {
+        alert("No path data found.");
+    }
+}
+
+async function deleteHike(id) {
+    if(!confirm("Delete this hike history?")) return;
+    await fetch(`/api/hikes/delete/${id}`, {method:'DELETE'});
+    openHikeList(); // Refresh list
 }
 
 function stopHikeTrack(){
