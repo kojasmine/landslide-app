@@ -156,6 +156,61 @@ app.delete('/api/image/:filename', async (req, res) => {
     }
 });
 
+
+
+// --- AI ANALYSIS ROUTE (GOOGLE GEMINI - FREE) ---
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Helper to download image from Cloudinary as a buffer
+async function fetchImageToBuffer(url) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
+app.post('/api/ai/analyze', async (req, res) => {
+    const { filename } = req.body;
+    if (!filename) return res.status(400).json({ error: "No filename provided" });
+
+    // 1. Get the full Cloudinary URL
+    let imageUrl = filename;
+    if (!filename.startsWith('http')) {
+        imageUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/land_survey_app/${filename}`;
+    }
+
+    try {
+        // 2. Initialize Google AI
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        // Use 'gemini-1.5-flash' which is fast and free for this use case
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // 3. Download the image data (Gemini needs the raw data, not just a URL)
+        const imageBuffer = await fetchImageToBuffer(imageUrl);
+
+        // 4. Send to Google
+        const prompt = "Analyze this land survey photo. Describe the terrain (flat, sloped), vegetation (dense, sparse), and any visible man-made objects like fences, stakes, or buildings. Keep it brief.";
+        
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: imageBuffer.toString("base64"),
+                    mimeType: "image/jpeg",
+                },
+            },
+        ]);
+
+        const response = await result.response;
+        const analysis = response.text();
+        
+        res.json({ analysis: analysis });
+
+    } catch (error) {
+        console.error("AI Error:", error);
+        res.status(500).json({ error: "AI analysis failed. Check server logs." });
+    }
+});
+
 // --- MAP DATA ROUTES ---
 app.get('/api/search', async (req, res) => {
     let { q } = req.query; if (!q || q.length < 1) return res.json([]);
