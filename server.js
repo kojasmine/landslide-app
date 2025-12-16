@@ -158,8 +158,72 @@ app.delete('/api/image/:filename', async (req, res) => {
 
 
 
-// --- AI ANALYSIS ROUTE (GOOGLE GEMINI - FREE) ---
+// --- AI ANALYSIS ROUTE (ROBUST VERSION) ---
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const https = require('https'); // Use built-in https instead of fetch
+
+// Robust image downloader
+function downloadImage(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            if (res.statusCode !== 200) {
+                reject(new Error(`Failed to download image: Status ${res.statusCode}`));
+                return;
+            }
+            const data = [];
+            res.on('data', (chunk) => data.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(data)));
+        }).on('error', (err) => reject(err));
+    });
+}
+
+app.post('/api/ai/analyze', async (req, res) => {
+    const { filename } = req.body;
+    
+    // Log what is happening so we can see it in Render Logs
+    console.log(`[AI Request] Analyzing: ${filename}`);
+
+    if (!filename) return res.status(400).json({ error: "No filename provided" });
+
+    let imageUrl = filename;
+    if (!filename.startsWith('http')) {
+        imageUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/land_survey_app/${filename}`;
+    }
+
+    try {
+        // Initialize Google AI
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Download image using the robust function
+        console.log(`[AI Request] Downloading image...`);
+        const imageBuffer = await downloadImage(imageUrl);
+        
+        console.log(`[AI Request] Sending to Gemini...`);
+        const prompt = "Analyze this land survey photo. Describe the terrain, vegetation, and any man-made markers.";
+        
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: imageBuffer.toString("base64"),
+                    mimeType: "image/jpeg",
+                },
+            },
+        ]);
+
+        const response = await result.response;
+        const analysis = response.text();
+        
+        console.log(`[AI Request] Success!`);
+        res.json({ analysis: analysis });
+
+    } catch (error) {
+        console.error("AI SERVER ERROR DETAILS:", error); // This will show up in logs
+        res.status(500).json({ error: "Analysis failed. See server logs for details." });
+    }
+});
+
 
 // Helper to download image from Cloudinary as a buffer
 async function fetchImageToBuffer(url) {
