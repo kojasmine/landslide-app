@@ -193,7 +193,7 @@ app.post('/api/ai/analyze', async (req, res) => {
     try {
         // Initialize Google AI
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // Download image using the robust function
         console.log(`[AI Request] Downloading image...`);
@@ -246,7 +246,7 @@ app.post('/api/ai/analyze', async (req, res) => {
         // 2. Initialize Google AI
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
         // Use 'gemini-1.5-flash' which is fast and free for this use case
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         // 3. Download the image data (Gemini needs the raw data, not just a URL)
         const imageBuffer = await fetchImageToBuffer(imageUrl);
