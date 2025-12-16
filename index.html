@@ -708,190 +708,305 @@
         // ==========================================
         //  ADVANCED HIKE TRACKING LOGIC
         // ==========================================
-        let hikeWatchId = null;
-        let hikePath = [];      
-        let hikeStakes = [];    
-        let hikePolyline = null;
-        let hikeStartTime = null;
-        let hikeTimerInterval = null;
 
-        function startHikeRecording() {
-            toggleMenu();
-            if(!currentUserId) { alert("Please login to save hikes."); openLogin(); return; }
-            
-            hikePath = [];
-            hikeStakes = [];
-            if(hikePolyline) map.removeLayer(hikePolyline);
-            hikePolyline = L.polyline([], {color: '#FF9800', weight: 5}).addTo(map);
-            
-            if(!navigator.geolocation) return alert("GPS not supported");
-            
-            hikeStartTime = Date.now();
-            document.getElementById('hikePanel').classList.add('active');
-            
-            // We use the existing map.locate to track, or we can use a separate watch
-            // Since map.locate is already running with high accuracy, we can just hook into userMarker updates
-            // But for recording, a separate watch is safer to ensure we capture points even if map isn't moving
-            hikeWatchId = navigator.geolocation.watchPosition(
-                (pos) => updateHikePosition(pos), 
-                (err) => console.log("Hike GPS Err:", err), 
-                { enableHighAccuracy: true, maximumAge: 1000 }
-            );
-            
-            hikeTimerInterval = setInterval(updateHikeTimer, 1000);
+// ==========================================
+//  ADVANCED HIKE TRACKING LOGIC (updated)
+//  - Start/record without login
+//  - Save to account if logged in, otherwise save locally
+//  - Stop & Clear really clears the track + resets stats
+// ==========================================
+let hikeWatchId = null;
+let hikePath = [];
+let hikeStakes = [];
+let hikePolyline = null;
+let hikeStartTime = null;
+let hikeTimerInterval = null;
+let hikeDistMeters = 0;
+
+function isHikeRecording(){
+    return hikeWatchId !== null;
+}
+
+function resetHikeUI(){
+    document.getElementById('hikeDist').innerText = "0.00";
+    document.getElementById('hikeTime').innerText = "00:00";
+}
+
+function startHikeRecording() {
+    toggleMenu();
+
+    if(isHikeRecording()){
+        alert("Hike tracking is already running.");
+        return;
+    }
+
+    if(hikePolyline && hikePath && hikePath.length > 1){
+        if(!confirm("Start a new hike? This will clear the current unsaved track.")) return;
+    }
+
+    hikePath = [];
+    hikeStakes = [];
+    hikeDistMeters = 0;
+
+    if(hikePolyline){
+        try{ map.removeLayer(hikePolyline); }catch(e){}
+    }
+    hikePolyline = L.polyline([], {color: '#FF9800', weight: 5}).addTo(map);
+
+    if(!navigator.geolocation) return alert("GPS not supported");
+
+    hikeStartTime = Date.now();
+    resetHikeUI();
+    document.getElementById('hikePanel').classList.add('active');
+
+    hikeWatchId = navigator.geolocation.watchPosition(
+        (pos) => updateHikePosition(pos),
+        (err) => {
+            console.log("Hike GPS Err:", err);
+            alert("GPS error: " + (err && err.message ? err.message : "unknown"));
+            stopHikeRecording(true);
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+    );
+
+    hikeTimerInterval = setInterval(updateHikeTimer, 1000);
+
+    if(!currentUserId){
+        console.log("Hike recording started (not logged in). Save will be local-only.");
+    }
+}
+
+function updateHikePosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const latlng = [lat, lng];
+
+    // Ignore tiny jitter (~<3 meters)
+    if(hikePath.length > 0) {
+        const last = hikePath[hikePath.length-1];
+        const moved = map.distance(last, latlng);
+        if(moved < 3) return;
+        hikeDistMeters += moved;
+    }
+
+    hikePath.push(latlng);
+
+    if(hikePolyline) hikePolyline.setLatLngs(hikePath);
+
+    const miles = (hikeDistMeters * 0.000621371).toFixed(2);
+    document.getElementById('hikeDist').innerText = miles;
+}
+
+function updateHikeTimer() {
+    if(!hikeStartTime) return;
+    const diff = Math.floor((Date.now() - hikeStartTime) / 1000);
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    document.getElementById('hikeTime').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+}
+
+async function finishAndSaveHike() {
+    if(hikePath.length < 2) return alert("Hike too short to save.");
+
+    const defaultName = "Hike " + new Date().toLocaleDateString();
+    const name = prompt("Name this hike:", defaultName);
+    if(!name) return;
+
+    const payload = {
+        name,
+        distance_ft: Math.round(hikeDistMeters * 3.28084),
+        path: hikePath,
+        stakes: hikeStakes,
+        start_time: new Date(hikeStartTime || Date.now()).toISOString()
+    };
+
+    // Local-only save if not logged in
+    if(!currentUserId){
+        try{
+            const k = "landslide_hikes_local";
+            const list = JSON.parse(localStorage.getItem(k) || "[]");
+            const id = Date.now();
+            list.unshift({ id, ...payload, source: "local" });
+            localStorage.setItem(k, JSON.stringify(list));
+            alert("Saved locally (not logged in).");
+            stopHikeRecording(true);
+        }catch(e){
+            alert("Failed to save locally: storage full?");
+        }
+        return;
+    }
+
+    // Save to server if logged in
+    try {
+        const res = await fetch('/api/hikes/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId: currentUserId, ...payload })
+        });
+        const data = await res.json();
+        if(data.success) {
+            alert("Hike Saved!");
+            stopHikeRecording(true);
+        } else {
+            alert("Save failed: " + (data.message || "unknown"));
+        }
+    } catch(e) { 
+        alert("Network error saving hike"); 
+    }
+}
+
+function stopHikeRecording(clearTrack = true) {
+    if(hikeWatchId) {
+        try{ navigator.geolocation.clearWatch(hikeWatchId); }catch(e){}
+    }
+    if(hikeTimerInterval) {
+        try{ clearInterval(hikeTimerInterval); }catch(e){}
+    }
+    hikeWatchId = null;
+    hikeTimerInterval = null;
+    hikeStartTime = null;
+
+    document.getElementById('hikePanel').classList.remove('active');
+
+    if(clearTrack){
+        hikePath = [];
+        hikeStakes = [];
+        hikeDistMeters = 0;
+        resetHikeUI();
+        if(hikePolyline){
+            try{ map.removeLayer(hikePolyline); }catch(e){}
+            hikePolyline = null;
+        }
+    }
+}
+
+// --- VIEW SAVED HIKES ---
+function toggleHikeModal() { document.getElementById('hikeModal').classList.toggle('open'); }
+
+async function openHikeList() {
+    toggleMenu();
+
+    document.getElementById('hikeListContainer').innerHTML = "Loading...";
+    if(!document.getElementById('hikeModal').classList.contains('open')) toggleHikeModal();
+
+    const container = document.getElementById('hikeListContainer');
+    container.innerHTML = "";
+
+    // 1) Local hikes (always)
+    try{
+        const local = JSON.parse(localStorage.getItem("landslide_hikes_local") || "[]");
+        if(local.length){
+            local.forEach(h => {
+                const date = new Date(h.start_time || Date.now()).toLocaleDateString();
+                const dist = (Number(h.distance_ft || 0) / 5280).toFixed(2);
+                container.innerHTML += `
+                <div class="hike-item" onclick="loadLocalHike(${h.id})">
+                    <b>${h.name}</b><br>
+                    <span style="color:#666; font-size:12px;">📅 ${date} • 📏 ${dist} mi • 💾 Local</span>
+                </div>`;
+            });
+        }
+    }catch(e){}
+
+    if(!currentUserId){
+        if(container.innerHTML.trim()==="") {
+            container.innerHTML = "<div style='padding:20px;text-align:center'>Login to see saved hikes in your account.<br><br>You can still record + save hikes locally.</div>";
+        }
+        return;
+    }
+
+    if(container.innerHTML.trim()!=="") container.innerHTML += "<div style='padding:10px 15px;color:#888;font-size:12px'>Account Hikes</div>";
+
+    try {
+        const res = await fetch(`/api/hikes/list/${currentUserId}`);
+        const list = await res.json();
+
+        if(Array.isArray(list) && list.length){
+            list.forEach(h => {
+                const date = new Date(h.start_time).toLocaleDateString();
+                const dist = (h.distance_ft / 5280).toFixed(2);
+
+                container.innerHTML += `
+                <div class="hike-item">
+                    <div onclick="loadHike(${h.id})">
+                        <b>${h.name}</b><br>
+                        <span style="color:#666; font-size:12px;">📅 ${date} • 📏 ${dist} mi</span>
+                    </div>
+                    <div style="margin-top:5px; display:flex; gap:10px;">
+                         <button class="popup-btn" onclick="getDirectionsToHikeStart(${h.id})">🚗 Go to Start</button>
+                         <button class="popup-btn popup-delete" onclick="deleteHike(${h.id})">🗑</button>
+                    </div>
+                </div>`;
+            });
+        } else {
+            container.innerHTML += "<div style='padding:20px;text-align:center'>No saved hikes yet</div>";
+        }
+    } catch(e){ 
+        container.innerHTML += "<div style='padding:20px;text-align:center'>Error loading account hikes.</div>"; 
+    }
+}
+
+function loadLocalHike(id){
+    try{
+        const list = JSON.parse(localStorage.getItem("landslide_hikes_local") || "[]");
+        const hike = list.find(x => x.id === id);
+        if(!hike) return alert("Local hike not found.");
+
+        clearMap();
+        if(document.getElementById('hikeModal').classList.contains('open')) toggleHikeModal();
+
+        const path = hike.path || [];
+        if(!path.length) return alert("No path data found.");
+
+        hikePolyline = L.polyline(path, {color: 'blue', weight: 5}).addTo(map);
+        if(path.length > 0) map.fitBounds(L.polyline(path).getBounds());
+    }catch(e){
+        alert("Error loading local hike");
+    }
+}
+
+async function loadHike(id) {
+    try {
+        const res = await fetch(`/api/hikes/get/${id}`);
+        const hike = await res.json();
+
+        clearMap();
+        if(document.getElementById('hikeModal').classList.contains('open')) toggleHikeModal();
+
+        const path = hike.path_json;
+        hikePolyline = L.polyline(path, {color: 'blue', weight: 5}).addTo(map);
+
+        const savedStakes = hike.stakes_json;
+        if(savedStakes && savedStakes.length > 0) {
+            savedStakes.forEach(s => {
+                stakes.push(s);
+                addStakeMarker(s);
+            });
         }
 
-        function updateHikePosition(pos) {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const latlng = [lat, lng];
+        if(path.length > 0) map.fitBounds(L.polyline(path).getBounds());
+    } catch(e) { alert("Error loading hike details"); }
+}
 
-            // Don't add duplicate points if not moving much
-            if(hikePath.length > 0) {
-                const last = hikePath[hikePath.length-1];
-                if(Math.abs(last[0]-lat) < 0.00001 && Math.abs(last[1]-lng) < 0.00001) return;
-            }
+async function getDirectionsToHikeStart(id) {
+    const res = await fetch(`/api/hikes/get/${id}`);
+    const hike = await res.json();
+    const path = hike.path_json;
+    if(path && path.length > 0) {
+        const start = path[0];
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${start[0]},${start[1]}`;
+        window.open(url, '_blank');
+    } else {
+        alert("No path data found.");
+    }
+}
 
-            hikePath.push(latlng);
-            if(hikePolyline) hikePolyline.setLatLngs(hikePath);
-            
-            // Calculate total distance
-            let distMeters = 0;
-            for(let i=0; i<hikePath.length-1; i++) {
-                distMeters += map.distance(hikePath[i], hikePath[i+1]);
-            }
-            const miles = (distMeters * 0.000621371).toFixed(2);
-            document.getElementById('hikeDist').innerText = miles;
-        }
+async function deleteHike(id) {
+    if(!confirm("Delete this hike history?")) return;
+    await fetch(`/api/hikes/delete/${id}`, {method:'DELETE'});
+    openHikeList();
+}
 
-        function updateHikeTimer() {
-            const diff = Math.floor((Date.now() - hikeStartTime) / 1000);
-            const m = Math.floor(diff / 60);
-            const s = diff % 60;
-            document.getElementById('hikeTime').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-        }
-
-        async function finishAndSaveHike() {
-            if(hikePath.length < 2) return alert("Hike too short to save.");
-            
-            const name = prompt("Name this hike:", "Morning Hike " + new Date().toLocaleDateString());
-            if(!name) return;
-
-            const miles = document.getElementById('hikeDist').innerText; 
-
-            const payload = {
-                userId: currentUserId,
-                name: name,
-                distance: parseFloat(miles) * 5280, 
-                path: hikePath,
-                stakes: hikeStakes 
-            };
-
-            try {
-                const res = await fetch('/api/hikes/save', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if(data.success) {
-                    alert("Hike Saved!");
-                    stopHikeRecording();
-                } else {
-                    alert("Save failed: " + data.message);
-                }
-            } catch(e) { alert("Network error saving hike"); }
-        }
-
-        function stopHikeRecording() {
-            if(hikeWatchId) navigator.geolocation.clearWatch(hikeWatchId);
-            if(hikeTimerInterval) clearInterval(hikeTimerInterval);
-            hikeWatchId = null;
-            document.getElementById('hikePanel').classList.remove('active');
-        }
-
-        // --- VIEW SAVED HIKES ---
-        function toggleHikeModal() { document.getElementById('hikeModal').classList.toggle('open'); }
-
-        async function openHikeList() {
-            toggleMenu();
-            if(!currentUserId) return alert("Login required");
-            
-            document.getElementById('hikeListContainer').innerHTML = "Loading...";
-            toggleHikeModal();
-            
-            try {
-                const res = await fetch(`/api/hikes/list/${currentUserId}`);
-                const list = await res.json();
-                
-                const container = document.getElementById('hikeListContainer');
-                container.innerHTML = "";
-                
-                if(list.length === 0) container.innerHTML = "<div style='padding:20px;text-align:center'>No saved hikes yet</div>";
-
-                list.forEach(h => {
-                    const date = new Date(h.start_time).toLocaleDateString();
-                    const dist = (h.distance_ft / 5280).toFixed(2); 
-                    
-                    container.innerHTML += `
-                    <div class="hike-item">
-                        <div onclick="loadHike(${h.id})">
-                            <b>${h.name}</b><br>
-                            <span style="color:#666; font-size:12px;">📅 ${date} • 📏 ${dist} mi</span>
-                        </div>
-                        <div style="margin-top:5px; display:flex; gap:10px;">
-                             <button class="popup-btn" onclick="getDirectionsToHikeStart(${h.id})">🚗 Go to Start</button>
-                             <button class="popup-btn popup-delete" onclick="deleteHike(${h.id})">🗑</button>
-                        </div>
-                    </div>`;
-                });
-            } catch(e){ document.getElementById('hikeListContainer').innerHTML="Error loading list."; }
-        }
-
-        async function loadHike(id) {
-            try {
-                const res = await fetch(`/api/hikes/get/${id}`);
-                const hike = await res.json();
-                
-                clearMap(); 
-                toggleHikeModal();
-                
-                // Draw Path
-                const path = hike.path_json; 
-                hikePolyline = L.polyline(path, {color: 'blue', weight: 5}).addTo(map);
-                
-                // Draw Stakes
-                const savedStakes = hike.stakes_json;
-                if(savedStakes && savedStakes.length > 0) {
-                    savedStakes.forEach(s => {
-                        stakes.push(s);
-                        addStakeMarker(s); 
-                    });
-                }
-                
-                if(path.length > 0) map.fitBounds(L.polyline(path).getBounds());
-            } catch(e) { alert("Error loading hike details"); }
-        }
-
-        async function getDirectionsToHikeStart(id) {
-            const res = await fetch(`/api/hikes/get/${id}`);
-            const hike = await res.json();
-            const path = hike.path_json;
-            if(path && path.length > 0) {
-                const start = path[0]; 
-                const url = `https://www.google.com/maps/dir/?api=1&destination=${start[0]},${start[1]}`;
-                window.open(url, '_blank');
-            } else {
-                alert("No path data found.");
-            }
-        }
-
-        async function deleteHike(id) {
-            if(!confirm("Delete this hike history?")) return;
-            await fetch(`/api/hikes/delete/${id}`, {method:'DELETE'});
-            openHikeList(); 
-        }
-
-    </script>
+</script>
 </body>
 </html>
