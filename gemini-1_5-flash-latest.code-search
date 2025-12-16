@@ -1,0 +1,13 @@
+# Query: gemini-1.5-flash-latest
+# ContextLines: 1
+
+2 results - 1 file
+
+D:\landslide-mvp\server.js:
+  195          const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  196:         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+  197  
+
+  248          // Use 'gemini-1.5-flash' which is fast and free for this use case
+  249:         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+  250  
