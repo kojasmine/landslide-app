@@ -7,14 +7,12 @@ const cloudinary = require('cloudinary').v2;
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const https = require('https');
 const path = require('path');
-require('dotenv').config(); // <--- This was the line causing the error
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
 
-
-// Increase upload limit to 50MB to prevent "Payload Too Large" errors
+// INCREASE UPLOAD LIMITS (Fixes large photo crashes)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -22,12 +20,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// --- 1. CONFIGURATION ---
-
+// --- CONFIGURATION ---
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
+
+// Check for missing keys on startup
+if (!process.env.CLOUDINARY_CLOUD_NAME) console.error("⚠️ WARNING: Cloudinary Keys Missing in Environment!");
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -38,18 +38,17 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- 2. CORE ROUTES ---
+// --- ROUTES ---
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
 app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.0.2" });
+    res.json({ status: "ok", version: "1.0.3" });
 });
 
-// --- 3. AUTHENTICATION ---
-
+// --- AUTH ---
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -74,71 +73,24 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- EMERGENCY USER FIX ---
-app.get('/api/nuke/:email', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM users WHERE email = $1', [req.params.email]);
-        res.send(`SUCCESS: User ${req.params.email} deleted.`);
-    } catch (e) { res.send("Error: " + e.message); }
-});
-
-// --- 4. CLOUD PROJECTS ---
-
-app.post('/api/cloud/save', async (req, res) => {
-    const { id, userId, name, data } = req.body;
-    try {
-        if (!id) {
-            const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
-            if (check.rows.length > 0) return res.json({ success: false, message: "NAME_EXISTS" });
-            
-            const result = await pool.query(
-                'INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id',
-                [userId, name, JSON.stringify(data)]
-            );
-            return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
-        } else {
-            await pool.query(
-                'UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4',
-                [JSON.stringify(data), name, id, userId]
-            );
-            return res.json({ success: true, mode: 'update', newId: id });
-        }
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
-});
-
-app.get('/api/cloud/load/:userId', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT id, user_id, name, updated_at, data FROM user_projects WHERE user_id = $1 ORDER BY updated_at DESC', [req.params.userId]);
-        res.json(result.rows);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.delete('/api/cloud/delete/:projectId', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]);
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
-});
-
-// --- 5. IMAGE UPLOAD (ROBUST) ---
+// --- IMAGE UPLOAD (ROBUST) ---
 app.post('/api/image/upload', (req, res) => {
+    // Wrap multer in a handler to catch size errors
     upload.single('image')(req, res, (err) => {
         if (err) {
             console.error("Multer Error:", err);
-            return res.status(500).json({ success: false, message: "File too big or upload error" });
+            return res.status(500).json({ success: false, message: "File upload error: " + err.message });
         }
         
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "No image file received" });
-        }
+        if (!req.file) return res.status(400).json({ success: false, message: "No image received" });
 
-        // Proceed to Cloudinary
+        // Stream to Cloudinary
         const uploadStream = cloudinary.uploader.upload_stream(
             { folder: "land_survey_app", resource_type: "image" },
             (error, result) => {
                 if (error) {
                     console.error("Cloudinary Error:", error);
-                    return res.status(500).json({ success: false, message: "Cloudinary: " + error.message });
+                    return res.status(500).json({ success: false, message: "Cloudinary Error (Check Logs)" });
                 }
                 res.json({ success: true, url: result.secure_url, public_id: result.public_id });
             }
@@ -148,13 +100,20 @@ app.post('/api/image/upload', (req, res) => {
             const bufferStream = require('stream').Readable.from(req.file.buffer);
             bufferStream.pipe(uploadStream);
         } catch (e) {
-            res.status(500).json({ success: false, message: "Stream Processing Error" });
+            console.error("Stream Error:", e);
+            res.status(500).json({ success: false, message: "Server Stream Error" });
         }
     });
 });
 
-// --- 6. AI ANALYSIS (WORKING GEMINI) ---
+app.delete('/api/image/:filename', async (req, res) => {
+    const filename = req.params.filename;
+    const publicId = "land_survey_app/" + filename.split('.')[0]; 
+    try { await cloudinary.uploader.destroy(publicId); res.json({ success: true }); } 
+    catch (e) { res.json({ success: true }); }
+});
 
+// --- AI ANALYSIS ---
 function downloadImage(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (res) => {
@@ -180,8 +139,7 @@ app.post('/api/ai/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Using "gemini-1.5-flash" (Standard Free) or "gemini-flash-latest"
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Free model
 
         const imageBuffer = await downloadImage(imageUrl);
         
@@ -199,50 +157,46 @@ app.post('/api/ai/analyze', async (req, res) => {
     }
 });
 
-// --- 7. MAP DATA ---
-
-app.get('/api/search', async (req, res) => {
-    let { q } = req.query; if (!q || q.length < 1) return res.json([]);
-    let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
-    const query = `
-        SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, 
-               ST_X(ST_Centroid(p.geom)) as lng, ST_Y(ST_Centroid(p.geom)) as lat, ST_AsGeoJSON(p.geom) as geometry
-        FROM taxdata t JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '')
-        WHERE CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1 OR CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $2 OR t."PARID"::text ILIKE $2 LIMIT 5;
-    `;
-    try { const result = await pool.query(query, [`%${cleanQ}%`, `%${q}%`]); res.json(result.rows); } catch (e) { res.status(500).json({ error: e.message }); }
+// --- CLOUD SAVE/LOAD ---
+app.post('/api/cloud/save', async (req, res) => {
+    const { id, userId, name, data } = req.body;
+    try {
+        if (!id) {
+            const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
+            if (check.rows.length > 0) return res.json({ success: false, message: "NAME_EXISTS" });
+            const result = await pool.query('INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id', [userId, name, JSON.stringify(data)]);
+            return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
+        } else {
+            await pool.query('UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(data), name, id, userId]);
+            return res.json({ success: true, mode: 'update', newId: id });
+        }
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-app.get('/api/parcels', async (req, res) => {
-    const { lat, lng } = req.query;
-    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry
-        FROM "Parcels_real" p LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '')
-        ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326) LIMIT 1;`;
-    try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
+app.get('/api/cloud/load/:userId', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, user_id, name, updated_at, data FROM user_projects WHERE user_id = $1 ORDER BY updated_at DESC', [req.params.userId]);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 8. HIKE TRACKING ---
+app.delete('/api/cloud/delete/:projectId', async (req, res) => {
+    try { await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]); res.json({ success: true }); } 
+    catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
 
+// --- HIKE ROUTES ---
 app.post('/api/hikes/save', async (req, res) => {
     const { userId, name, distance, path, stakes } = req.body;
     try {
-        const result = await pool.query(
-            'INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]
-        );
+        const result = await pool.query('INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5) RETURNING id', [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]);
         res.json({ success: true, newId: result.rows[0].id });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: err.message });
-    }
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
 app.get('/api/hikes/list/:userId', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT id, name, distance_ft, start_time FROM user_hikes WHERE user_id = $1 ORDER BY start_time DESC', 
-            [req.params.userId]
-        );
+        const result = await pool.query('SELECT id, name, distance_ft, start_time FROM user_hikes WHERE user_id = $1 ORDER BY start_time DESC', [req.params.userId]);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -256,12 +210,24 @@ app.get('/api/hikes/get/:hikeId', async (req, res) => {
 });
 
 app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.hikeId]);
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.hikeId]); res.json({ success: true }); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 9. START SERVER ---
+// --- MAP SEARCH ---
+app.get('/api/search', async (req, res) => {
+    let { q } = req.query; if (!q || q.length < 1) return res.json([]);
+    let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
+    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_X(ST_Centroid(p.geom)) as lng, ST_Y(ST_Centroid(p.geom)) as lat, ST_AsGeoJSON(p.geom) as geometry FROM taxdata t JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '') WHERE CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1 OR CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $2 OR t."PARID"::text ILIKE $2 LIMIT 5;`;
+    try { const result = await pool.query(query, [`%${cleanQ}%`, `%${q}%`]); res.json(result.rows); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/parcels', async (req, res) => {
+    const { lat, lng } = req.query;
+    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM "Parcels_real" p LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '') ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326) LIMIT 1;`;
+    try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
+});
+
+// --- START ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server on ${PORT}`));
