@@ -13,6 +13,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+// Increase upload limit to 50MB to prevent "Payload Too Large" errors
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
@@ -115,39 +120,37 @@ app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// --- 5. IMAGE UPLOAD (DEBUG VERSION) ---
-
-app.post('/api/image/upload', upload.single('image'), (req, res) => {
-    if (!req.file) {
-        console.log("Upload Error: No file received");
-        return res.status(400).json({ success: false, message: "No image provided" });
-    }
-    
-    const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "land_survey_app", resource_type: "image" },
-        (error, result) => {
-            if (error) {
-                console.error("Cloudinary Upload Error:", error);
-                return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
-            }
-            res.json({ success: true, url: result.secure_url, public_id: result.public_id });
+// --- 5. IMAGE UPLOAD (ROBUST) ---
+app.post('/api/image/upload', (req, res) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) {
+            console.error("Multer Error:", err);
+            return res.status(500).json({ success: false, message: "File too big or upload error" });
         }
-    );
-    
-    try {
-        const bufferStream = require('stream').Readable.from(req.file.buffer);
-        bufferStream.pipe(uploadStream);
-    } catch (e) {
-        console.error("Stream Error:", e);
-        res.status(500).json({ success: false, message: "Stream Error" });
-    }
-});
+        
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No image file received" });
+        }
 
-app.delete('/api/image/:filename', async (req, res) => {
-    const filename = req.params.filename;
-    const publicId = "land_survey_app/" + filename.split('.')[0]; 
-    try { await cloudinary.uploader.destroy(publicId); res.json({ success: true }); } 
-    catch (e) { res.json({ success: true }); }
+        // Proceed to Cloudinary
+        const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "land_survey_app", resource_type: "image" },
+            (error, result) => {
+                if (error) {
+                    console.error("Cloudinary Error:", error);
+                    return res.status(500).json({ success: false, message: "Cloudinary: " + error.message });
+                }
+                res.json({ success: true, url: result.secure_url, public_id: result.public_id });
+            }
+        );
+
+        try {
+            const bufferStream = require('stream').Readable.from(req.file.buffer);
+            bufferStream.pipe(uploadStream);
+        } catch (e) {
+            res.status(500).json({ success: false, message: "Stream Processing Error" });
+        }
+    });
 });
 
 // --- 6. AI ANALYSIS (WORKING GEMINI) ---
