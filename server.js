@@ -1,3 +1,10 @@
+console.log("Cloudinary name:", process.env.CLOUDINARY_CLOUD_NAME);
+
+
+import dotenv from "dotenv";
+dotenv.config();
+
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
