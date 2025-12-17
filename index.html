@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v105</div>
+    <div class="debug-label">v106</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
 
@@ -189,6 +189,7 @@
         <div class="menu-item" onclick="openHikeList()"><span class="material-icons" style="color:#FF9800">history</span> Saved Hikes</div>
 
         <div class="menu-section-title">More</div>
+        <div class="menu-item" onclick="clearLocalData()"><span class="material-icons" style="color:#ff4400">delete_sweep</span> Clear App Data</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share Location</div>
         <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
     </div>
@@ -296,7 +297,6 @@
             let n = getNextStakeNumber();
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
             
-            // If hiking, assume they want a photo immediately
             if(isHiking) {
                 const s = stakes[stakes.length-1];
                 requestStakePhoto(s.id);
@@ -344,11 +344,8 @@
         function startHikeRecording() {
             toggleMenu();
             if(!currentUserId) { 
-                if(confirm("You are not logged in. You can track, but you cannot SAVE to cloud. Continue?")) {
-                    // allow
-                } else {
-                    openLogin(); 
-                    return; 
+                if(!confirm("You are not logged in. You can track, but you cannot SAVE to cloud. Continue?")) {
+                    openLogin(); return; 
                 }
             }
 
@@ -520,7 +517,6 @@
         }
 
         // --- LOAD LISTS ---
-        
         async function openListCloudProjects() {
             toggleMenu();
             if(!currentUserId) return alert("Login First");
@@ -591,7 +587,6 @@
             const res = await fetch(`/api/cloud/load/${currentUserId}`);
             const all = await res.json();
             const p = all.find(x => x.id === id);
-            
             if(p) {
                 const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data;
                 clearMap();
@@ -605,7 +600,6 @@
             document.getElementById('listModal').classList.remove('open');
             const res = await fetch(`/api/hikes/get/${id}`);
             const h = await res.json();
-            
             clearMap();
             L.polyline(h.path_json, {color:'blue', weight:6}).addTo(map);
             if(h.stakes_json) {
@@ -632,14 +626,20 @@
         }
 
         // --- PHOTO UPLOAD LOGIC (FIXED) ---
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], {type:mime});
+        }
+
         window.handleStakePhoto = async function(input) {
             if(!input.files[0] || !selectedStakeId) return;
             const file = input.files[0];
             
-            if(!currentUserId) {
-                // If not logged in, try local storage, but warn
-                alert("Not logged in. Saving to phone storage only (will not sync to cloud).");
-            }
+            if(!currentUserId) alert("Not logged in. Saving locally.");
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -654,8 +654,8 @@
 
                     if (currentUserId) {
                         try {
+                            const blob = dataURLtoBlob(base64); // Use Robust Converter
                             const fd = new FormData();
-                            const blob = await (await fetch(base64)).blob();
                             fd.append('image', blob, 'stake.jpg');
                             
                             const res = await fetch('/api/image/upload', {method:'POST', body:fd});
@@ -668,7 +668,7 @@
                                 saveImageLocally(base64, selectedStakeId);
                             }
                         } catch(e) { 
-                            alert("Upload error. Saving locally."); 
+                            alert("Upload error (Network). Saving locally."); 
                             saveImageLocally(base64, selectedStakeId);
                         }
                     } else {
@@ -700,9 +700,19 @@
                     updateStakePopup(s);
                     saveToStorage();
                 }
-            } catch(e){ alert("Phone Storage Full!"); }
+            } catch(e){ 
+                alert("Phone Storage Full! Use 'Clear App Data' in Menu."); 
+            }
         }
         
+        // --- HELPER: CLEAR LOCAL STORAGE ---
+        function clearLocalData() {
+            if(confirm("Clear ALL local data (fixes 'Storage Full')? Synced cloud data is safe.")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+
         // --- IMAGE & AI ---
         let currImgUrl = "";
         let currImgStakeId = null;
@@ -712,7 +722,6 @@
             document.getElementById('modalImage').src = currImgUrl;
             document.getElementById('imageModal').style.display = 'flex';
         };
-        
         window.closeImageModal = function() { document.getElementById('imageModal').style.display = 'none'; };
         
         window.analyzeCurrentImage = async function(e) {
@@ -721,7 +730,6 @@
             const btn = e.target;
             const originalText = btn.innerHTML;
             btn.innerHTML = "⏳ Thinking...";
-            
             try {
                 const res = await fetch('/api/ai/analyze', {
                     method:'POST', 
@@ -765,7 +773,6 @@
                document.getElementById('owner').innerText = d[0].owner_name;
                document.getElementById('address').innerText = d[0].address;
                document.getElementById('card').classList.add('active');
-               
                if(activeLayer) map.removeLayer(activeLayer);
                if(d[0].geometry) {
                    activeLayer = L.geoJSON(JSON.parse(d[0].geometry), {style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);
@@ -835,10 +842,10 @@
             const icon = document.getElementById('userIcon');
             if(currentUserEmail) {
                 el.innerText = "Logout (" + currentUserEmail.split('@')[0] + ")";
-                icon.style.color = "#4CAF50"; // Green for logged in
+                icon.style.color = "#4CAF50"; 
             } else {
                 el.innerText = "Login / Register";
-                icon.style.color = "#5E35B1"; // Purple for logged out
+                icon.style.color = "#5E35B1"; 
             }
         }
         function loadFromLocalStorage() {

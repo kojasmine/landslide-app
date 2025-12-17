@@ -107,27 +107,35 @@ app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-// --- 5. IMAGE UPLOAD ---
 
+// --- 5. IMAGE UPLOAD (DEBUG VERSION) ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
-    if (!req.file) return res.status(400).json({ success: false, message: "No image provided" });
+    if (!req.file) {
+        console.log("Upload Error: No file received");
+        return res.status(400).json({ success: false, message: "No image provided" });
+    }
+    
+    // Create a stream to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
         { folder: "land_survey_app", resource_type: "image" },
         (error, result) => {
-            if (error) return res.status(500).json({ success: false, message: "Upload failed" });
+            if (error) {
+                console.error("Cloudinary Upload Error:", error); // <--- SHOW THIS IN LOGS
+                return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
+            }
             res.json({ success: true, url: result.secure_url, public_id: result.public_id });
         }
     );
-    const bufferStream = require('stream').Readable.from(req.file.buffer);
-    bufferStream.pipe(uploadStream);
+    
+    try {
+        const bufferStream = require('stream').Readable.from(req.file.buffer);
+        bufferStream.pipe(uploadStream);
+    } catch (e) {
+        console.error("Stream Error:", e);
+        res.status(500).json({ success: false, message: "Stream Error" });
+    }
 });
 
-app.delete('/api/image/:filename', async (req, res) => {
-    const filename = req.params.filename;
-    const publicId = "land_survey_app/" + filename.split('.')[0]; 
-    try { await cloudinary.uploader.destroy(publicId); res.json({ success: true }); } 
-    catch (e) { res.json({ success: true }); }
-});
 
 // --- 6. AI ANALYSIS (WORKING) ---
 
