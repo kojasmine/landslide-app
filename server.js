@@ -147,7 +147,7 @@ app.post('/api/ai/analyze', async (req, res) => {
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
         // Using standard flash model
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const imageBuffer = await downloadImage(imageUrl);
         
