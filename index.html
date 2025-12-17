@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v106</div>
+    <div class="debug-label">v107</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
 
@@ -297,6 +297,7 @@
             let n = getNextStakeNumber();
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
             
+            // If hiking, assume they want a photo immediately
             if(isHiking) {
                 const s = stakes[stakes.length-1];
                 requestStakePhoto(s.id);
@@ -587,6 +588,7 @@
             const res = await fetch(`/api/cloud/load/${currentUserId}`);
             const all = await res.json();
             const p = all.find(x => x.id === id);
+            
             if(p) {
                 const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data;
                 clearMap();
@@ -600,6 +602,7 @@
             document.getElementById('listModal').classList.remove('open');
             const res = await fetch(`/api/hikes/get/${id}`);
             const h = await res.json();
+            
             clearMap();
             L.polyline(h.path_json, {color:'blue', weight:6}).addTo(map);
             if(h.stakes_json) {
@@ -626,6 +629,7 @@
         }
 
         // --- PHOTO UPLOAD LOGIC (FIXED) ---
+        // Helper to convert base64 to blob reliably on mobile
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -639,13 +643,16 @@
             if(!input.files[0] || !selectedStakeId) return;
             const file = input.files[0];
             
-            if(!currentUserId) alert("Not logged in. Saving locally.");
+            if(!currentUserId) {
+                alert("Not logged in. Saving to phone storage only.");
+            }
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.src = e.target.result;
                 img.onload = async () => {
+                    // Resize to avoid huge payloads
                     const c = document.createElement('canvas');
                     const scale = 800 / img.width;
                     c.width = 800; c.height = img.height * scale;
@@ -654,7 +661,8 @@
 
                     if (currentUserId) {
                         try {
-                            const blob = dataURLtoBlob(base64); // Use Robust Converter
+                            // Use the robust function instead of fetch()
+                            const blob = dataURLtoBlob(base64); 
                             const fd = new FormData();
                             fd.append('image', blob, 'stake.jpg');
                             
@@ -668,6 +676,7 @@
                                 saveImageLocally(base64, selectedStakeId);
                             }
                         } catch(e) { 
+                            console.error(e);
                             alert("Upload error (Network). Saving locally."); 
                             saveImageLocally(base64, selectedStakeId);
                         }
