@@ -1,10 +1,3 @@
-console.log("Cloudinary name:", process.env.CLOUDINARY_CLOUD_NAME);
-
-
-import dotenv from "dotenv";
-dotenv.config();
-
-
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -14,7 +7,7 @@ const cloudinary = require('cloudinary').v2;
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const https = require('https');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config(); // <--- This was the line causing the error
 
 const app = express();
 app.use(cors());
@@ -47,7 +40,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.0.1" });
+    res.json({ status: "ok", version: "1.0.2" });
 });
 
 // --- 3. AUTHENTICATION ---
@@ -74,6 +67,14 @@ app.post('/api/login', async (req, res) => {
         if(!match) return res.json({success:false, message:"Wrong password"});
         res.json({ success: true, user: { id: user.id, email: user.email } });
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
+});
+
+// --- EMERGENCY USER FIX ---
+app.get('/api/nuke/:email', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM users WHERE email = $1', [req.params.email]);
+        res.send(`SUCCESS: User ${req.params.email} deleted.`);
+    } catch (e) { res.send("Error: " + e.message); }
 });
 
 // --- 4. CLOUD PROJECTS ---
@@ -114,20 +115,19 @@ app.delete('/api/cloud/delete/:projectId', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-
 // --- 5. IMAGE UPLOAD (DEBUG VERSION) ---
+
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if (!req.file) {
         console.log("Upload Error: No file received");
         return res.status(400).json({ success: false, message: "No image provided" });
     }
     
-    // Create a stream to Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
         { folder: "land_survey_app", resource_type: "image" },
         (error, result) => {
             if (error) {
-                console.error("Cloudinary Upload Error:", error); // <--- SHOW THIS IN LOGS
+                console.error("Cloudinary Upload Error:", error);
                 return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
             }
             res.json({ success: true, url: result.secure_url, public_id: result.public_id });
@@ -143,8 +143,14 @@ app.post('/api/image/upload', upload.single('image'), (req, res) => {
     }
 });
 
+app.delete('/api/image/:filename', async (req, res) => {
+    const filename = req.params.filename;
+    const publicId = "land_survey_app/" + filename.split('.')[0]; 
+    try { await cloudinary.uploader.destroy(publicId); res.json({ success: true }); } 
+    catch (e) { res.json({ success: true }); }
+});
 
-// --- 6. AI ANALYSIS (WORKING) ---
+// --- 6. AI ANALYSIS (WORKING GEMINI) ---
 
 function downloadImage(url) {
     return new Promise((resolve, reject) => {
@@ -171,8 +177,8 @@ app.post('/api/ai/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Using "gemini-flash-latest" as it works with the free tier and avoids 404s
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        // Using "gemini-1.5-flash" (Standard Free) or "gemini-flash-latest"
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const imageBuffer = await downloadImage(imageUrl);
         
@@ -212,10 +218,8 @@ app.get('/api/parcels', async (req, res) => {
     try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
 });
 
+// --- 8. HIKE TRACKING ---
 
-// --- HIKE TRACKING ROUTES ---
-
-// Save a completed hike
 app.post('/api/hikes/save', async (req, res) => {
     const { userId, name, distance, path, stakes } = req.body;
     try {
@@ -230,7 +234,6 @@ app.post('/api/hikes/save', async (req, res) => {
     }
 });
 
-// Load user's hikes
 app.get('/api/hikes/list/:userId', async (req, res) => {
     try {
         const result = await pool.query(
@@ -241,7 +244,6 @@ app.get('/api/hikes/list/:userId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Load specific hike details
 app.get('/api/hikes/get/:hikeId', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM user_hikes WHERE id = $1', [req.params.hikeId]);
@@ -250,7 +252,6 @@ app.get('/api/hikes/get/:hikeId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Delete a hike
 app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
     try {
         await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.hikeId]);
@@ -258,38 +259,6 @@ app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-
-// --- 8. START SERVER ---
+// --- 9. START SERVER ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server on ${PORT}`);
-    // uncomment the line below to debug models on startup
-    // listModels(); 
-});
-
-
-// =========================================================
-// =================  DEBUG & UTILITIES  ===================
-// =========================================================
-
-/* 
-   TOOL: Check which Google Models are available to your key.
-   Use this if "AI Analyze" starts giving 404 errors again.
-*/
-async function listModels() {
-    console.log("Checking available Google Models...");
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GOOGLE_API_KEY}`);
-        const data = await response.json();
-        console.log("=== AVAILABLE GOOGLE MODELS ===");
-        if (data.models) {
-            data.models.forEach(m => console.log(m.name));
-        } else {
-            console.log("ERROR LISTING MODELS:", data);
-        }
-        console.log("===============================");
-    } catch (e) {
-        console.log("Connection Error:", e.message);
-    }
-}
+app.listen(PORT, () => console.log(`Server on ${PORT}`));
