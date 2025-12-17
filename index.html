@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v108-FastUpload</div>
+    <div class="debug-label">v109-Fixed</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
 
@@ -492,6 +492,13 @@
             saveToStorage();
         }
 
+        // --- ADDED MISSING FUNCTION ---
+        function updateStakePopup(s) {
+            if(stakeMarkers[s.id]) {
+                stakeMarkers[s.id].setPopupContent(generateStakePopupContent(s));
+            }
+        }
+
         // --- MAP CLICK HANDLER (Manual Mode) ---
         map.on('click', (e) => {
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
@@ -629,7 +636,6 @@
         }
 
         // --- PHOTO UPLOAD LOGIC (FIXED) ---
-        // Helper to convert base64 to blob reliably on mobile
         function dataURLtoBlob(dataurl) {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -648,7 +654,7 @@
             }
 
             // UI Feedback
-            alert("Compressing... Please wait...");
+            // alert("Compressing... Please wait..."); // Removed alert for smoother flow
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -656,7 +662,6 @@
                 img.src = e.target.result;
                 img.onload = async () => {
                     // *** CRITICAL CHANGE: SUPER COMPRESSION ***
-                    // 600px width is enough for phone screens, but small enough to upload instantly.
                     const c = document.createElement('canvas');
                     const scale = 600 / img.width; 
                     c.width = 600; c.height = img.height * scale;
@@ -667,21 +672,19 @@
 
                     if (currentUserId) {
                         try {
-                            // Use the robust function instead of fetch()
                             const blob = dataURLtoBlob(base64); 
                             const fd = new FormData();
                             fd.append('image', blob, 'stake.jpg');
                             
                             const res = await fetch('/api/image/upload', {method:'POST', body:fd});
                             
-                            // Check if response is valid JSON
                             if (!res.ok) throw new Error(`Server returned ${res.status}`);
                             
                             const d = await res.json();
                             
                             if(d.success) {
                                 attachPhotoToStake(d.url);
-                                alert("Success!");
+                                // alert("Success!");
                             } else {
                                 alert("Upload failed: " + d.message);
                                 saveImageLocally(base64, selectedStakeId);
