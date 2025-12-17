@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v104</div>
+    <div class="debug-label">v105</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
 
@@ -174,7 +174,10 @@
     <!-- SIDE MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
-        <div class="menu-item" id="loginItem" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
+        <div class="menu-item" id="loginItem" onclick="handleUserMenuClick()">
+            <span class="material-icons" id="userIcon" style="color:#5E35B1">person</span> 
+            <span id="loginText">Login / Register</span>
+        </div>
         
         <div class="menu-section-title">Tools</div>
         <div class="menu-item" onclick="startStakingMode()"><span class="material-icons" style="color:#E91E63">flag</span> Stake Boundary</div>
@@ -235,26 +238,23 @@
         let currentUserId = localStorage.getItem('landslide_auth_id');
         let currentUserEmail = localStorage.getItem('landslide_auth_email');
         
-        // Data Containers
         let stakes = []; 
         let stakeMarkers = {};
-        let savedItems = []; // For property boundaries (parcels)
-        let activeLayer = null; // Current parcel layer
+        let savedItems = []; 
+        let activeLayer = null; 
         
         let userMarker = null;
         let currentLatLng = null;
-        let selectedStakeId = null; // FIXED: This was missing!
+        let selectedStakeId = null; 
         
         // Init
-        updateMenuLoginText();
+        setTimeout(updateMenuLoginText, 500); 
         loadFromLocalStorage();
 
         // --- GPS TRACKING ---
         map.locate({watch:true, enableHighAccuracy:true});
         map.on('locationfound', (e)=>{
             currentLatLng = e.latlng;
-            
-            // Draw User Marker
             if(!userMarker){
                 const iconHtml = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
                 userMarker = L.marker(e.latlng, {
@@ -264,12 +264,9 @@
             } else {
                 userMarker.setLatLng(e.latlng);
             }
-
-            // If Hiking, update path
             if(isHiking) updateHikePosition(e.latlng);
         });
 
-        // Compass Orientation
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
                 const el = document.getElementById('gpsArrow');
@@ -286,10 +283,7 @@
             toggleMenu();
             isStaking = true;
             document.getElementById('stakingPanel').classList.add('active');
-            
-            // Zoom to user instantly
             if(currentLatLng) map.flyTo(currentLatLng, 20);
-            else alert("Waiting for GPS...");
         }
 
         function exitStakingMode() {
@@ -345,37 +339,39 @@
         let hikePolyline = null;
         let hikeStartTime = 0;
         let hikeInterval = null;
-        let hikeStakes = []; // Stakes specific to this hike
+        let hikeStakes = []; 
 
         function startHikeRecording() {
             toggleMenu();
-            if(!currentUserId) { alert("Please login to track hikes."); openLogin(); return; }
+            if(!currentUserId) { 
+                if(confirm("You are not logged in. You can track, but you cannot SAVE to cloud. Continue?")) {
+                    // allow
+                } else {
+                    openLogin(); 
+                    return; 
+                }
+            }
 
-            // 1. Zoom Map Instantly
             if(currentLatLng) map.flyTo(currentLatLng, 19);
             
-            // 2. Setup Data
             isHiking = true;
             hikePath = [];
             hikeStakes = [];
             if(hikePolyline) map.removeLayer(hikePolyline);
             hikePolyline = L.polyline([], {color: '#FF9800', weight: 6}).addTo(map);
 
-            // 3. UI
             document.getElementById('hikePanel').classList.add('active');
             hikeStartTime = Date.now();
             hikeInterval = setInterval(updateHikeTimer, 1000);
             
-            // 4. Force one GPS read immediately
             if(currentLatLng) updateHikePosition(currentLatLng);
         }
 
         function updateHikePosition(latlng) {
             hikePath.push(latlng);
             hikePolyline.setLatLngs(hikePath);
-            map.panTo(latlng); // Lock camera to user
+            map.panTo(latlng); 
 
-            // Distance Calc
             let distMeters = 0;
             for(let i=0; i<hikePath.length-1; i++) distMeters += map.distance(hikePath[i], hikePath[i+1]);
             document.getElementById('hikeDist').innerText = (distMeters * 0.000621371).toFixed(2);
@@ -397,6 +393,7 @@
         }
 
         async function finishAndSaveHike() {
+            if(!currentUserId) return alert("You must login to save hikes.");
             if(hikePath.length < 5) return alert("Hike too short to save.");
             isHiking = false;
             clearInterval(hikeInterval);
@@ -404,7 +401,7 @@
             const name = prompt("Name this Hike:", "Hike " + new Date().toLocaleDateString());
             if(!name) return;
 
-            const dist = parseFloat(document.getElementById('hikeDist').innerText) * 5280; // ft
+            const dist = parseFloat(document.getElementById('hikeDist').innerText) * 5280; 
 
             try {
                 const res = await fetch('/api/hikes/save', {
@@ -438,7 +435,6 @@
             addStakeMarker(s);
             saveToStorage();
 
-            // Link to hike if hiking
             if(isHiking) hikeStakes.push(s);
         }
 
@@ -456,7 +452,6 @@
 
             marker.bindPopup(() => generateStakePopupContent(s));
             
-            // Allow clicking marker to just open popup normally
             marker.on('dragend', (e) => {
                 s.lat = e.target.getLatLng().lat;
                 s.lng = e.target.getLatLng().lng;
@@ -465,12 +460,10 @@
         }
 
         function generateStakePopupContent(s) {
-            // Find fresh data
             const freshS = stakes.find(x => x.id === s.id) || s;
             let photosHtml = "";
             if(freshS.photos) {
                 freshS.photos.forEach(p => {
-                    // Decide if local or cloud
                     const src = p.startsWith('http') ? p : localStorage.getItem(p);
                     if(src) photosHtml += `<img src="${src}" class="popup-img" onclick="openImageModal('${p}', ${s.id})">`;
                 });
@@ -489,7 +482,7 @@
         }
 
         function requestStakePhoto(id) {
-            selectedStakeId = id; // Fixed variable!
+            selectedStakeId = id; 
             document.getElementById('stakeCamInput').click();
         }
 
@@ -505,11 +498,9 @@
         map.on('click', (e) => {
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
             if(isStaking) {
-                // If staking mode is active, clicking map adds stake
                 let n = getNextStakeNumber();
                 createStake(e.latlng.lat, e.latlng.lng, "Stake " + n);
             } else {
-                // Default behavior: Check for Parcel
                  fetchParcelAt(e.latlng);
             }
         });
@@ -528,7 +519,7 @@
             }
         }
 
-        // --- LOAD LISTS (Saved Hikes / Boundaries) ---
+        // --- LOAD LISTS ---
         
         async function openListCloudProjects() {
             toggleMenu();
@@ -578,10 +569,7 @@
                         </div>
                         <button class="popup-btn popup-delete" onclick="deleteItem('${type}', ${item.id})">🗑</button>
                     `;
-                    // Attach data locally to avoid refetch
-                    // We'll store it in a global temp map if needed, but for now assuming fetch on load
                 } else {
-                    // Hike
                     const mi = (item.distance_ft / 5280).toFixed(2);
                     div.innerHTML = `
                         <div>
@@ -599,11 +587,7 @@
             });
         }
 
-        // --- LOADERS ---
         async function loadProject(id) {
-            // Since we don't have a single-fetch for projects yet, 
-            // we rely on the list data we just got.
-            // Simplified: Re-fetch list and find it.
             const res = await fetch(`/api/cloud/load/${currentUserId}`);
             const all = await res.json();
             const p = all.find(x => x.id === id);
@@ -643,7 +627,6 @@
             if(!confirm("Delete?")) return;
             const endpoint = type === 'project' ? `/api/cloud/delete/${id}` : `/api/hikes/delete/${id}`;
             await fetch(endpoint, {method:'DELETE'});
-            // Refresh
             if(type === 'project') openListCloudProjects();
             else openHikeList();
         }
@@ -653,7 +636,11 @@
             if(!input.files[0] || !selectedStakeId) return;
             const file = input.files[0];
             
-            // Compressor
+            if(!currentUserId) {
+                // If not logged in, try local storage, but warn
+                alert("Not logged in. Saving to phone storage only (will not sync to cloud).");
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
@@ -665,31 +652,56 @@
                     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
                     const base64 = c.toDataURL('image/jpeg', 0.7);
 
-                    // Upload
-                    try {
-                        const fd = new FormData();
-                        // Convert base64 to blob
-                        const blob = await (await fetch(base64)).blob();
-                        fd.append('image', blob, 'stake.jpg');
-                        
-                        const res = await fetch('/api/image/upload', {method:'POST', body:fd});
-                        const d = await res.json();
-                        
-                        if(d.success) {
-                            const s = stakes.find(x => x.id === selectedStakeId);
-                            if(s) {
-                                if(!s.photos) s.photos=[];
-                                s.photos.push(d.url);
-                                updateStakePopup(s); // Refresh popup immediately if open
-                                saveToStorage();
+                    if (currentUserId) {
+                        try {
+                            const fd = new FormData();
+                            const blob = await (await fetch(base64)).blob();
+                            fd.append('image', blob, 'stake.jpg');
+                            
+                            const res = await fetch('/api/image/upload', {method:'POST', body:fd});
+                            const d = await res.json();
+                            
+                            if(d.success) {
+                                attachPhotoToStake(d.url);
+                            } else {
+                                alert("Upload failed: " + d.message);
+                                saveImageLocally(base64, selectedStakeId);
                             }
-                        } else alert("Upload failed");
-                        
-                    } catch(e) { alert("Error uploading"); }
+                        } catch(e) { 
+                            alert("Upload error. Saving locally."); 
+                            saveImageLocally(base64, selectedStakeId);
+                        }
+                    } else {
+                        saveImageLocally(base64, selectedStakeId);
+                    }
                 };
             };
             reader.readAsDataURL(file);
         };
+
+        function attachPhotoToStake(url) {
+            const s = stakes.find(x => x.id === selectedStakeId);
+            if(s) {
+                if(!s.photos) s.photos=[];
+                s.photos.push(url);
+                updateStakePopup(s); 
+                saveToStorage();
+            }
+        }
+
+        function saveImageLocally(data, sid){
+            try{
+                const k="img_"+Date.now();
+                localStorage.setItem(k,data);
+                const s = stakes.find(x => x.id === sid);
+                if(s){
+                    if(!s.photos)s.photos=[];
+                    s.photos.push(k);
+                    updateStakePopup(s);
+                    saveToStorage();
+                }
+            } catch(e){ alert("Phone Storage Full!"); }
+        }
         
         // --- IMAGE & AI ---
         let currImgUrl = "";
@@ -705,10 +717,7 @@
         
         window.analyzeCurrentImage = async function(e) {
             e.preventDefault();
-            // Get filename from URL
             const filename = currImgUrl.split('/').pop();
-            
-            // Show loading state
             const btn = e.target;
             const originalText = btn.innerHTML;
             btn.innerHTML = "⏳ Thinking...";
@@ -723,23 +732,19 @@
                 if(d.error) alert(d.error);
                 else alert(d.analysis);
             } catch(e) { alert("AI Error"); }
-            
             btn.innerHTML = originalText;
         };
         
         window.deleteCurrentImage = async function(e) {
             if(!confirm("Delete Photo?")) return;
-            // Remove from stake array
             const s = stakes.find(x => x.id === currImgStakeId);
             if(s) {
-                // Find index of photo that matches (either by full url or filename match)
                 s.photos = s.photos.filter(p => !p.includes(currImgUrl) && p !== currImgUrl);
                 saveToStorage();
                 closeImageModal();
                 updateStakePopup(s);
             }
         };
-
 
         // --- HELPER: SEARCH & PARCELS ---
         async function performSearch() {
@@ -783,30 +788,58 @@
             document.getElementById('menuOverlay').classList.toggle('active'); 
         }
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
+        
+        function handleUserMenuClick() {
+            if(currentUserId) {
+                if(confirm("Logout?")) {
+                    currentUserId = null;
+                    currentUserEmail = null;
+                    localStorage.removeItem('landslide_auth_id');
+                    localStorage.removeItem('landslide_auth_email');
+                    updateMenuLoginText();
+                    alert("Logged out.");
+                }
+            } else {
+                openLogin();
+            }
+        }
+
         async function doLogin() {
             const e = document.getElementById('emailInput').value;
             const p = document.getElementById('passInput').value;
-            const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})});
-            const d = await r.json();
-            if(d.success) {
-                currentUserId = d.user.id;
-                currentUserEmail = d.user.email;
-                localStorage.setItem('landslide_auth_id', currentUserId);
-                localStorage.setItem('landslide_auth_email', currentUserEmail);
-                updateMenuLoginText();
-                document.getElementById('loginModal').style.display='none';
-            } else alert(d.message);
+            try {
+                const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})});
+                const d = await r.json();
+                if(d.success) {
+                    currentUserId = d.user.id;
+                    currentUserEmail = d.user.email;
+                    localStorage.setItem('landslide_auth_id', currentUserId);
+                    localStorage.setItem('landslide_auth_email', currentUserEmail);
+                    updateMenuLoginText();
+                    document.getElementById('loginModal').style.display='none';
+                } else alert(d.message);
+            } catch(e) { alert("Login failed"); }
         }
         async function doRegister() {
             const e = document.getElementById('emailInput').value;
             const p = document.getElementById('passInput').value;
-            const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})});
-            const d = await r.json();
-            if(d.success) alert("Created! Now Login.");
-            else alert(d.message);
+            try {
+                const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})});
+                const d = await r.json();
+                if(d.success) alert("Created! Now Login.");
+                else alert(d.message);
+            } catch(e) { alert("Error"); }
         }
         function updateMenuLoginText() {
-            if(currentUserEmail) document.getElementById('loginText').innerText = currentUserEmail.split('@')[0];
+            const el = document.getElementById('loginText');
+            const icon = document.getElementById('userIcon');
+            if(currentUserEmail) {
+                el.innerText = "Logout (" + currentUserEmail.split('@')[0] + ")";
+                icon.style.color = "#4CAF50"; // Green for logged in
+            } else {
+                el.innerText = "Login / Register";
+                icon.style.color = "#5E35B1"; // Purple for logged out
+            }
         }
         function loadFromLocalStorage() {
             const s = localStorage.getItem('landslide_saves');
