@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <div class="debug-label">v107</div>
+    <div class="debug-label">v108-FastUpload</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
 
@@ -647,17 +647,23 @@
                 alert("Not logged in. Saving to phone storage only.");
             }
 
+            // UI Feedback
+            alert("Compressing... Please wait...");
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.src = e.target.result;
                 img.onload = async () => {
-                    // Resize to avoid huge payloads
+                    // *** CRITICAL CHANGE: SUPER COMPRESSION ***
+                    // 600px width is enough for phone screens, but small enough to upload instantly.
                     const c = document.createElement('canvas');
-                    const scale = 800 / img.width;
-                    c.width = 800; c.height = img.height * scale;
+                    const scale = 600 / img.width; 
+                    c.width = 600; c.height = img.height * scale;
                     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-                    const base64 = c.toDataURL('image/jpeg', 0.7);
+                    
+                    // 50% Quality (0.5)
+                    const base64 = c.toDataURL('image/jpeg', 0.5);
 
                     if (currentUserId) {
                         try {
@@ -667,17 +673,22 @@
                             fd.append('image', blob, 'stake.jpg');
                             
                             const res = await fetch('/api/image/upload', {method:'POST', body:fd});
+                            
+                            // Check if response is valid JSON
+                            if (!res.ok) throw new Error(`Server returned ${res.status}`);
+                            
                             const d = await res.json();
                             
                             if(d.success) {
                                 attachPhotoToStake(d.url);
+                                alert("Success!");
                             } else {
                                 alert("Upload failed: " + d.message);
                                 saveImageLocally(base64, selectedStakeId);
                             }
                         } catch(e) { 
                             console.error(e);
-                            alert("Upload error (Network). Saving locally."); 
+                            alert("Upload error: " + e.message + "\nSaving locally."); 
                             saveImageLocally(base64, selectedStakeId);
                         }
                     } else {
