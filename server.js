@@ -12,7 +12,7 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
-// INCREASE UPLOAD LIMITS (Fixes large photo crashes)
+// *** CRITICAL: INCREASE LIMITS AT THE VERY TOP ***
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -20,14 +20,19 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// --- CONFIGURATION ---
+// --- DIAGNOSTIC STARTUP CHECK ---
+console.log("---------------------------------------");
+console.log("SERVER STARTING - CHECKING CONFIG:");
+console.log("1. DB URL:", process.env.DATABASE_URL ? "✅ Set" : "❌ MISSING");
+console.log("2. Cloudinary Name:", process.env.CLOUDINARY_CLOUD_NAME ? "✅ Set" : "❌ MISSING");
+console.log("3. Cloudinary Key:", process.env.CLOUDINARY_API_KEY ? "✅ Set" : "❌ MISSING");
+console.log("4. Cloudinary Secret:", process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ MISSING");
+console.log("---------------------------------------");
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
-
-// Check for missing keys on startup
-if (!process.env.CLOUDINARY_CLOUD_NAME) console.error("⚠️ WARNING: Cloudinary Keys Missing in Environment!");
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -42,10 +47,6 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
-});
-
-app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.0.3" });
 });
 
 // --- AUTH ---
@@ -73,25 +74,31 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- IMAGE UPLOAD (ROBUST) ---
+// --- IMAGE UPLOAD (LOGGING ENABLED) ---
 app.post('/api/image/upload', (req, res) => {
-    // Wrap multer in a handler to catch size errors
+    console.log("[Upload] Request received...");
+    
     upload.single('image')(req, res, (err) => {
         if (err) {
-            console.error("Multer Error:", err);
-            return res.status(500).json({ success: false, message: "File upload error: " + err.message });
+            console.error("[Upload] Multer Error:", err);
+            return res.status(500).json({ success: false, message: "Upload Limit Error: " + err.message });
         }
         
-        if (!req.file) return res.status(400).json({ success: false, message: "No image received" });
+        if (!req.file) {
+            console.error("[Upload] No file in request");
+            return res.status(400).json({ success: false, message: "No image received" });
+        }
 
-        // Stream to Cloudinary
+        console.log(`[Upload] File received. Size: ${req.file.size} bytes. Sending to Cloudinary...`);
+
         const uploadStream = cloudinary.uploader.upload_stream(
             { folder: "land_survey_app", resource_type: "image" },
             (error, result) => {
                 if (error) {
-                    console.error("Cloudinary Error:", error);
-                    return res.status(500).json({ success: false, message: "Cloudinary Error (Check Logs)" });
+                    console.error("[Upload] Cloudinary Error:", error);
+                    return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
                 }
+                console.log("[Upload] Success! URL:", result.secure_url);
                 res.json({ success: true, url: result.secure_url, public_id: result.public_id });
             }
         );
@@ -100,8 +107,8 @@ app.post('/api/image/upload', (req, res) => {
             const bufferStream = require('stream').Readable.from(req.file.buffer);
             bufferStream.pipe(uploadStream);
         } catch (e) {
-            console.error("Stream Error:", e);
-            res.status(500).json({ success: false, message: "Server Stream Error" });
+            console.error("[Upload] Stream Error:", e);
+            res.status(500).json({ success: false, message: "Stream Error" });
         }
     });
 });
@@ -139,7 +146,8 @@ app.post('/api/ai/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Free model
+        // Using standard flash model
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const imageBuffer = await downloadImage(imageUrl);
         
@@ -218,7 +226,7 @@ app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
 app.get('/api/search', async (req, res) => {
     let { q } = req.query; if (!q || q.length < 1) return res.json([]);
     let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
-    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_X(ST_Centroid(p.geom)) as lng, ST_Y(ST_Centroid(p.geom)) as lat, ST_AsGeoJSON(p.geom) as geometry FROM taxdata t JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '') WHERE CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1 OR CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $2 OR t."PARID"::text ILIKE $2 LIMIT 5;`;
+    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM taxdata t JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '') WHERE CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1 OR CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $2 OR t."PARID"::text ILIKE $2 LIMIT 5;`;
     try { const result = await pool.query(query, [`%${cleanQ}%`, `%${q}%`]); res.json(result.rows); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -228,6 +236,5 @@ app.get('/api/parcels', async (req, res) => {
     try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
 });
 
-// --- START ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server on ${PORT}`));
