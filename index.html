@@ -11,8 +11,6 @@
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
-        
-        /* APP BAR */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { position: relative; flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
@@ -28,17 +26,15 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: #f0f0f0; }
 
-        /* COMPACT PANELS */
+        /* PANELS */
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
-        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
         .stat-val { font-size: 20px; font-weight: bold; color: #4CAF50; }
         .stat-label { font-size: 10px; color: #ccc; margin-top: 1px; }
-        
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
@@ -47,25 +43,17 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
-
-        /* HIDE TITLE IN RECORDING MODE TO SAVE SPACE */
-        #hikeActiveUI .mode-title { display: none; }
-        #hikeActiveUI { padding-top: 5px; }
+        #hikeActiveUI .mode-title { display: none; } #hikeActiveUI { padding-top: 5px; }
 
         /* MENU */
-        .side-menu { 
-            position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
-            transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
-            display: flex; flex-direction: column; padding-top: 10px;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
-        }
+        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
         
-        /* UTILS */
+        /* LOGIN */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
         .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
@@ -73,6 +61,7 @@
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
         .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
 
+        /* UTILS */
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
@@ -113,10 +102,10 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v132-Compact</div>
+    <div class="debug-label">v134-MobilePhotoFix</div>
 
-    <!-- REMOVED capture="environment" to allow Gallery choice -->
-    <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
+    <!-- MOVED STYLE TO INLINE TO PREVENT BROWSER IGNORING IT -->
+    <input type="file" id="stakeCamInput" accept="image/*" style="position:fixed; top:-1000px; left:0; opacity:0; pointer-events:none;" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -132,32 +121,27 @@
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
 
-    <!-- HIKE PANEL (COMPACT UI) -->
+    <!-- HIKE PANEL -->
     <div class="mode-panel" id="hikePanel">
-        
-        <!-- READY STATE -->
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
             <button class="panel-btn btn-start" style="width:100%" onclick="startHikeRecording()"><span class="material-icons">play_arrow</span> START TRACKING</button>
             <button class="panel-btn btn-stop" style="margin-top:10px; width:100%; background:transparent; border:1px solid #444;" onclick="closeHikePanel()">Cancel</button>
         </div>
-        
-        <!-- RECORDING STATE (Compact) -->
         <div id="hikeActiveUI" style="display:none; width:100%; flex-direction:column;">
             <div class="hike-stats">
                 <div class="stat-box"><div class="stat-val" id="hikeDist">0.00</div><div class="stat-label">MILES</div></div>
                 <div class="stat-box"><div class="stat-val" id="hikeTime">00:00</div><div class="stat-label">TIME</div></div>
             </div>
-            <!-- Photo & Pause -->
             <div class="panel-controls">
-                <button class="panel-btn btn-action" style="flex:1.5" onclick="addStakeAtUserLoc()">
+                <!-- CHANGED: Calls takeHikePhoto() directly for instant camera -->
+                <button class="panel-btn btn-action" style="flex:1.5" onclick="takeHikePhoto()">
                     <span class="material-icons">camera_alt</span> Photo
                 </button>
                 <button class="panel-btn btn-pause" id="btnPause" onclick="toggleHikePause()">
                     <span class="material-icons">pause</span>
                 </button>
             </div>
-            <!-- Finish & Cancel -->
             <div class="panel-controls">
                 <button class="panel-btn btn-save" style="flex:2" onclick="finishAndSaveHike()">Finish & Save</button>
                 <button class="panel-btn btn-stop" onclick="stopHikeAndClear()">✕</button>
@@ -170,7 +154,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
-    <!-- APP BAR -->
+    <!-- APP BAR WITH SUGGESTIONS -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -225,9 +209,13 @@
         const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
         let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email'), stakes = [], stakeMarkers = {}, savedItems = [], activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null, currentProjectName = null, currentProjectID = null;
         
+        // NEW STATE FOR HIKE PHOTOS
+        let isTakingHikePhoto = false;
+
         loadFromLocalStorage();
         updateMenuLoginText();
         
+        // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
         let debounceTimer;
@@ -311,6 +299,7 @@
             else { i.type='password'; ico.innerText='visibility'; }
         }
 
+        // --- STAKING ---
         let isStaking = false;
         function startStakingMode() {
             toggleMenu();
@@ -327,7 +316,7 @@
         function addStakeAtUserLoc() {
             if(!currentLatLng) return alert("No GPS");
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + getNextStakeNumber());
-            if(isHiking) requestStakePhoto(stakes[stakes.length-1].id);
+            // Note: Standard stake button does NOT auto-trigger photo anymore, unless hiking
         }
         
         async function saveStakingProject(forceId=null) {
@@ -365,18 +354,37 @@
             } catch(e) { alert("Error"); }
         }
 
+        // --- HIKING ---
         let isHiking=false, isPaused=false, hikePath=[], hikePolyline=null, hikeSeconds=0, hikeInterval=null, hikeStakes=[];
         function openHikePanel() { toggleMenu(); document.getElementById('hikeStartUI').style.display='flex'; document.getElementById('hikeActiveUI').style.display='none'; document.getElementById('hikePanel').classList.add('active'); if(currentLatLng) map.flyTo(currentLatLng, 19); }
         function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
+        
         function startHikeRecording() {
             document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
-            clearMap(); isHiking=true; isPaused=false; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
+            // CLEAN THE MAP FOR HIKE
+            if(activeLayer) map.removeLayer(activeLayer); // Remove yellow lines
+            stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
+            stakes = []; 
+            
+            isHiking=true; isPaused=false; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
             hikePolyline=L.polyline([],{color:'#FF9800',weight:6}).addTo(map);
             hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000);
             if(currentLatLng) updateHikePosition(currentLatLng);
         }
+        
+        // *** NEW INSTANT PHOTO LOGIC ***
+        function takeHikePhoto() {
+            if(!currentLatLng) return alert("No GPS");
+            
+            // 1. Immediately trigger input (bypass logic to satisfy mobile browser)
+            document.getElementById('stakeCamInput').click();
+            
+            // 2. Set flag so handleStakePhoto knows what to do
+            isTakingHikePhoto = true;
+        }
+
         function toggleHikePause() {
-            isPaused=!isPaused; const btn=document.getElementById('btnPause'); const t=document.getElementById('hikeTitle');
+            isPaused=!isPaused; const btn=document.getElementById('btnPause'); 
             if(isPaused) { btn.innerHTML='<span class="material-icons">play_arrow</span>'; btn.style.background='#4CAF50'; btn.style.color='white'; }
             else { btn.innerHTML='<span class="material-icons">pause</span>'; btn.style.background='#FFC107'; btn.style.color='black'; if(currentLatLng) updateHikePosition(currentLatLng); }
         }
@@ -392,23 +400,31 @@
             try { const res=await fetch('/api/hikes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,name:n,distance:parseFloat(document.getElementById('hikeDist').innerText)*5280,path:hikePath,stakes:hikeStakes})}); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); }
         }
 
+        // --- CORE UTILS ---
         function createStake(lat, lng, label) { const s={id:Date.now(),lat,lng,label,number:getNextStakeNumber(),photos:[]}; stakes.push(s); addStakeMarker(s); saveToStorage(); if(isHiking) hikeStakes.push(s); }
         function getNextStakeNumber() { return stakes.length+1; }
         function addStakeMarker(s) { const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'ci',html:`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`,iconSize:[40,40],iconAnchor:[20,20]}),draggable:true}).addTo(map); stakeMarkers[s.id]=m; m.bindPopup(()=>generatePopup(s)); m.on('dragend',(e)=>{s.lat=e.target.getLatLng().lat;s.lng=e.target.getLatLng().lng;saveToStorage();}); }
         function generatePopup(s) { let ph=""; (s.photos||[]).forEach(p=>{const src=p.startsWith('http')?p:localStorage.getItem(p);ph+=`<img src="${src}" class="popup-img" onclick="openImageModal('${p}',${s.id})">`;}); return `<div style="text-align:center"><b>${s.label}</b><div class="popup-photos">${ph}</div><button class="popup-btn" onclick="requestStakePhoto(${s.id})">📷 Photo</button><button class="popup-btn popup-delete" onclick="deleteStake(${s.id})">🗑</button></div>`; }
         function updateStakePopup(s){if(stakeMarkers[s.id])stakeMarkers[s.id].setPopupContent(generatePopup(s));}
         
-        // --- FIXED: REQUEST PHOTO ---
         function requestStakePhoto(id) { 
+            if(!currentUserId) {
+                if(!confirm("You are not logged in. Photos will not be saved to cloud. Continue?")) return;
+            }
             selectedStakeId=id; 
             document.getElementById('stakeCamInput').click(); 
         }
 
         function deleteStake(id){if(confirm("Delete?")){map.removeLayer(stakeMarkers[id]);delete stakeMarkers[id];stakes=stakes.filter(s=>s.id!==id);saveToStorage();}}
         
+        // --- MAP CLICK LOGIC ---
         map.on('click',(e)=>{ 
             if(isMeasuring){addMeasurePoint(e.latlng);return;} 
-            if(isStaking){let n=getNextStakeNumber();createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);fetchParcelAt(e.latlng);} // Added fetchParcelAt to ensure yellow line draws
+            if(isStaking){
+                let n=getNextStakeNumber();
+                createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);
+                fetchParcelAt(e.latlng); 
+            } 
             else if(isHiking) { return; } 
             else {fetchParcelAt(e.latlng);} 
         });
@@ -432,8 +448,6 @@
                 const d=JSON.parse(typeof p.data==='string'?p.data:JSON.stringify(p.data)); 
                 stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); stakes=[]; stakeMarkers={}; 
                 (d.stakes||[]).forEach(s=>{stakes.push(s);addStakeMarker(s);}); 
-                
-                // FIXED: KEEP YELLOW LINE
                 if(d.properties && d.properties.length > 0 && d.properties[0].geometry) {
                     if(activeLayer) map.removeLayer(activeLayer);
                     activeLayer = L.geoJSON(JSON.parse(d.properties[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);
@@ -464,7 +478,6 @@
             stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
             stakes=[]; stakeMarkers={}; 
             if(hikePolyline) map.removeLayer(hikePolyline);
-            // activeLayer NOT CLEARED to keep yellow line
         }
         
         function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
@@ -477,7 +490,43 @@
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
         window.deleteCurrentImage=()=>{if(confirm("Delete?")){const s=stakes.find(x=>x.id===currImgStakeId);s.photos=s.photos.filter(p=>!p.includes(currImgUrl));saveToStorage();closeImageModal();updateStakePopup(s);}};
         function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
-        window.handleStakePhoto = async function(input) { if(!input.files[0] || !selectedStakeId) return; const r=new FileReader(); r.onload=(e)=>{const i=new Image();i.src=e.target.result;i.onload=async()=>{const c=document.createElement('canvas');const sc=600/i.width;c.width=600;c.height=i.height*sc;c.getContext('2d').drawImage(i,0,0,c.width,c.height);const b64=c.toDataURL('image/jpeg',0.5);const b=dataURLtoBlob(b64);const fd=new FormData();fd.append('image',b,'stake.jpg');try{const res=await fetch('/api/image/upload',{method:'POST',body:fd});const d=await res.json();const s=stakes.find(x=>x.id===selectedStakeId);s.photos.push(d.url);updateStakePopup(s);saveToStorage();}catch(x){alert("Upload failed");}}};r.readAsDataURL(input.files[0]); };
+        
+        // --- PHOTO HANDLER ---
+        window.handleStakePhoto = async function(input) {
+            // Logic for Hike photos vs Stake photos
+            if(!input.files[0]) return;
+            const file = input.files[0];
+            
+            // If taking photo during hike, create stake NOW
+            if(isTakingHikePhoto) {
+                if(!currentLatLng) return alert("No GPS");
+                let n = getNextStakeNumber();
+                createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
+                // The newest stake is the one we want
+                selectedStakeId = stakes[stakes.length-1].id;
+                isTakingHikePhoto = false; // Reset flag
+            }
+
+            if(!selectedStakeId) return;
+
+            const r=new FileReader(); 
+            r.onload=(e)=>{
+                const i=new Image(); i.src=e.target.result;
+                i.onload=async()=>{
+                    const c=document.createElement('canvas'); const sc=600/i.width; c.width=600; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+                    const b64=c.toDataURL('image/jpeg',0.5); const b=dataURLtoBlob(b64); const fd=new FormData(); fd.append('image',b,'stake.jpg');
+                    try{
+                        const res=await fetch('/api/image/upload',{method:'POST',body:fd});
+                        const d=await res.json();
+                        const s=stakes.find(x=>x.id===selectedStakeId);
+                        s.photos.push(d.url);
+                        updateStakePopup(s);
+                        saveToStorage();
+                    } catch(x){ alert("Upload failed"); }
+                }
+            };
+            r.readAsDataURL(file); 
+        };
     </script>
 </body>
 </html>
