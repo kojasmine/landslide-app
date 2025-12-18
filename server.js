@@ -33,16 +33,12 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '/index.html')));
 
-app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.0.8" });
-});
-
-// --- AUTOCOMPLETE SUGGESTIONS (PHOTON ONLY) ---
-// Fast, type-ahead search for dropdowns
+// --- 1. ADDRESS AUTOCOMPLETE (PHOTON) ---
 app.get('/api/address/suggestions', async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 3) return res.json([]); 
-
+    
+    // Search Photon API (Global, OpenStreetMap)
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5`;
     
     https.get(url, (resp) => {
@@ -54,34 +50,29 @@ app.get('/api/address/suggestions', async (req, res) => {
                 if (json.features) {
                     const results = json.features.map(f => {
                         const p = f.properties;
-                        // Format a nice label
-                        const addr = [p.name, p.housenumber, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
+                        // Create a clean label: "Name, Street, City, State"
+                        const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
                         return { 
-                            label: addr, 
+                            label: label, 
                             lat: f.geometry.coordinates[1], 
                             lng: f.geometry.coordinates[0] 
                         };
                     });
                     res.json(results);
-                } else {
-                    res.json([]);
-                }
+                } else { res.json([]); }
             } catch(e) { res.json([]); }
         });
-    }).on('error', (err) => res.json([]));
+    }).on('error', () => res.json([]));
 });
 
-// --- EXACT ADDRESS SEARCH (US CENSUS + PHOTON) ---
+// --- 2. EXACT SEARCH (CENSUS + PHOTON) ---
 function fetchJson(url) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         https.get(url, (res) => {
             let data = '';
             res.on('data', c => data += c);
-            res.on('end', () => {
-                try { resolve(JSON.parse(data)); } 
-                catch (e) { resolve(null); }
-            });
-        }).on('error', (err) => resolve(null));
+            res.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { resolve(null); } });
+        }).on('error', () => resolve(null));
     });
 }
 
@@ -89,32 +80,28 @@ app.get('/api/address/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: "No query" });
 
-    // 1. Try US CENSUS (Best for house numbers)
+    // Try US Census first (Best for house numbers)
     const censusUrl = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(q)}&benchmark=Public_AR_Current&format=json`;
-    try {
-        const censusData = await fetchJson(censusUrl);
-        if (censusData && censusData.result && censusData.result.addressMatches && censusData.result.addressMatches.length > 0) {
-            const match = censusData.result.addressMatches[0];
-            return res.json({ lat: match.coordinates.y, lng: match.coordinates.x, address: match.matchedAddress, source: "US Census" });
-        }
-    } catch(e) { console.log("Census Error", e); }
+    const censusData = await fetchJson(censusUrl);
+    if (censusData?.result?.addressMatches?.length > 0) {
+        const match = censusData.result.addressMatches[0];
+        return res.json({ lat: match.coordinates.y, lng: match.coordinates.x, address: match.matchedAddress });
+    }
 
-    // 2. Fallback to PHOTON
+    // Fallback to Photon (Best for streets/places)
     const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
-    try {
-        const photonData = await fetchJson(photonUrl);
-        if (photonData && photonData.features && photonData.features.length > 0) {
-            const feat = photonData.features[0];
-            const p = feat.properties;
-            const addr = [p.name, p.housenumber, p.street, p.city, p.state].filter(Boolean).join(', ');
-            return res.json({ lat: feat.geometry.coordinates[1], lng: feat.geometry.coordinates[0], address: addr, source: "OpenStreetMap" });
-        }
-    } catch(e) { console.log("Photon Error", e); }
+    const photonData = await fetchJson(photonUrl);
+    if (photonData?.features?.length > 0) {
+        const f = photonData.features[0];
+        const p = f.properties;
+        const addr = [p.name, p.housenumber, p.street, p.city, p.state].filter(Boolean).join(', ');
+        return res.json({ lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], address: addr });
+    }
 
     res.json({ error: "Address not found" });
 });
 
-// --- AUTH ---
+// --- 3. CORE FEATURES ---
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -122,8 +109,7 @@ app.post('/api/register', async (req, res) => {
         if (check.rows.length > 0) return res.json({success:false, message:"Email exists"});
         const hash = await bcrypt.hash(password, 10);
         await pool.query('INSERT INTO users (email, password) VALUES ($1, $2)', [email, hash]);
-        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        res.json({ success: true, user: user.rows[0] });
+        res.json({ success: true });
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
@@ -138,7 +124,6 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- IMAGE UPLOAD ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if(!req.file) return res.status(400).json({success:false, message:"No file"});
     const uploadStream = cloudinary.uploader.upload_stream({ folder: "land_survey_app" }, (err, result) => {
@@ -148,30 +133,23 @@ app.post('/api/image/upload', upload.single('image'), (req, res) => {
     require('stream').Readable.from(req.file.buffer).pipe(uploadStream);
 });
 
-// --- AI ---
-function downloadImage(url) {
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            if (res.statusCode !== 200) { reject(new Error(`Status ${res.statusCode}`)); return; }
-            const data = [];
-            res.on('data', (chunk) => data.push(chunk));
-            res.on('end', () => resolve(Buffer.concat(data)));
-        }).on('error', (err) => reject(err));
-    });
-}
 app.post('/api/ai/analyze', async (req, res) => {
     const { filename } = req.body;
     const imageUrl = filename.startsWith('http') ? filename : `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/land_survey_app/${filename}`;
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-        const imageBuffer = await downloadImage(imageUrl);
-        const result = await model.generateContent(["Analyze land survey photo.", { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } }]);
+        
+        // Simple fetch for AI image
+        const imgResp = await new Promise((resolve) => https.get(imageUrl, (r) => {
+             const data = []; r.on('data', c=>data.push(c)); r.on('end', ()=>resolve(Buffer.concat(data)));
+        }));
+        
+        const result = await model.generateContent(["Analyze survey photo.", { inlineData: { data: imgResp.toString("base64"), mimeType: "image/jpeg" } }]);
         res.json({ analysis: result.response.text() });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- CLOUD SAVE ---
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
@@ -191,35 +169,29 @@ app.get('/api/cloud/load/:userId', async (req, res) => {
     const r = await pool.query('SELECT * FROM user_projects WHERE user_id = $1 ORDER BY updated_at DESC', [req.params.userId]);
     res.json(r.rows);
 });
-
-app.delete('/api/cloud/delete/:projectId', async (req, res) => {
-    await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]);
+app.delete('/api/cloud/delete/:id', async (req, res) => {
+    await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.id]);
     res.json({ success: true });
 });
 
-// --- HIKES ---
 app.post('/api/hikes/save', async (req, res) => {
     const { userId, name, distance, path, stakes } = req.body;
     await pool.query('INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5)', [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]);
     res.json({ success: true });
 });
-
 app.get('/api/hikes/list/:userId', async (req, res) => {
     const r = await pool.query('SELECT id, name, distance_ft, start_time FROM user_hikes WHERE user_id = $1 ORDER BY start_time DESC', [req.params.userId]);
     res.json(r.rows);
 });
-
 app.get('/api/hikes/get/:id', async (req, res) => {
     const r = await pool.query('SELECT * FROM user_hikes WHERE id = $1', [req.params.id]);
     res.json(r.rows[0]);
 });
-
 app.delete('/api/hikes/delete/:id', async (req, res) => {
     await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.id]);
     res.json({ success: true });
 });
 
-// --- PARCELS ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM "Parcels_real" p LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '') ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326) LIMIT 1;`;
