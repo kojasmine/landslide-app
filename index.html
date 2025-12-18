@@ -93,15 +93,9 @@
         }
         .measure-box.visible { display: flex; }
         .measure-icon { color: #FF9800; font-size: 20px; }
-
-        /* MEASURE MARKER (Draggable) */
-        .measure-dot {
-            background: #FF9800;
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            cursor: grab;
-        }
+        
+        /* MEASURE DOT (Draggable) */
+        .measure-dot { background: #FF9800; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; }
 
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
@@ -134,13 +128,12 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v138-LiveMeasure</div>
+    <div class="debug-label">v139-PhotoFixed</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
 
-    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -187,7 +180,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
-    <!-- APP BAR WITH SUGGESTIONS -->
+    <!-- APP BAR -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -467,7 +460,7 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- UPDATED MEASURE TOOL (DRAGGABLE & DYNAMIC) ---
+        // --- MEASURE TOOL (UPDATED) ---
         let isMeasuring=false;
         let measureMarkers=[];
         let measurePolyline=null;
@@ -600,7 +593,54 @@
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
         window.deleteCurrentImage=()=>{if(confirm("Delete?")){const s=stakes.find(x=>x.id===currImgStakeId);s.photos=s.photos.filter(p=>!p.includes(currImgUrl));saveToStorage();closeImageModal();updateStakePopup(s);}};
         function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
-        window.handleStakePhoto = async function(input) { if(!input.files[0] || !selectedStakeId) return; const r=new FileReader(); r.onload=(e)=>{const i=new Image();i.src=e.target.result;i.onload=async()=>{const c=document.createElement('canvas');const sc=600/i.width;c.width=600;c.height=i.height*sc;c.getContext('2d').drawImage(i,0,0,c.width,c.height);const b64=c.toDataURL('image/jpeg',0.5);const b=dataURLtoBlob(b64);const fd=new FormData();fd.append('image',b,'stake.jpg');try{const res=await fetch('/api/image/upload',{method:'POST',body:fd});const d=await res.json();const s=stakes.find(x=>x.id===selectedStakeId);s.photos.push(d.url);updateStakePopup(s);saveToStorage();}catch(x){alert("Upload failed");}}};r.readAsDataURL(input.files[0]); };
+        
+        // --- PHOTO HANDLER ---
+        window.handleStakePhoto = async function(input) {
+            // Logic for Hike photos vs Stake photos
+            if(!input.files[0]) return;
+            const file = input.files[0];
+            
+            // If taking photo during hike, create stake NOW
+            if(isTakingHikePhoto) {
+                if(!currentLatLng) return alert("No GPS");
+                let n = getNextStakeNumber();
+                createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
+                // The newest stake is the one we want
+                selectedStakeId = stakes[stakes.length-1].id;
+                isTakingHikePhoto = false; // Reset flag
+            }
+
+            if(!selectedStakeId) return;
+
+            const r=new FileReader(); 
+            r.onload=(e)=>{
+                const i=new Image(); i.src=e.target.result;
+                i.onload=async()=>{
+                    const c=document.createElement('canvas'); const sc=600/i.width; c.width=600; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+                    const b64=c.toDataURL('image/jpeg',0.5); const b=dataURLtoBlob(b64); const fd=new FormData(); fd.append('image',b,'stake.jpg');
+                    try{
+                        const res=await fetch('/api/image/upload',{method:'POST',body:fd});
+                        const d=await res.json();
+                        if(d.success) {
+                            attachPhotoToStake(d.url);
+                        } else alert("Upload Failed: " + d.message);
+                    } catch(x){ alert("Upload failed"); }
+                }
+            };
+            r.readAsDataURL(file); 
+        };
+
+        function attachPhotoToStake(url) {
+            const s = stakes.find(x => x.id === selectedStakeId);
+            if(s) {
+                if(!s.photos) s.photos=[];
+                s.photos.push(url);
+                updateStakePopup(s);
+                saveToStorage();
+                // FIX: Open the popup immediately to confirm photo was added
+                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup();
+            }
+        }
     </script>
 </body>
 </html>
