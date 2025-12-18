@@ -34,21 +34,17 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
-        
-        /* SCROLLABLE SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
             display: flex; flex-direction: column; padding-top: 10px;
-            overflow-y: auto; /* Enable vertical scrolling */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; /* Prevent shrinking */ }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
-        
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
@@ -87,7 +83,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v114-ScrollMenu</div>
+    <div class="debug-label">v115-Overwrite</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -142,7 +138,6 @@
         <div class="menu-item" onclick="clearLocalData()"><span class="material-icons" style="color:#ff4400">delete_sweep</span> Clear App Data</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share Location</div>
         <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
-        <!-- Spacer to ensure bottom items are reachable -->
         <div style="height: 50px;"></div>
     </div>
     <div class="login-overlay" id="loginModal">
@@ -178,6 +173,7 @@
         let currentUserId = localStorage.getItem('landslide_auth_id');
         let currentUserEmail = localStorage.getItem('landslide_auth_email');
         let stakes = []; let stakeMarkers = {}; let savedItems = []; let activeLayer = null; let userMarker = null; let currentLatLng = null; let selectedStakeId = null;
+        let currentProjectName = null; let currentProjectID = null;
         
         setTimeout(updateMenuLoginText, 500); 
         loadFromLocalStorage();
@@ -213,15 +209,45 @@
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
             if(isHiking) { const s = stakes[stakes.length-1]; requestStakePhoto(s.id); }
         }
-        async function saveStakingProject() {
+        
+        // *** FIXED SAVE LOGIC WITH OVERWRITE ***
+        async function saveStakingProject(forceId = null) {
             if(!currentUserId) return alert("Please login to save.");
             if(stakes.length === 0) return alert("No stakes to save.");
-            const name = prompt("Name this Boundary Project:");
-            if(!name) return;
+            
+            let name = currentProjectName;
+            if(!forceId) { // Only ask if not forcing overwrite
+                name = prompt("Name this Boundary Project:", currentProjectName || "");
+                if(!name) return;
+            }
+
             try {
-                const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: currentUserId, name: name, data: { properties: savedItems, stakes: stakes } }) });
+                const res = await fetch('/api/cloud/save', { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ 
+                        userId: currentUserId, 
+                        id: forceId || currentProjectID, // Use forceId if recursive
+                        name: name, 
+                        data: { properties: savedItems, stakes: stakes } 
+                    }) 
+                });
                 const json = await res.json();
-                if(json.success) { alert("Boundary Saved Successfully!"); exitStakingMode(); clearMap(); } else { alert("Error: " + json.message); }
+                
+                if(json.success) { 
+                    alert("Boundary Saved Successfully!"); 
+                    currentProjectName = name;
+                    currentProjectID = json.newId; // Store ID for future updates
+                    exitStakingMode(); 
+                    clearMap(); 
+                } 
+                else if (json.status === 'EXISTS') {
+                    // ASK TO OVERWRITE
+                    if(confirm(`"${name}" already exists. Overwrite it?`)) {
+                        saveStakingProject(json.existingId); // Call again with ID
+                    }
+                }
+                else { alert("Error: " + json.message); }
             } catch(e) { alert("Network Error"); }
         }
 

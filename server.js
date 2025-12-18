@@ -12,7 +12,7 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
-// *** CRITICAL: INCREASE LIMITS AT THE VERY TOP ***
+// INCREASE UPLOAD LIMITS
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -20,19 +20,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// --- DIAGNOSTIC STARTUP CHECK ---
-console.log("---------------------------------------");
-console.log("SERVER STARTING - CHECKING CONFIG:");
-console.log("1. DB URL:", process.env.DATABASE_URL ? "✅ Set" : "❌ MISSING");
-console.log("2. Cloudinary Name:", process.env.CLOUDINARY_CLOUD_NAME ? "✅ Set" : "❌ MISSING");
-console.log("3. Cloudinary Key:", process.env.CLOUDINARY_API_KEY ? "✅ Set" : "❌ MISSING");
-console.log("4. Cloudinary Secret:", process.env.CLOUDINARY_API_SECRET ? "✅ Set" : "❌ MISSING");
-console.log("---------------------------------------");
-
+// --- CONFIGURATION ---
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
+
+if (!process.env.CLOUDINARY_CLOUD_NAME) console.error("⚠️ WARNING: Cloudinary Keys Missing!");
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -47,6 +41,10 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
+});
+
+app.get('/api/config', (_req, res) => {
+    res.json({ status: "ok", version: "1.0.4" });
 });
 
 // --- AUTH ---
@@ -74,42 +72,23 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- IMAGE UPLOAD (LOGGING ENABLED) ---
+// --- IMAGE UPLOAD ---
 app.post('/api/image/upload', (req, res) => {
-    console.log("[Upload] Request received...");
-    
     upload.single('image')(req, res, (err) => {
-        if (err) {
-            console.error("[Upload] Multer Error:", err);
-            return res.status(500).json({ success: false, message: "Upload Limit Error: " + err.message });
-        }
-        
-        if (!req.file) {
-            console.error("[Upload] No file in request");
-            return res.status(400).json({ success: false, message: "No image received" });
-        }
-
-        console.log(`[Upload] File received. Size: ${req.file.size} bytes. Sending to Cloudinary...`);
+        if (err) return res.status(500).json({ success: false, message: "Upload error: " + err.message });
+        if (!req.file) return res.status(400).json({ success: false, message: "No image received" });
 
         const uploadStream = cloudinary.uploader.upload_stream(
             { folder: "land_survey_app", resource_type: "image" },
             (error, result) => {
-                if (error) {
-                    console.error("[Upload] Cloudinary Error:", error);
-                    return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
-                }
-                console.log("[Upload] Success! URL:", result.secure_url);
+                if (error) return res.status(500).json({ success: false, message: "Cloudinary Error: " + error.message });
                 res.json({ success: true, url: result.secure_url, public_id: result.public_id });
             }
         );
-
         try {
             const bufferStream = require('stream').Readable.from(req.file.buffer);
             bufferStream.pipe(uploadStream);
-        } catch (e) {
-            console.error("[Upload] Stream Error:", e);
-            res.status(500).json({ success: false, message: "Stream Error" });
-        }
+        } catch (e) { res.status(500).json({ success: false, message: "Stream Error" }); }
     });
 });
 
@@ -124,10 +103,7 @@ app.delete('/api/image/:filename', async (req, res) => {
 function downloadImage(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (res) => {
-            if (res.statusCode !== 200) {
-                reject(new Error(`Failed to download image: Status ${res.statusCode}`));
-                return;
-            }
+            if (res.statusCode !== 200) { reject(new Error(`Status ${res.statusCode}`)); return; }
             const data = [];
             res.on('data', (chunk) => data.push(chunk));
             res.on('end', () => resolve(Buffer.concat(data)));
@@ -137,7 +113,7 @@ function downloadImage(url) {
 
 app.post('/api/ai/analyze', async (req, res) => {
     const { filename } = req.body;
-    if (!filename) return res.status(400).json({ error: "No filename provided" });
+    if (!filename) return res.status(400).json({ error: "No filename" });
 
     let imageUrl = filename;
     if (!filename.startsWith('http')) {
@@ -146,35 +122,38 @@ app.post('/api/ai/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Using standard flash model
+        // Using "gemini-flash-latest" as the safe free model
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const imageBuffer = await downloadImage(imageUrl);
-        
         const result = await model.generateContent([
-            "Analyze this land survey photo. Describe the terrain, vegetation, and any man-made markers.",
+            "Analyze this land survey photo. Describe terrain, vegetation, and man-made markers.",
             { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } },
         ]);
-
         const response = await result.response;
         res.json({ analysis: response.text() });
-
     } catch (error) {
         console.error("AI Error:", error);
-        res.status(500).json({ error: error.message || "AI Analysis Failed" });
+        res.status(500).json({ error: error.message || "AI Failed" });
     }
 });
 
-// --- CLOUD SAVE/LOAD ---
+// --- CLOUD SAVE (UPDATED FOR OVERWRITE) ---
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
         if (!id) {
+            // New Save: Check Duplicate
             const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
-            if (check.rows.length > 0) return res.json({ success: false, message: "NAME_EXISTS" });
+            if (check.rows.length > 0) {
+                // RETURN THE EXISTING ID SO FRONTEND CAN OVERWRITE
+                return res.json({ success: false, status: 'EXISTS', existingId: check.rows[0].id, message: "Name exists" });
+            }
+            
             const result = await pool.query('INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id', [userId, name, JSON.stringify(data)]);
             return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
         } else {
+            // Overwrite (Update)
             await pool.query('UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(data), name, id, userId]);
             return res.json({ success: true, mode: 'update', newId: id });
         }
