@@ -34,12 +34,21 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
-        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; }
+        
+        /* SCROLLABLE SIDE MENU */
+        .side-menu { 
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
+            transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
+            display: flex; flex-direction: column; padding-top: 10px;
+            overflow-y: auto; /* Enable vertical scrolling */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
-        .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; /* Prevent shrinking */ }
+        .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
+        
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
@@ -73,21 +82,12 @@
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
-        
-        /* UPDATED DIRECTION BUTTON */
-        .direction-btn { 
-            height: 44px; padding: 0 18px; 
-            background: #007bff; border-radius: 25px; 
-            display: flex; align-items: center; justify-content: center; gap: 8px; 
-            color: white; font-weight: 700; cursor: pointer; font-size: 14px;
-            box-shadow: 0 4px 10px rgba(0,123,255,0.3);
-            transition: transform 0.1s;
-        }
+        .direction-btn { height: 44px; padding: 0 18px; background: #007bff; border-radius: 25px; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,123,255,0.3); transition: transform 0.1s; }
         .direction-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
-    <div class="debug-label">v113</div>
+    <div class="debug-label">v114-ScrollMenu</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -121,10 +121,7 @@
     </div>
     <div class="info-card" id="card">
         <div class="prop-info"><div class="prop-val" id="owner">...</div><div class="prop-sub" id="address">...</div></div>
-        <div class="direction-btn" onclick="getDirectionsToSelected()">
-            <span class="material-icons">directions_car</span>
-            <span>Direction from here</span>
-        </div>
+        <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
@@ -145,6 +142,8 @@
         <div class="menu-item" onclick="clearLocalData()"><span class="material-icons" style="color:#ff4400">delete_sweep</span> Clear App Data</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share Location</div>
         <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
+        <!-- Spacer to ensure bottom items are reachable -->
+        <div style="height: 50px;"></div>
     </div>
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
@@ -393,11 +392,7 @@
         let currImgUrl = ""; let currImgStakeId = null;
         window.openImageModal = function(url, sid) { currImgUrl = url.startsWith('http') ? url : localStorage.getItem(url); currImgStakeId = sid; document.getElementById('modalImage').src = currImgUrl; document.getElementById('imageModal').style.display = 'flex'; };
         window.closeImageModal = function() { document.getElementById('imageModal').style.display = 'none'; };
-        window.analyzeCurrentImage = async function(e) {
-            e.preventDefault(); const filename = currImgUrl.split('/').pop(); const btn = e.target; const originalText = btn.innerHTML; btn.innerHTML = "⏳ Thinking...";
-            try { const res = await fetch('/api/ai/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename}) }); const d = await res.json(); if(d.error) alert(d.error); else alert(d.analysis); } catch(e) { alert("AI Error"); }
-            btn.innerHTML = originalText;
-        };
+        window.analyzeCurrentImage = async function(e) { e.preventDefault(); const filename = currImgUrl.split('/').pop(); const btn = e.target; const originalText = btn.innerHTML; btn.innerHTML = "⏳ Thinking..."; try { const res = await fetch('/api/ai/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename}) }); const d = await res.json(); if(d.error) alert(d.error); else alert(d.analysis); } catch(e) { alert("AI Error"); } btn.innerHTML = originalText; };
         window.deleteCurrentImage = async function(e) { if(!confirm("Delete Photo?")) return; const s = stakes.find(x => x.id === currImgStakeId); if(s) { s.photos = s.photos.filter(p => !p.includes(currImgUrl) && p !== currImgUrl); saveToStorage(); closeImageModal(); updateStakePopup(s); } };
         async function performSearch() { const q = document.getElementById('searchBox').value; if(!q) return; const r = await fetch(`/api/search?q=${q}`); const d = await r.json(); if(d.length) { const p = d[0]; map.flyTo([p.lat, p.lng], 19); } }
         async function fetchParcelAt(ll) { const r = await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`); const d = await r.json(); if(d.length > 0) { document.getElementById('owner').innerText = d[0].owner_name; document.getElementById('address').innerText = d[0].address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(d[0].geometry) { activeLayer = L.geoJSON(JSON.parse(d[0].geometry), {style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); } } else { document.getElementById('card').classList.remove('active'); } }
@@ -408,16 +403,7 @@
         async function doLogin() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) { currentUserId = d.user.id; currentUserEmail = d.user.email; localStorage.setItem('landslide_auth_id', currentUserId); localStorage.setItem('landslide_auth_email', currentUserEmail); updateMenuLoginText(); document.getElementById('loginModal').style.display='none'; } else alert(d.message); } catch(e) { alert("Login failed"); } }
         async function doRegister() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) alert("Created! Now Login."); else alert(d.message); } catch(e) { alert("Error"); } }
         function updateMenuLoginText() { const el = document.getElementById('loginText'); const icon = document.getElementById('userIcon'); if(currentUserEmail) { el.innerText = "Logout (" + currentUserEmail.split('@')[0] + ")"; icon.style.color = "#4CAF50"; } else { el.innerText = "Login / Register"; icon.style.color = "#5E35B1"; } }
-        // *** SAFE LOADER ***
-        function loadFromLocalStorage() { 
-            try { 
-                const s = localStorage.getItem('landslide_saves'); 
-                if(s) { 
-                    const d = JSON.parse(s); 
-                    if(Array.isArray(d)) d.forEach(i => { if(i.type === 'stake') { stakes.push(i); addStakeMarker(i); } }); 
-                } 
-            } catch(e) { localStorage.removeItem('landslide_saves'); } 
-        }
+        function loadFromLocalStorage() { try { const s = localStorage.getItem('landslide_saves'); if(s) { const d = JSON.parse(s); if(Array.isArray(d)) d.forEach(i => { if(i.type === 'stake') { stakes.push(i); addStakeMarker(i); } }); } } catch(e) { localStorage.removeItem('landslide_saves'); } }
         function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify(stakes)); }
         function clearMap() { stakes.forEach(s => map.removeLayer(stakeMarkers[s.id])); stakes = []; stakeMarkers = {}; if(hikePolyline) map.removeLayer(hikePolyline); }
         function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
