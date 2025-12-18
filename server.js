@@ -44,7 +44,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.0.4" });
+    res.json({ status: "ok", version: "1.0.7" });
 });
 
 // --- AUTH ---
@@ -122,7 +122,6 @@ app.post('/api/ai/analyze', async (req, res) => {
 
     try {
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-        // Using "gemini-flash-latest" as the safe free model
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const imageBuffer = await downloadImage(imageUrl);
@@ -138,22 +137,51 @@ app.post('/api/ai/analyze', async (req, res) => {
     }
 });
 
-// --- CLOUD SAVE (UPDATED FOR OVERWRITE) ---
+// --- ADDRESS SEARCH (PHOTON / OPENSTREETMAP) ---
+// Docs: https://photon.komoot.io/
+app.get('/api/address/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: "No query" });
+    
+    // Search US/Global addresses using free Photon API
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
+    
+    https.get(url, (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => data += chunk);
+        resp.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                if (json.features && json.features.length > 0) {
+                    const feat = json.features[0];
+                    const coords = feat.geometry.coordinates; // [lon, lat]
+                    
+                    // Build a clean address string
+                    const p = feat.properties;
+                    const addressParts = [p.name, p.street, p.housenumber, p.city, p.state].filter(Boolean);
+                    const formatted = addressParts.join(', ');
+
+                    res.json({ lat: coords[1], lng: coords[0], address: formatted });
+                } else {
+                    res.json({ error: "Address not found" });
+                }
+            } catch(e) { res.status(500).json({ error: "Search API Error" }); }
+        });
+    }).on('error', (err) => res.status(500).json({ error: err.message }));
+});
+
+// --- CLOUD SAVE ---
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
         if (!id) {
-            // New Save: Check Duplicate
             const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
             if (check.rows.length > 0) {
-                // RETURN THE EXISTING ID SO FRONTEND CAN OVERWRITE
                 return res.json({ success: false, status: 'EXISTS', existingId: check.rows[0].id, message: "Name exists" });
             }
-            
             const result = await pool.query('INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id', [userId, name, JSON.stringify(data)]);
             return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
         } else {
-            // Overwrite (Update)
             await pool.query('UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(data), name, id, userId]);
             return res.json({ success: true, mode: 'update', newId: id });
         }
@@ -201,16 +229,10 @@ app.delete('/api/hikes/delete/:hikeId', async (req, res) => {
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- MAP SEARCH ---
-app.get('/api/search', async (req, res) => {
-    let { q } = req.query; if (!q || q.length < 1) return res.json([]);
-    let cleanQ = q.toLowerCase().replace(/\bdrive\b|\bdr\b/g, '').replace(/\bstreet\b|\bst\b/g, '').trim();
-    const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM taxdata t JOIN "Parcels_real" p ON REPLACE(t."PARID", ' ', '') = REPLACE(p."PIN", ' ', '') WHERE CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $1 OR CONCAT(t."ADRNO", ' ', t."ADRSTR") ILIKE $2 OR t."PARID"::text ILIKE $2 LIMIT 5;`;
-    try { const result = await pool.query(query, [`%${cleanQ}%`, `%${q}%`]); res.json(result.rows); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
+// --- PARCEL DATA (Only used on manual click) ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
+    // Uses PostGIS <-> operator to find nearest parcel
     const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM "Parcels_real" p LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '') ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326) LIMIT 1;`;
     try { const result = await pool.query(query, [lng, lat]); res.json(result.rows); } catch (e) { res.status(500).send("Error"); }
 });

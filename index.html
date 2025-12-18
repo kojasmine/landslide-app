@@ -18,7 +18,6 @@
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
         .top-icons { display: flex; gap: 5px; }
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
-        .icon-btn:hover { background: #f0f0f0; }
         .mode-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 85%; max-width: 320px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
@@ -35,8 +34,6 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
-        
-        /* SCROLLABLE SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
@@ -48,7 +45,6 @@
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
-        
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
@@ -87,7 +83,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v117-HomeGuard</div>
+    <div class="debug-label">v120-PhotonSearch</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -194,7 +190,6 @@
         setTimeout(updateMenuLoginText, 500); 
         loadFromLocalStorage();
 
-        // Safety: Warn before leaving if recording
         window.addEventListener('beforeunload', function (e) {
             if (isHiking || (isStaking && stakes.length > 0)) {
                 e.preventDefault();
@@ -202,7 +197,6 @@
             }
         });
 
-        // --- NEW HOME FUNCTION ---
         function goHome() {
             if (isHiking && hikePath.length > 0) {
                 if (!confirm("Hike recording in progress. Stop and discard?")) return;
@@ -212,7 +206,6 @@
                 if (!confirm("Exit staking mode?")) return;
                 exitStakingMode();
             }
-            // Close all UI
             document.getElementById('sideMenu').classList.remove('open');
             document.getElementById('menuOverlay').classList.remove('active');
             document.getElementById('loginModal').style.display = 'none';
@@ -224,7 +217,6 @@
             measureLayer.clearLayers();
             measurePoints = [];
             
-            // Reset View
             if (currentLatLng) map.flyTo(currentLatLng, 18);
         }
 
@@ -405,10 +397,37 @@
             stakes = stakes.filter(s => s.id !== id);
             saveToStorage();
         }
+        
+        // --- SEARCH UPDATE: USING PHOTON ---
+        const input=document.getElementById('searchBox');
+        input.addEventListener('keypress', (e)=>{if(e.key==='Enter')performSearch()});
+        async function performSearch() {
+            const q = input.value;
+            if(!q) return;
+            try {
+                // Call NEW Address Search (Photon)
+                const r = await fetch(`/api/address/search?q=${encodeURIComponent(q)}`);
+                const d = await r.json();
+                
+                if (d.error) {
+                    alert(d.error);
+                } else if (d.lat && d.lng) {
+                    map.flyTo([d.lat, d.lng], 18);
+                    input.blur();
+                    // Note: We deliberately DO NOT call fetchParcelAt() here
+                }
+            } catch(e) { alert("Search Error"); }
+        }
+        
+        // --- PARCEL FETCH (ONLY ON CLICK) ---
         map.on('click', (e) => {
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
-            if(isStaking) { let n = getNextStakeNumber(); createStake(e.latlng.lat, e.latlng.lng, "Stake " + n); } else { fetchParcelAt(e.latlng); }
+            if(isStaking) { let n = getNextStakeNumber(); createStake(e.latlng.lat, e.latlng.lng, "Stake " + n); } 
+            else { 
+                fetchParcelAt(e.latlng); 
+            }
         });
+        
         let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
         function toggleMeasureMode(){ isMeasuring=!isMeasuring; document.querySelector('.measure-box').classList.toggle('visible'); if(!isMeasuring) {measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft";} }
         function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let dist = 0; for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft"; } }
@@ -482,6 +501,7 @@
         async function doLogin() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) { currentUserId = d.user.id; currentUserEmail = d.user.email; localStorage.setItem('landslide_auth_id', currentUserId); localStorage.setItem('landslide_auth_email', currentUserEmail); updateMenuLoginText(); document.getElementById('loginModal').style.display='none'; } else alert(d.message); } catch(e) { alert("Login failed"); } }
         async function doRegister() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) alert("Created! Now Login."); else alert(d.message); } catch(e) { alert("Error"); } }
         function updateMenuLoginText() { const el = document.getElementById('loginText'); const icon = document.getElementById('userIcon'); if(currentUserEmail) { el.innerText = "Logout (" + currentUserEmail.split('@')[0] + ")"; icon.style.color = "#4CAF50"; } else { el.innerText = "Login / Register"; icon.style.color = "#5E35B1"; } }
+        // *** SAFETY WRAPPER FOR BACKUP ***
         function loadFromLocalStorage() { try { const s = localStorage.getItem('landslide_saves'); if(s) { const d = JSON.parse(s); if(Array.isArray(d)) d.forEach(i => { if(i.type === 'stake') { stakes.push(i); addStakeMarker(i); } }); } } catch(e) { localStorage.removeItem('landslide_saves'); } }
         function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify(stakes)); }
         function clearMap() { stakes.forEach(s => map.removeLayer(stakeMarkers[s.id])); stakes = []; stakeMarkers = {}; if(hikePolyline) map.removeLayer(hikePolyline); }
