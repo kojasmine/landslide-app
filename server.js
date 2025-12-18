@@ -35,40 +35,52 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '/index.html')));
 
-// --- ADDRESS SEARCH (PHOTON / OPENSTREETMAP) ---
-// Docs: https://photon.komoot.io/
-// This is much more reliable than raw Nominatim
+// --- HYBRID ADDRESS SEARCH (US CENSUS + PHOTON) ---
+function fetchJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)); } 
+                catch (e) { resolve(null); } // Fail silently
+            });
+        }).on('error', (err) => resolve(null));
+    });
+}
+
 app.get('/api/address/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: "No query" });
-    
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
-    
-    https.get(url, (resp) => {
-        let data = '';
-        resp.on('data', (chunk) => data += chunk);
-        resp.on('end', () => {
-            try {
-                const json = JSON.parse(data);
-                if (json.features && json.features.length > 0) {
-                    const feat = json.features[0];
-                    const coords = feat.geometry.coordinates; // Photon returns [lon, lat]
-                    
-                    // Build address label
-                    const p = feat.properties;
-                    const address = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
 
-                    // Send back [lat, lng] for Leaflet
-                    res.json({ lat: coords[1], lng: coords[0], address: address });
-                } else {
-                    res.json({ error: "Address not found" });
-                }
-            } catch(e) { 
-                console.error("Search Error:", e);
-                res.status(500).json({ error: "Search Provider Error" }); 
-            }
-        });
-    }).on('error', (err) => res.status(500).json({ error: err.message }));
+    // 1. Try US CENSUS (Best for specific house numbers)
+    // Docs: https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html
+    const censusUrl = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(q)}&benchmark=Public_AR_Current&format=json`;
+    
+    try {
+        const censusData = await fetchJson(censusUrl);
+        if (censusData && censusData.result && censusData.result.addressMatches && censusData.result.addressMatches.length > 0) {
+            const match = censusData.result.addressMatches[0];
+            const coords = match.coordinates; // x (lng), y (lat)
+            const addr = match.matchedAddress;
+            return res.json({ lat: coords.y, lng: coords.x, address: addr, source: "US Census" });
+        }
+    } catch(e) { console.log("Census Error", e); }
+
+    // 2. Fallback to PHOTON (Best for streets/towns/places)
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
+    try {
+        const photonData = await fetchJson(photonUrl);
+        if (photonData && photonData.features && photonData.features.length > 0) {
+            const feat = photonData.features[0];
+            const coords = feat.geometry.coordinates; // [lon, lat]
+            const p = feat.properties;
+            const addr = [p.name, p.housenumber, p.street, p.city, p.state].filter(Boolean).join(', ');
+            return res.json({ lat: coords[1], lng: coords[0], address: addr, source: "OpenStreetMap" });
+        }
+    } catch(e) { console.log("Photon Error", e); }
+
+    res.json({ error: "Address not found" });
 });
 
 // --- AUTH ---
@@ -94,7 +106,7 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- IMAGE UPLOAD ---
+// --- IMAGE ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if(!req.file) return res.status(400).json({success:false, message:"No file"});
     const uploadStream = cloudinary.uploader.upload_stream({ folder: "land_survey_app" }, (err, result) => {
