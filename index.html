@@ -18,6 +18,7 @@
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
         .top-icons { display: flex; gap: 5px; }
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
+        .icon-btn:hover { background: #f0f0f0; }
         .mode-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 85%; max-width: 320px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
@@ -34,6 +35,8 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+        
+        /* SCROLLABLE SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
@@ -45,6 +48,7 @@
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
+        
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
@@ -83,7 +87,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v116-FixSave</div>
+    <div class="debug-label">v117-HomeGuard</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -91,12 +95,16 @@
         <span id="distVal" style="color:#4CAF50">0 ft</span>
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
+    
+    <!-- STAKING PANEL -->
     <div class="mode-panel" id="stakingPanel">
         <div class="mode-title">📍 Boundary Staking Mode</div>
         <div style="font-size:13px; color:#ccc; margin-bottom:15px; text-align:center;">Tap map or use button below to add stakes.</div>
         <div class="panel-controls"><button class="panel-btn btn-action" onclick="addStakeAtUserLoc()"><span class="material-icons">my_location</span> Stake Here</button></div>
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
+
+    <!-- HIKE PANEL -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
@@ -115,15 +123,22 @@
             <div class="panel-controls"><button class="panel-btn btn-save" style="width:100%" onclick="finishAndSaveHike()">Finish & Save</button></div>
         </div>
     </div>
+
     <div class="info-card" id="card">
         <div class="prop-info"><div class="prop-val" id="owner">...</div><div class="prop-sub" id="address">...</div></div>
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
+
+    <!-- APP BAR WITH HOME BUTTON -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search address..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
-        <div class="top-icons"><div class="icon-btn" onclick="toggleLayer()"><span class="material-icons" style="color:#444">layers</span></div></div>
+        <div class="top-icons">
+            <div class="icon-btn" onclick="goHome()" title="Home"><span class="material-icons" style="color:#444">home</span></div>
+            <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
+        </div>
     </div>
+
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="handleUserMenuClick()"><span class="material-icons" id="userIcon" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
@@ -140,6 +155,7 @@
         <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
         <div style="height: 50px;"></div>
     </div>
+
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
             <h2 style="margin-top:0">Welcome</h2>
@@ -178,6 +194,40 @@
         setTimeout(updateMenuLoginText, 500); 
         loadFromLocalStorage();
 
+        // Safety: Warn before leaving if recording
+        window.addEventListener('beforeunload', function (e) {
+            if (isHiking || (isStaking && stakes.length > 0)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        // --- NEW HOME FUNCTION ---
+        function goHome() {
+            if (isHiking && hikePath.length > 0) {
+                if (!confirm("Hike recording in progress. Stop and discard?")) return;
+                stopHikeAndClear();
+            }
+            if (isStaking && stakes.length > 0) {
+                if (!confirm("Exit staking mode?")) return;
+                exitStakingMode();
+            }
+            // Close all UI
+            document.getElementById('sideMenu').classList.remove('open');
+            document.getElementById('menuOverlay').classList.remove('active');
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('listModal').classList.remove('open');
+            document.getElementById('imageModal').style.display = 'none';
+            document.getElementById('card').classList.remove('active');
+            document.querySelector('.measure-box').classList.remove('visible');
+            isMeasuring = false;
+            measureLayer.clearLayers();
+            measurePoints = [];
+            
+            // Reset View
+            if (currentLatLng) map.flyTo(currentLatLng, 18);
+        }
+
         map.locate({watch:true, enableHighAccuracy:true});
         map.on('locationfound', (e)=>{
             currentLatLng = e.latlng;
@@ -200,12 +250,10 @@
             if(stakes.length > 0) { 
                 if(confirm("Start new staking session? This will clear current stakes.")) {
                     clearMap();
-                    // *** FIX: FORGET OLD PROJECT ID ON NEW SESSION ***
                     currentProjectID = null;
                     currentProjectName = null;
                 }
             } else {
-                // Safe to assume new session even if no stakes, reset to be sure
                 currentProjectID = null;
                 currentProjectName = null;
             }
@@ -221,50 +269,36 @@
             if(isHiking) { const s = stakes[stakes.length-1]; requestStakePhoto(s.id); }
         }
         
-        // *** SMART SAVE LOGIC ***
         async function saveStakingProject(forceId = null) {
             if(!currentUserId) return alert("Please login to save.");
             if(stakes.length === 0) return alert("No stakes to save.");
             
             let name = currentProjectName;
-            
-            // If we are forcing an ID (recursion), skip prompt
-            if(!forceId) {
+            if(!forceId) { 
                 name = prompt("Name this Boundary Project:", currentProjectName || "");
                 if(!name) return;
             }
 
-            // *** CRITICAL FIX: If user changed the name, treat as NEW file (ID = null)
             let idToSend = forceId || currentProjectID;
-            if (currentProjectName && name !== currentProjectName) {
-                idToSend = null; // Force check for duplicates instead of overwriting old ID
-            }
+            if (currentProjectName && name !== currentProjectName) idToSend = null; 
 
             try {
                 const res = await fetch('/api/cloud/save', { 
                     method:'POST', 
                     headers:{'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ 
-                        userId: currentUserId, 
-                        id: idToSend, // Use smart ID
-                        name: name, 
-                        data: { properties: savedItems, stakes: stakes } 
-                    }) 
+                    body: JSON.stringify({ userId: currentUserId, id: idToSend, name: name, data: { properties: savedItems, stakes: stakes } }) 
                 });
                 const json = await res.json();
                 
                 if(json.success) { 
                     alert("Boundary Saved Successfully!"); 
                     currentProjectName = name;
-                    currentProjectID = json.newId; // Remember new ID
+                    currentProjectID = json.newId; 
                     exitStakingMode(); 
                     clearMap(); 
                 } 
                 else if (json.status === 'EXISTS') {
-                    // ASK TO OVERWRITE
-                    if(confirm(`"${name}" already exists. Overwrite it?`)) {
-                        saveStakingProject(json.existingId); // Recursive call with existing ID to force overwrite
-                    }
+                    if(confirm(`"${name}" already exists. Overwrite it?`)) saveStakingProject(json.existingId);
                 }
                 else { alert("Error: " + json.message); }
             } catch(e) { alert("Network Error"); }
@@ -398,17 +432,7 @@
         }
         async function loadProject(id) {
             const res = await fetch(`/api/cloud/load/${currentUserId}`); const all = await res.json(); const p = all.find(x => x.id === id);
-            if(p) { 
-                const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data; 
-                clearMap(); 
-                if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); 
-                document.getElementById('listModal').classList.remove('open'); 
-                if(stakes.length) map.flyTo([stakes[0].lat, stakes[0].lng], 19); 
-                
-                // *** RESTORE STATE ***
-                currentProjectID = p.id;
-                currentProjectName = p.name;
-            }
+            if(p) { const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data; clearMap(); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); document.getElementById('listModal').classList.remove('open'); if(stakes.length) map.flyTo([stakes[0].lat, stakes[0].lng], 19); }
         }
         async function loadHike(id) {
             document.getElementById('listModal').classList.remove('open'); const res = await fetch(`/api/hikes/get/${id}`); const h = await res.json();
