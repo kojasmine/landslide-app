@@ -35,7 +35,12 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
-        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .side-menu { 
+            position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
+            transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
+            display: flex; flex-direction: column; padding-top: 10px;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
@@ -79,7 +84,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v121-OSMSearch</div>
+    <div class="debug-label">v122-PhotonFixed</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -87,28 +92,25 @@
         <span id="distVal" style="color:#4CAF50">0 ft</span>
         <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
     </div>
-    <div class="app-bar">
-        <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
-        <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search address..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
-        <div class="top-icons">
-            <div class="icon-btn" onclick="goHome()" title="Home"><span class="material-icons" style="color:#444">home</span></div>
-            <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
-        </div>
-    </div>
-    <!-- ACTION PANELS -->
+    
+    <!-- STAKING PANEL -->
     <div class="mode-panel" id="stakingPanel">
         <div class="mode-title">📍 Boundary Staking Mode</div>
+        <div style="font-size:13px; color:#ccc; margin-bottom:15px; text-align:center;">Tap map or use button below to add stakes.</div>
         <div class="panel-controls"><button class="panel-btn btn-action" onclick="addStakeAtUserLoc()"><span class="material-icons">my_location</span> Stake Here</button></div>
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
+
+    <!-- HIKE PANEL -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
+            <div style="font-size:13px; color:#ccc; margin-bottom:15px; text-align:center;">Ready to track GPS path & photos?</div>
             <button class="panel-btn btn-start" style="width:100%" onclick="startHikeRecording()"><span class="material-icons">play_arrow</span> START TRACKING</button>
             <button class="panel-btn btn-stop" style="margin-top:10px; width:100%; background:transparent; border:1px solid #444;" onclick="closeHikePanel()">Cancel</button>
         </div>
         <div id="hikeActiveUI" style="display:none; width:100%; flex-direction:column;">
-            <div class="mode-title" id="hikeTitle" style="color:#FF9800">🔴 Recording...</div>
+            <div class="mode-title" id="hikeTitle" style="color:#FF9800">🔴 Recording Path...</div>
             <div class="hike-stats">
                 <div class="stat-box"><div class="stat-val" id="hikeDist">0.00</div><div class="stat-label">MILES</div></div>
                 <div class="stat-box"><div class="stat-val" id="hikeTime">00:00</div><div class="stat-label">TIME</div></div>
@@ -118,11 +120,22 @@
             <div class="panel-controls"><button class="panel-btn btn-save" style="width:100%" onclick="finishAndSaveHike()">Finish & Save</button></div>
         </div>
     </div>
-    <!-- PARCEL CARD -->
+
     <div class="info-card" id="card">
         <div class="prop-info"><div class="prop-val" id="owner">...</div><div class="prop-sub" id="address">...</div></div>
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
+
+    <!-- APP BAR WITH HOME BUTTON -->
+    <div class="app-bar">
+        <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
+        <div class="search-wrapper"><input type="text" class="search-input" id="searchBox" placeholder="Search address..."><div class="search-go-btn" onclick="performSearch()">GO</div></div>
+        <div class="top-icons">
+            <div class="icon-btn" onclick="goHome()" title="Home"><span class="material-icons" style="color:#444">home</span></div>
+            <div class="icon-btn" onclick="toggleLayer()" title="Layers"><span class="material-icons" style="color:#444">layers</span></div>
+        </div>
+    </div>
+
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="handleUserMenuClick()"><span class="material-icons" id="userIcon" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
@@ -136,96 +149,338 @@
         <div class="menu-section-title">More</div>
         <div class="menu-item" onclick="clearLocalData()"><span class="material-icons" style="color:#ff4400">delete_sweep</span> Clear App Data</div>
         <div class="menu-item" onclick="shareLocation()"><span class="material-icons" style="color:#2196F3">share</span> Share Location</div>
+        <div class="menu-item" onclick="inviteFriends()"><span class="material-icons" style="color:#666">link</span> Invite Friends</div>
+        <div style="height: 50px;"></div>
     </div>
-    <!-- MODALS -->
+
     <div class="login-overlay" id="loginModal">
-        <div class="login-card"><h2>Welcome</h2><input type="email" id="emailInput" class="login-input" placeholder="Email"><input type="password" id="passInput" class="login-input" placeholder="Password"><button class="login-btn" onclick="doLogin()">Login</button><button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button><button style="background:none;border:none;margin-top:15px;text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button></div>
+        <div class="login-card">
+            <h2 style="margin-top:0">Welcome</h2>
+            <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
+            <input type="password" id="passInput" class="login-input" placeholder="Password">
+            <button class="login-btn" onclick="doLogin()">Login</button>
+            <button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button>
+            <button style="background:none; border:none; margin-top:15px; text-decoration:underline; color:#666;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
+        </div>
     </div>
-    <div class="full-modal" id="listModal"><div class="modal-header"><span id="listTitle">Saved Items</span><span onclick="document.getElementById('listModal').classList.remove('open')" style="cursor:pointer">✕</span></div><div class="modal-list" id="listContainer"></div></div>
-    <div id="imageModal"><div class="img-backdrop" onclick="closeImageModal()"></div><div class="img-content"><img id="modalImage" src=""><div class="img-controls"><a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a><a href="#" class="img-ctrl-btn" style="background:#4CAF50" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a><a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a></div></div></div>
-    
+    <div class="full-modal" id="listModal">
+        <div class="modal-header"><span id="listTitle">Saved Items</span><span onclick="document.getElementById('listModal').classList.remove('open')" style="cursor:pointer">✕</span></div>
+        <div class="modal-list" id="listContainer"></div>
+    </div>
+    <div id="imageModal">
+        <div class="img-backdrop" onclick="closeImageModal()"></div>
+        <div class="img-content">
+            <img id="modalImage" src="">
+            <div class="img-controls">
+                <a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a>
+                <a href="#" class="img-ctrl-btn" style="background:#4CAF50; color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a>
+                <a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a>
+            </div>
+        </div>
+    </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
-        const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
-        let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email'), stakes = [], stakeMarkers = {}, savedItems = [], activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null, currentProjectName = null, currentProjectID = null;
+        const map = L.map('map', { center: [40.7128, -74.0060], zoom: 12, layers: [satellite], zoomControl: false });
+        let currentUserId = localStorage.getItem('landslide_auth_id');
+        let currentUserEmail = localStorage.getItem('landslide_auth_email');
+        let stakes = []; let stakeMarkers = {}; let savedItems = []; let activeLayer = null; let userMarker = null; let currentLatLng = null; let selectedStakeId = null;
+        let currentProjectName = null; let currentProjectID = null;
         
+        setTimeout(updateMenuLoginText, 500); 
         loadFromLocalStorage();
-        updateMenuLoginText();
-        map.locate({watch:true, enableHighAccuracy:true});
 
+        window.addEventListener('beforeunload', function (e) {
+            if (isHiking || (isStaking && stakes.length > 0)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function goHome() {
+            if (isHiking && hikePath.length > 0) {
+                if (!confirm("Hike recording in progress. Stop and discard?")) return;
+                stopHikeAndClear();
+            }
+            if (isStaking && stakes.length > 0) {
+                if (!confirm("Exit staking mode?")) return;
+                exitStakingMode();
+            }
+            document.getElementById('sideMenu').classList.remove('open');
+            document.getElementById('menuOverlay').classList.remove('active');
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('listModal').classList.remove('open');
+            document.getElementById('imageModal').style.display = 'none';
+            document.getElementById('card').classList.remove('active');
+            document.querySelector('.measure-box').classList.remove('visible');
+            isMeasuring = false;
+            measureLayer.clearLayers();
+            measurePoints = [];
+            
+            if (currentLatLng) map.flyTo(currentLatLng, 18);
+        }
+
+        map.locate({watch:true, enableHighAccuracy:true});
         map.on('locationfound', (e)=>{
             currentLatLng = e.latlng;
             if(!userMarker){
-                const h = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
-                userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:h, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
+                const iconHtml = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
+                userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:iconHtml, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
             } else { userMarker.setLatLng(e.latlng); }
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
         });
-
-        // --- SEARCH (OSM NOMINATIM) ---
-        async function performSearch() {
-            const q = document.getElementById('searchBox').value;
-            if(!q) return;
-            try {
-                const r = await fetch(`/api/address/search?q=${encodeURIComponent(q)}`);
-                const d = await r.json();
-                if (d.error) alert(d.error);
-                else if (d.lat) { map.flyTo([d.lat, d.lng], 18); document.getElementById('searchBox').blur(); }
-            } catch(e) { alert("Search Error"); }
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (e) => {
+                const el = document.getElementById('gpsArrow');
+                if(el) el.style.transform = `rotate(${e.webkitCompassHeading || Math.abs(e.alpha - 360)}deg)`;
+            });
         }
 
-        // --- PARCELS (MANUAL CLICK ONLY) ---
+        let isStaking = false;
+        function startStakingMode() {
+            toggleMenu();
+            if(stakes.length > 0) { 
+                if(confirm("Start new staking session? This will clear current stakes.")) {
+                    clearMap();
+                    currentProjectID = null;
+                    currentProjectName = null;
+                }
+            } else {
+                currentProjectID = null;
+                currentProjectName = null;
+            }
+            isStaking = true;
+            document.getElementById('stakingPanel').classList.add('active');
+            if(currentLatLng) map.flyTo(currentLatLng, 20);
+        }
+        function exitStakingMode() { isStaking = false; document.getElementById('stakingPanel').classList.remove('active'); }
+        function addStakeAtUserLoc() {
+            if(!currentLatLng) return alert("No GPS signal yet");
+            let n = getNextStakeNumber();
+            createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
+            if(isHiking) { const s = stakes[stakes.length-1]; requestStakePhoto(s.id); }
+        }
+        
+        async function saveStakingProject(forceId = null) {
+            if(!currentUserId) return alert("Please login to save.");
+            if(stakes.length === 0) return alert("No stakes to save.");
+            
+            let name = currentProjectName;
+            if(!forceId) { 
+                name = prompt("Name this Boundary Project:", currentProjectName || "");
+                if(!name) return;
+            }
+
+            let idToSend = forceId || currentProjectID;
+            if (currentProjectName && name !== currentProjectName) idToSend = null; 
+
+            try {
+                const res = await fetch('/api/cloud/save', { 
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ userId: currentUserId, id: idToSend, name: name, data: { properties: savedItems, stakes: stakes } }) 
+                });
+                const json = await res.json();
+                
+                if(json.success) { 
+                    alert("Boundary Saved Successfully!"); 
+                    currentProjectName = name;
+                    currentProjectID = json.newId; 
+                    exitStakingMode(); 
+                    clearMap(); 
+                } 
+                else if (json.status === 'EXISTS') {
+                    if(confirm(`"${name}" already exists. Overwrite it?`)) saveStakingProject(json.existingId);
+                }
+                else { alert("Error: " + json.message); }
+            } catch(e) { alert("Network Error"); }
+        }
+
+        let isHiking = false, isPaused = false, hikePath = [], hikePolyline = null, hikeSeconds = 0, hikeInterval = null, hikeStakes = []; 
+        function openHikePanel() {
+            toggleMenu();
+            if(!currentUserId) { if(!confirm("You are not logged in. You cannot SAVE. Continue?")) { openLogin(); return; } }
+            document.getElementById('hikeStartUI').style.display = 'flex';
+            document.getElementById('hikeActiveUI').style.display = 'none';
+            document.getElementById('hikePanel').classList.add('active');
+            if(currentLatLng) map.flyTo(currentLatLng, 19);
+        }
+        function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
+        function startHikeRecording() {
+            document.getElementById('hikeStartUI').style.display = 'none';
+            document.getElementById('hikeActiveUI').style.display = 'flex';
+            clearMap(); 
+            isHiking = true; isPaused = false; hikePath = []; hikeStakes = []; hikeSeconds = 0;
+            hikePolyline = L.polyline([], {color: '#FF9800', weight: 6}).addTo(map);
+            hikeInterval = setInterval(hikeTimerTick, 1000);
+            if(currentLatLng) updateHikePosition(currentLatLng);
+        }
+        function toggleHikePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('btnPause');
+            const title = document.getElementById('hikeTitle');
+            if(isPaused) {
+                btn.innerHTML = '<span class="material-icons">play_arrow</span> Resume'; btn.style.background = '#4CAF50'; btn.style.color = 'white';
+                title.innerText = "⏸ Hiked Paused"; title.style.color = "#FFC107";
+            } else {
+                btn.innerHTML = '<span class="material-icons">pause</span> Pause'; btn.style.background = '#FFC107'; btn.style.color = 'black';
+                title.innerText = "🔴 Recording Path..."; title.style.color = "#FF9800";
+                if(currentLatLng) updateHikePosition(currentLatLng);
+            }
+        }
+        function updateHikePosition(latlng) {
+            hikePath.push(latlng);
+            hikePolyline.setLatLngs(hikePath);
+            map.panTo(latlng); 
+            let distMeters = 0;
+            for(let i=0; i<hikePath.length-1; i++) distMeters += map.distance(hikePath[i], hikePath[i+1]);
+            document.getElementById('hikeDist').innerText = (distMeters * 0.000621371).toFixed(2);
+        }
+        function hikeTimerTick() {
+            if(!isPaused) {
+                hikeSeconds++;
+                const m = Math.floor(hikeSeconds / 60);
+                const s = hikeSeconds % 60;
+                document.getElementById('hikeTime').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            }
+        }
+        function stopHikeAndClear() {
+            if(!confirm("Stop and discard this hike recording?")) return;
+            isHiking = false; isPaused = false; clearInterval(hikeInterval);
+            document.getElementById('hikePanel').classList.remove('active');
+            if(hikePolyline) map.removeLayer(hikePolyline); 
+            hikePolyline = null; hikePath = [];
+        }
+        async function finishAndSaveHike() {
+            if(!currentUserId) return alert("You must login to save hikes.");
+            if(hikePath.length < 5) return alert("Hike too short to save.");
+            isHiking = false; clearInterval(hikeInterval);
+            const name = prompt("Name this Hike:", "Hike " + new Date().toLocaleDateString());
+            if(!name) { isHiking = true; hikeInterval = setInterval(hikeTimerTick, 1000); return; }
+            const dist = parseFloat(document.getElementById('hikeDist').innerText) * 5280; 
+            try {
+                const res = await fetch('/api/hikes/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: currentUserId, name: name, distance: dist, path: hikePath, stakes: hikeStakes }) });
+                const d = await res.json();
+                if(d.success) { alert("Hike Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } else alert("Error: " + d.message);
+            } catch(e) { alert("Save failed"); }
+        }
+
+        function createStake(lat, lng, label) {
+            const id = Date.now();
+            const s = { id, lat, lng, label, number: getNextStakeNumber(), photos: [] };
+            stakes.push(s);
+            addStakeMarker(s);
+            saveToStorage();
+            if(isHiking) hikeStakes.push(s);
+        }
+        function getNextStakeNumber() { let max = 0; stakes.forEach(s => { if(s.number > max) max = s.number; }); return max + 1; }
+        function addStakeMarker(s) {
+            const html = `<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`;
+            const icon = L.divIcon({className:'ci', html:html, iconSize:[40,40], iconAnchor:[20,20]});
+            const marker = L.marker([s.lat, s.lng], {icon:icon, draggable:true}).addTo(map);
+            stakeMarkers[s.id] = marker;
+            marker.bindPopup(() => generateStakePopupContent(s));
+            marker.on('dragend', (e) => { s.lat = e.target.getLatLng().lat; s.lng = e.target.getLatLng().lng; saveToStorage(); });
+        }
+        function generateStakePopupContent(s) {
+            const freshS = stakes.find(x => x.id === s.id) || s;
+            let photosHtml = "";
+            if(freshS.photos) { freshS.photos.forEach(p => { const src = p.startsWith('http') ? p : localStorage.getItem(p); if(src) photosHtml += `<img src="${src}" class="popup-img" onclick="openImageModal('${p}', ${s.id})">`; }); }
+            return `<div style="text-align:center; min-width:150px;"><b>${freshS.label}</b><div class="popup-photos">${photosHtml}</div><div style="margin-top:10px;"><button class="popup-btn" onclick="requestStakePhoto(${freshS.id})">📷 Photo</button><button class="popup-btn popup-delete" onclick="deleteStake(${freshS.id})">🗑</button></div></div>`;
+        }
+        function updateStakePopup(s) { if(stakeMarkers[s.id]) { stakeMarkers[s.id].setPopupContent(generateStakePopupContent(s)); } }
+        function requestStakePhoto(id) { selectedStakeId = id; document.getElementById('stakeCamInput').click(); }
+        function deleteStake(id) {
+            if(!confirm("Delete Stake?")) return;
+            map.removeLayer(stakeMarkers[id]);
+            delete stakeMarkers[id];
+            stakes = stakes.filter(s => s.id !== id);
+            saveToStorage();
+        }
         map.on('click', (e) => {
             if(isMeasuring) { addMeasurePoint(e.latlng); return; }
-            if(isStaking) createStake(e.latlng.lat, e.latlng.lng, "Stake " + getNextStakeNumber());
-            else fetchParcelAt(e.latlng);
+            if(isStaking) { let n = getNextStakeNumber(); createStake(e.latlng.lat, e.latlng.lng, "Stake " + n); } else { fetchParcelAt(e.latlng); }
         });
-
-        async function fetchParcelAt(ll) {
-            const r = await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);
-            const d = await r.json();
-            if(d.length > 0) {
-                document.getElementById('owner').innerText = d[0].owner_name;
-                document.getElementById('address').innerText = d[0].address;
-                document.getElementById('card').classList.add('active');
-                if(activeLayer) map.removeLayer(activeLayer);
-                if(d[0].geometry) activeLayer = L.geoJSON(JSON.parse(d[0].geometry), {style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);
-            } else { document.getElementById('card').classList.remove('active'); }
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){ isMeasuring=!isMeasuring; document.querySelector('.measure-box').classList.toggle('visible'); if(!isMeasuring) {measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft";} }
+        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let dist = 0; for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft"; } }
+        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Boundaries", "Loading..."); try { const res = await fetch(`/api/cloud/load/${currentUserId}`); const data = await res.json(); renderList(data, 'project'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
+        async function openHikeList() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Hikes", "Loading..."); try { const res = await fetch(`/api/hikes/list/${currentUserId}`); const data = await res.json(); renderList(data, 'hike'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
+        function showListModal(title, content) { document.getElementById('listTitle').innerText = title; document.getElementById('listContainer').innerHTML = content || ""; document.getElementById('listModal').classList.add('open'); }
+        function renderList(items, type) {
+            const container = document.getElementById('listContainer'); container.innerHTML = "";
+            if(items.length === 0) container.innerHTML = "<div style='padding:20px; text-align:center'>Nothing saved yet.</div>";
+            items.forEach(item => {
+                const date = new Date(item.updated_at || item.start_time).toLocaleDateString();
+                const div = document.createElement('div'); div.className = "list-item";
+                if(type === 'project') {
+                    div.innerHTML = `<div onclick="loadProject(${item.id})"><div style="font-weight:bold">${item.name}</div><div style="font-size:12px;color:#666">${date}</div></div><button class="popup-btn popup-delete" onclick="deleteItem('${type}', ${item.id})">🗑</button>`;
+                } else {
+                    const mi = (item.distance_ft / 5280).toFixed(2);
+                    div.innerHTML = `<div><div style="font-weight:bold">${item.name}</div><div style="font-size:12px;color:#666">${date} • ${mi} miles</div></div><div style="display:flex; gap:10px"><button class="popup-btn" onclick="navToHike(${item.id})">🚗</button><button class="popup-btn" onclick="loadHike(${item.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}', ${item.id})">🗑</button></div>`;
+                }
+                container.appendChild(div);
+            });
         }
-
-        // --- HIKE & STAKE MODES ---
-        let isStaking = false;
-        function startStakingMode() { toggleMenu(); if(stakes.length > 0 && confirm("Clear current stakes?")) clearMap(); isStaking = true; document.getElementById('stakingPanel').classList.add('active'); if(currentLatLng) map.flyTo(currentLatLng, 20); }
-        function exitStakingMode() { isStaking = false; document.getElementById('stakingPanel').classList.remove('active'); }
-        function addStakeAtUserLoc() { if(!currentLatLng) return alert("No GPS"); createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + getNextStakeNumber()); if(isHiking) requestStakePhoto(stakes[stakes.length-1].id); }
-        
-        let isHiking = false, isPaused = false, hikePath = [], hikePolyline = null, hikeSeconds = 0, hikeInterval = null, hikeStakes = [];
-        function openHikePanel() { toggleMenu(); document.getElementById('hikeStartUI').style.display = 'flex'; document.getElementById('hikeActiveUI').style.display = 'none'; document.getElementById('hikePanel').classList.add('active'); if(currentLatLng) map.flyTo(currentLatLng, 19); }
-        function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
-        function startHikeRecording() { document.getElementById('hikeStartUI').style.display = 'none'; document.getElementById('hikeActiveUI').style.display = 'flex'; clearMap(); isHiking = true; isPaused = false; hikePath = []; hikeStakes = []; hikeSeconds = 0; hikePolyline = L.polyline([], {color: '#FF9800', weight: 6}).addTo(map); hikeInterval = setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m = Math.floor(hikeSeconds/60), s = hikeSeconds%60; document.getElementById('hikeTime').innerText = `${m}:${s<10?'0'+s:s}`; } }, 1000); if(currentLatLng) updateHikePosition(currentLatLng); }
-        function toggleHikePause() { isPaused = !isPaused; document.getElementById('btnPause').innerHTML = isPaused ? '<span class="material-icons">play_arrow</span> Resume' : '<span class="material-icons">pause</span> Pause'; document.getElementById('hikeTitle').innerText = isPaused ? "⏸ Paused" : "🔴 Recording..."; }
-        function updateHikePosition(ll) { hikePath.push(ll); hikePolyline.setLatLngs(hikePath); map.panTo(ll); let d = 0; for(let i=0; i<hikePath.length-1; i++) d += map.distance(hikePath[i], hikePath[i+1]); document.getElementById('hikeDist').innerText = (d * 0.000621371).toFixed(2); }
-        function stopHikeAndClear() { if(confirm("Discard hike?")) { isHiking = false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); if(hikePolyline) map.removeLayer(hikePolyline); } }
-        async function finishAndSaveHike() { isHiking = false; clearInterval(hikeInterval); const name = prompt("Name Hike:"); if(!name) return; try { const res = await fetch('/api/hikes/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, name, distance:parseFloat(document.getElementById('hikeDist').innerText)*5280, path:hikePath, stakes:hikeStakes }) }); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); } }
-
-        // --- CORE FUNCTIONS ---
-        function createStake(lat, lng, label) { const s = { id:Date.now(), lat, lng, label, number:stakes.length+1, photos:[] }; stakes.push(s); addStakeMarker(s); saveToStorage(); if(isHiking) hikeStakes.push(s); }
-        function addStakeMarker(s) { const marker = L.marker([s.lat, s.lng], { icon: L.divIcon({className:'ci', html:`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`, iconSize:[40,40], iconAnchor:[20,20]}), draggable:true }).addTo(map); stakeMarkers[s.id] = marker; marker.bindPopup(() => generatePopup(s)); marker.on('dragend', (e) => { s.lat = e.target.getLatLng().lat; s.lng = e.target.getLatLng().lng; saveToStorage(); }); }
-        function generatePopup(s) { let ph = ""; (s.photos||[]).forEach(p => { const src = p.startsWith('http') ? p : localStorage.getItem(p); ph += `<img src="${src}" class="popup-img" onclick="openImageModal('${p}', ${s.id})">`; }); return `<div style="text-align:center"><b>${s.label}</b><div class="popup-photos">${ph}</div><button class="popup-btn" onclick="requestStakePhoto(${s.id})">📷 Photo</button><button class="popup-btn popup-delete" onclick="deleteStake(${s.id})">🗑</button></div>`; }
-        function requestStakePhoto(id) { selectedStakeId = id; document.getElementById('stakeCamInput').click(); }
-        window.handleStakePhoto = async function(input) { if(!input.files[0] || !selectedStakeId) return; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.src = e.target.result; img.onload = async () => { const c = document.createElement('canvas'); const sc = 600/img.width; c.width=600; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height); const base64 = c.toDataURL('image/jpeg', 0.5); const blob = dataURLtoBlob(base64); const fd = new FormData(); fd.append('image', blob, 'stake.jpg'); try { const res = await fetch('/api/image/upload', {method:'POST', body:fd}); const d = await res.json(); const s = stakes.find(x => x.id === selectedStakeId); s.photos.push(d.url); stakeMarkers[s.id].setPopupContent(generatePopup(s)); saveToStorage(); } catch(e){ alert("Upload failed"); } }; }; reader.readAsDataURL(input.files[0]); };
-        function dataURLtoBlob(d) { var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n); while(n--)u[n]=b.charCodeAt(n); return new Blob([u],{type:m}); }
-        function goHome() { if((isHiking || isStaking) && !confirm("Discard current work?")) return; exitStakingMode(); isHiking=false; document.getElementById('hikePanel').classList.remove('active'); document.getElementById('sideMenu').classList.remove('open'); document.getElementById('menuOverlay').classList.remove('active'); if(currentLatLng) map.flyTo(currentLatLng, 18); }
-        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify(stakes)); }
-        function loadFromLocalStorage() { try { const d = JSON.parse(localStorage.getItem('landslide_saves')); if(Array.isArray(d)) d.forEach(i => createStake(i.lat, i.lng, i.label)); } catch(e){} }
-        function clearMap() { stakes.forEach(s => map.removeLayer(stakeMarkers[s.id])); stakes = []; stakeMarkers = {}; if(hikePolyline) map.removeLayer(hikePolyline); }
+        async function loadProject(id) {
+            const res = await fetch(`/api/cloud/load/${currentUserId}`); const all = await res.json(); const p = all.find(x => x.id === id);
+            if(p) { const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data; clearMap(); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); document.getElementById('listModal').classList.remove('open'); if(stakes.length) map.flyTo([stakes[0].lat, stakes[0].lng], 19); }
+        }
+        async function loadHike(id) {
+            document.getElementById('listModal').classList.remove('open'); const res = await fetch(`/api/hikes/get/${id}`); const h = await res.json();
+            clearMap(); L.polyline(h.path_json, {color:'blue', weight:6}).addTo(map); if(h.stakes_json) { h.stakes_json.forEach(s => { stakes.push(s); addStakeMarker(s); }); } if(h.path_json.length) map.fitBounds(L.polyline(h.path_json).getBounds());
+        }
+        async function navToHike(id) { const res = await fetch(`/api/hikes/get/${id}`); const h = await res.json(); if(h.path_json && h.path_json.length) { const start = h.path_json[0]; window.open(`https://www.google.com/maps/dir/?api=1&destination=${start[0]},${start[1]}`); } }
+        async function deleteItem(type, id) { if(!confirm("Delete?")) return; const endpoint = type === 'project' ? `/api/cloud/delete/${id}` : `/api/hikes/delete/${id}`; await fetch(endpoint, {method:'DELETE'}); if(type === 'project') openListCloudProjects(); else openHikeList(); }
+        function dataURLtoBlob(dataurl) { var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); while(n--){ u8arr[n] = bstr.charCodeAt(n); } return new Blob([u8arr], {type:mime}); }
+        window.handleStakePhoto = async function(input) {
+            if(!input.files[0] || !selectedStakeId) return;
+            const file = input.files[0];
+            if(!currentUserId) { alert("Not logged in. Saving to phone storage only."); }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = async () => {
+                    const c = document.createElement('canvas'); const scale = 600 / img.width; c.width = 600; c.height = img.height * scale; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+                    const base64 = c.toDataURL('image/jpeg', 0.5);
+                    if (currentUserId) {
+                        try {
+                            const blob = dataURLtoBlob(base64); const fd = new FormData(); fd.append('image', blob, 'stake.jpg');
+                            const res = await fetch('/api/image/upload', {method:'POST', body:fd});
+                            if (!res.ok) throw new Error(`Server returned ${res.status}`);
+                            const d = await res.json();
+                            if(d.success) { attachPhotoToStake(d.url); } else { alert("Upload failed: " + d.message); saveImageLocally(base64, selectedStakeId); }
+                        } catch(e) { console.error(e); alert("Upload error: " + e.message + "\nSaving locally."); saveImageLocally(base64, selectedStakeId); }
+                    } else { saveImageLocally(base64, selectedStakeId); }
+                };
+            };
+            reader.readAsDataURL(file);
+        };
+        function attachPhotoToStake(url) { const s = stakes.find(x => x.id === selectedStakeId); if(s) { if(!s.photos) s.photos=[]; s.photos.push(url); updateStakePopup(s); saveToStorage(); } }
+        function saveImageLocally(data, sid){ try{ const k="img_"+Date.now(); localStorage.setItem(k,data); const s = stakes.find(x => x.id === sid); if(s){ if(!s.photos)s.photos=[]; s.photos.push(k); updateStakePopup(s); saveToStorage(); } } catch(e){ alert("Phone Storage Full! Use 'Clear App Data' in Menu."); } }
+        function clearLocalData() { if(confirm("Clear ALL local data (fixes 'Storage Full')? Synced cloud data is safe.")) { localStorage.clear(); window.location.reload(); } }
+        let currImgUrl = ""; let currImgStakeId = null;
+        window.openImageModal = function(url, sid) { currImgUrl = url.startsWith('http') ? url : localStorage.getItem(url); currImgStakeId = sid; document.getElementById('modalImage').src = currImgUrl; document.getElementById('imageModal').style.display = 'flex'; };
+        window.closeImageModal = function() { document.getElementById('imageModal').style.display = 'none'; };
+        window.analyzeCurrentImage = async function(e) { e.preventDefault(); const filename = currImgUrl.split('/').pop(); const btn = e.target; const originalText = btn.innerHTML; btn.innerHTML = "⏳ Thinking..."; try { const res = await fetch('/api/ai/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename}) }); const d = await res.json(); if(d.error) alert(d.error); else alert(d.analysis); } catch(e) { alert("AI Error"); } btn.innerHTML = originalText; };
+        window.deleteCurrentImage = async function(e) { if(!confirm("Delete Photo?")) return; const s = stakes.find(x => x.id === currImgStakeId); if(s) { s.photos = s.photos.filter(p => !p.includes(currImgUrl) && p !== currImgUrl); saveToStorage(); closeImageModal(); updateStakePopup(s); } };
+        async function performSearch() { const q = document.getElementById('searchBox').value; if(!q) return; const r = await fetch(`/api/address/search?q=${encodeURIComponent(q)}`); const d = await r.json(); if(d.error) alert(d.error); else if(d.lat) { map.flyTo([d.lat, d.lng], 18); document.getElementById('searchBox').blur(); } }
+        async function fetchParcelAt(ll) { const r = await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`); const d = await r.json(); if(d.length > 0) { document.getElementById('owner').innerText = d[0].owner_name; document.getElementById('address').innerText = d[0].address; document.getElementById('card').classList.add('active'); if(activeLayer) map.removeLayer(activeLayer); if(d[0].geometry) { activeLayer = L.geoJSON(JSON.parse(d[0].geometry), {style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map); } } else { document.getElementById('card').classList.remove('active'); } }
+        function getDirectionsToSelected() { if(activeLayer && activeLayer.getBounds()) { const c = activeLayer.getBounds().getCenter(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`); } }
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
-        function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else { toggleMenu(); document.getElementById('loginModal').style.display='flex'; } }
-        async function doLogin() { const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:document.getElementById('emailInput').value, password:document.getElementById('passInput').value})}); const d = await r.json(); if(d.success) { localStorage.setItem('landslide_auth_id', d.user.id); localStorage.setItem('landslide_auth_email', d.user.email); window.location.reload(); } else alert(d.message); }
-        function updateMenuLoginText() { if(currentUserEmail) { document.getElementById('loginText').innerText = "Logout (" + currentUserEmail.split('@')[0] + ")"; document.getElementById('userIcon').style.color = "#4CAF50"; } }
+        function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
+        function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { currentUserId = null; currentUserEmail = null; localStorage.removeItem('landslide_auth_id'); localStorage.removeItem('landslide_auth_email'); updateMenuLoginText(); alert("Logged out."); } } else { openLogin(); } }
+        async function doLogin() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) { currentUserId = d.user.id; currentUserEmail = d.user.email; localStorage.setItem('landslide_auth_id', currentUserId); localStorage.setItem('landslide_auth_email', currentUserEmail); updateMenuLoginText(); document.getElementById('loginModal').style.display='none'; } else alert(d.message); } catch(e) { alert("Login failed"); } }
+        async function doRegister() { const e = document.getElementById('emailInput').value; const p = document.getElementById('passInput').value; try { const r = await fetch('/api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e, password:p})}); const d = await r.json(); if(d.success) alert("Created! Now Login."); else alert(d.message); } catch(e) { alert("Error"); } }
+        function updateMenuLoginText() { const el = document.getElementById('loginText'); const icon = document.getElementById('userIcon'); if(currentUserEmail) { el.innerText = "Logout (" + currentUserEmail.split('@')[0] + ")"; icon.style.color = "#4CAF50"; } else { el.innerText = "Login / Register"; icon.style.color = "#5E35B1"; } }
+        function loadFromLocalStorage() { try { const s = localStorage.getItem('landslide_saves'); if(s) { const d = JSON.parse(s); if(Array.isArray(d)) d.forEach(i => { if(i.type === 'stake') { stakes.push(i); addStakeMarker(i); } }); } } catch(e) { localStorage.removeItem('landslide_saves'); } }
+        function saveToStorage() { localStorage.setItem('landslide_saves', JSON.stringify(stakes)); }
+        function clearMap() { stakes.forEach(s => map.removeLayer(stakeMarkers[s.id])); stakes = []; stakeMarkers = {}; if(hikePolyline) map.removeLayer(hikePolyline); }
         function toggleLayer() { if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } else { map.removeLayer(street); map.addLayer(satellite); } }
+        function shareLocation() { toggleMenu(); if(!currentLatLng) return alert("No GPS"); const url = `https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`; if(navigator.share) navigator.share({title:'My Location', url:url}); else prompt("Copy Link:", url); }
+        function inviteFriends() { toggleMenu(); if(navigator.share) navigator.share({title:'Land Survey App', url:window.location.href}); }
     </script>
 </body>
 </html>
