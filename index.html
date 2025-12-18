@@ -11,8 +11,6 @@
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
-        
-        /* APP BAR */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { position: relative; flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
@@ -29,22 +27,29 @@
         .suggestion-item:hover { background: #f0f0f0; }
 
         /* PANELS */
-        .mode-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 85%; max-width: 320px; border: 1px solid #333; }
+        .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 15px; font-weight: bold; text-align: center; }
-        .hike-stats { display: flex; gap: 20px; margin-bottom: 15px; width: 100%; justify-content: center; }
-        .stat-box { text-align: center; background: #333; padding: 8px 15px; border-radius: 8px; min-width: 80px; }
-        .stat-val { font-size: 22px; font-weight: bold; color: #4CAF50; }
-        .stat-label { font-size: 10px; color: #ccc; margin-top: 2px; }
-        .panel-controls { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
-        .panel-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; transition: transform 0.1s; text-transform: uppercase; }
+        .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
+        .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
+        .stat-val { font-size: 18px; font-weight: bold; color: #4CAF50; }
+        .stat-label { font-size: 10px; color: #ccc; margin-top: 1px; }
+        
+        .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
+        .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
         .btn-stop { background: #444; color: #ff5252; } 
         .btn-save { background: #2196F3; color: white; }
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+
+        /* COMPACT HIKE UI SPECIFIC */
+        #hikeActiveUI .mode-title { display: none; } /* Hide title while recording to save space */
+        #hikeActiveUI .panel-controls { margin-top: 4px; }
+        #hikeActiveUI { padding-top: 5px; }
 
         /* MENU */
         .side-menu { 
@@ -59,7 +64,7 @@
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
         
-        /* LOGIN */
+        /* UTILS */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
         .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
@@ -67,13 +72,11 @@
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
         .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
 
-        /* UTILS */
         .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
         .full-modal.open { display: flex; }
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
         .modal-list { flex: 1; overflow-y: auto; padding: 10px; }
         .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .list-item:hover { background: #f5f5f5; }
 
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
@@ -109,9 +112,9 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v131-Friendly</div>
+    <div class="debug-label">v132-CompactHike</div>
 
-    <!-- REMOVED capture="environment" to allow Gallery choice -->
+    <!-- REMOVED capture="environment" so user can choose Camera/Gallery -->
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
@@ -128,22 +131,35 @@
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
 
-    <!-- HIKE PANEL -->
+    <!-- HIKE PANEL (Compact) -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
             <button class="panel-btn btn-start" style="width:100%" onclick="startHikeRecording()"><span class="material-icons">play_arrow</span> START TRACKING</button>
             <button class="panel-btn btn-stop" style="margin-top:10px; width:100%; background:transparent; border:1px solid #444;" onclick="closeHikePanel()">Cancel</button>
         </div>
+        
+        <!-- COMPACT ACTIVE UI -->
         <div id="hikeActiveUI" style="display:none; width:100%; flex-direction:column;">
-            <div class="mode-title" id="hikeTitle" style="color:#FF9800">🔴 Recording...</div>
+            <!-- Stats on Top -->
             <div class="hike-stats">
                 <div class="stat-box"><div class="stat-val" id="hikeDist">0.00</div><div class="stat-label">MILES</div></div>
                 <div class="stat-box"><div class="stat-val" id="hikeTime">00:00</div><div class="stat-label">TIME</div></div>
             </div>
-            <div class="panel-controls"><button class="panel-btn btn-action" onclick="addStakeAtUserLoc()"><span class="material-icons">camera_alt</span> Photo</button></div>
-            <div class="panel-controls"><button class="panel-btn btn-pause" id="btnPause" onclick="toggleHikePause()"><span class="material-icons">pause</span> Pause</button><button class="panel-btn btn-stop" onclick="stopHikeAndClear()">Cancel</button></div>
-            <div class="panel-controls"><button class="panel-btn btn-save" style="width:100%" onclick="finishAndSaveHike()">Finish & Save</button></div>
+            <!-- Photo & Pause in Middle -->
+            <div class="panel-controls">
+                <button class="panel-btn btn-action" style="flex:1.5" onclick="addStakeAtUserLoc()">
+                    <span class="material-icons">camera_alt</span> Photo
+                </button>
+                <button class="panel-btn btn-pause" id="btnPause" onclick="toggleHikePause()">
+                    <span class="material-icons">pause</span>
+                </button>
+            </div>
+            <!-- Save & Cancel at Bottom -->
+            <div class="panel-controls">
+                <button class="panel-btn btn-save" style="flex:2" onclick="finishAndSaveHike()">Finish & Save</button>
+                <button class="panel-btn btn-stop" onclick="stopHikeAndClear()">✕</button>
+            </div>
         </div>
     </div>
 
@@ -368,13 +384,21 @@
         }
         
         function toggleHikePause() {
-            isPaused=!isPaused; const btn=document.getElementById('btnPause'); const t=document.getElementById('hikeTitle');
-            if(isPaused) { btn.innerHTML='<span class="material-icons">play_arrow</span> Resume'; btn.style.background='#4CAF50'; btn.style.color='white'; t.innerText="⏸ Paused"; t.style.color="#FFC107"; }
-            else { btn.innerHTML='<span class="material-icons">pause</span> Pause'; btn.style.background='#FFC107'; btn.style.color='black'; t.innerText="🔴 Recording..."; t.style.color="#FF9800"; if(currentLatLng) updateHikePosition(currentLatLng); }
+            isPaused=!isPaused; const btn=document.getElementById('btnPause');
+            if(isPaused) { btn.innerHTML='<span class="material-icons">play_arrow</span>'; btn.style.background='#4CAF50'; btn.style.color='white'; }
+            else { btn.innerHTML='<span class="material-icons">pause</span>'; btn.style.background='#FFC107'; btn.style.color='black'; if(currentLatLng) updateHikePosition(currentLatLng); }
         }
         function updateHikePosition(ll) {
             if(hikePath.length > 0 && map.distance(ll, hikePath[hikePath.length-1]) < 4) return;
             hikePath.push(ll); hikePolyline.setLatLngs(hikePath); 
+            
+            // OFFSET CAMERA to see dot above panel
+            const offset = map.getSize().y * 0.2; 
+            const point = map.project(ll, map.getZoom());
+            point.y += offset; 
+            const target = map.unproject(point, map.getZoom());
+            map.panTo(target);
+
             let d=0; for(let i=0; i<hikePath.length-1; i++) d+=map.distance(hikePath[i], hikePath[i+1]);
             document.getElementById('hikeDist').innerText=(d*0.000621371).toFixed(2);
         }
