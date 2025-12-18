@@ -32,13 +32,11 @@
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
-        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
         .stat-val { font-size: 20px; font-weight: bold; color: #4CAF50; }
         .stat-label { font-size: 10px; color: #ccc; margin-top: 1px; }
-        
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
@@ -96,6 +94,15 @@
         .measure-box.visible { display: flex; }
         .measure-icon { color: #FF9800; font-size: 20px; }
 
+        /* MEASURE MARKER (Draggable) */
+        .measure-dot {
+            background: #FF9800;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: grab;
+        }
+
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
@@ -127,12 +134,13 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v137-Rescue</div>
+    <div class="debug-label">v138-LiveMeasure</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
 
+    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -237,22 +245,10 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // *** 1. MAP SETUP ***
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
         const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
-        
-        let currentUserId = localStorage.getItem('landslide_auth_id');
-        let currentUserEmail = localStorage.getItem('landslide_auth_email');
-        let stakes = []; 
-        let stakeMarkers = {}; 
-        let savedItems = []; 
-        let activeLayer = null; 
-        let userMarker = null; 
-        let currentLatLng = null; 
-        let selectedStakeId = null; 
-        let currentProjectName = null; 
-        let currentProjectID = null;
+        let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email'), stakes = [], stakeMarkers = {}, savedItems = [], activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null, currentProjectName = null, currentProjectID = null;
         let isTakingHikePhoto = false;
 
         loadFromLocalStorage();
@@ -471,11 +467,68 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
-        function toggleMeasureMode(){ isMeasuring=!isMeasuring; document.querySelector('.measure-box').classList.toggle('visible'); if(!isMeasuring) {measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft";} }
-        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let dist = 0; for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft"; } }
+        // --- UPDATED MEASURE TOOL (DRAGGABLE & DYNAMIC) ---
+        let isMeasuring=false;
+        let measureMarkers=[];
+        let measurePolyline=null;
+        let measureLayer=L.layerGroup().addTo(map);
+
+        function toggleMeasureMode(){ 
+            isMeasuring=!isMeasuring; 
+            const box = document.querySelector('.measure-box');
+            if(isMeasuring) {
+                box.classList.add('visible');
+                document.getElementById('measureText').style.display='inline';
+                document.getElementById('distVal').style.display='none';
+                measureLayer.clearLayers(); 
+                measureMarkers=[];
+                measurePolyline=null;
+                document.getElementById('card').classList.remove('active'); 
+            } else {
+                box.classList.remove('visible');
+                measureLayer.clearLayers();
+            }
+        }
+
+        function addMeasurePoint(ll) { 
+            // Update UI on first click
+            document.getElementById('measureText').style.display='none';
+            document.getElementById('distVal').style.display='inline';
+            
+            // Create DRAGGABLE marker
+            const m = L.marker(ll, {
+                draggable: true,
+                icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] })
+            }).addTo(measureLayer);
+            
+            m.on('drag', updateMeasureCalc); // Recalc while dragging
+            m.on('dragend', updateMeasureCalc); // Final recalc
+            
+            measureMarkers.push(m);
+            updateMeasureCalc();
+        }
+
+        function updateMeasureCalc() {
+            if(measureMarkers.length < 2) return;
+            
+            // Extract coordinates from markers
+            const latlngs = measureMarkers.map(m => m.getLatLng());
+            
+            // Update or Create Line
+            if(!measurePolyline) {
+                measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
+            } else {
+                measurePolyline.setLatLngs(latlngs);
+            }
+            
+            // Calculate Total Distance
+            let dist = 0;
+            for(let i=0; i<latlngs.length-1; i++) {
+                dist += latlngs[i].distanceTo(latlngs[i+1]);
+            }
+            document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
+        }
         
-        // --- DATA LOADING ---
         async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Boundaries", "Loading..."); try { const res = await fetch(`/api/cloud/load/${currentUserId}`); const data = await res.json(); renderList(data, 'project'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
         async function openHikeList() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Hikes", "Loading..."); try { const res = await fetch(`/api/hikes/list/${currentUserId}`); const data = await res.json(); renderList(data, 'hike'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
         function showListModal(title, content) { document.getElementById('listTitle').innerText = title; document.getElementById('listContainer').innerHTML = content || ""; document.getElementById('listModal').classList.add('open'); }
@@ -528,7 +581,6 @@
 
         async function loadHike(id) { document.getElementById('listModal').classList.remove('open'); const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json(); clearMap(); L.polyline(h.path_json,{color:'blue',weight:6}).addTo(map); (h.stakes_json||[]).forEach(s=>{stakes.push(s);addStakeMarker(s);}); if(h.path_json.length) map.fitBounds(L.polyline(h.path_json).getBounds()); }
         async function deleteItem(type,id) { if(!confirm("Delete?")) return; await fetch(type==='project'?`/api/cloud/delete/${id}`:`/api/hikes/delete/${id}`,{method:'DELETE'}); if(type==='project') openListCloudProjects(); else openHikeList(); }
-        
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
         function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else openLogin(); }
@@ -548,50 +600,7 @@
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
         window.deleteCurrentImage=()=>{if(confirm("Delete?")){const s=stakes.find(x=>x.id===currImgStakeId);s.photos=s.photos.filter(p=>!p.includes(currImgUrl));saveToStorage();closeImageModal();updateStakePopup(s);}};
         function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
-        
-        // --- PHOTO HANDLER ---
-        window.handleStakePhoto = async function(input) {
-            if(!input.files[0]) return;
-            const file = input.files[0];
-            
-            if(isTakingHikePhoto) {
-                if(!currentLatLng) return alert("No GPS");
-                let n = getNextStakeNumber();
-                createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-                selectedStakeId = stakes[stakes.length-1].id;
-                isTakingHikePhoto = false;
-            }
-
-            if(!selectedStakeId) return;
-
-            const r=new FileReader(); 
-            r.onload=(e)=>{
-                const i=new Image(); i.src=e.target.result;
-                i.onload=async()=>{
-                    const c=document.createElement('canvas'); const sc=600/i.width; c.width=600; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-                    const b64=c.toDataURL('image/jpeg',0.5); const b=dataURLtoBlob(b64); const fd=new FormData(); fd.append('image',b,'stake.jpg');
-                    try{
-                        const res=await fetch('/api/image/upload',{method:'POST',body:fd});
-                        const d=await res.json();
-                        if(d.success) {
-                            attachPhotoToStake(d.url);
-                        } else alert("Upload Failed: " + d.message);
-                    } catch(x){ alert("Upload failed"); }
-                }
-            };
-            r.readAsDataURL(file); 
-        };
-
-        function attachPhotoToStake(url) {
-            const s = stakes.find(x => x.id === selectedStakeId);
-            if(s) {
-                if(!s.photos) s.photos=[];
-                s.photos.push(url);
-                updateStakePopup(s);
-                saveToStorage();
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); // FIX: Show popup immediately
-            }
-        }
+        window.handleStakePhoto = async function(input) { if(!input.files[0] || !selectedStakeId) return; const r=new FileReader(); r.onload=(e)=>{const i=new Image();i.src=e.target.result;i.onload=async()=>{const c=document.createElement('canvas');const sc=600/i.width;c.width=600;c.height=i.height*sc;c.getContext('2d').drawImage(i,0,0,c.width,c.height);const b64=c.toDataURL('image/jpeg',0.5);const b=dataURLtoBlob(b64);const fd=new FormData();fd.append('image',b,'stake.jpg');try{const res=await fetch('/api/image/upload',{method:'POST',body:fd});const d=await res.json();const s=stakes.find(x=>x.id===selectedStakeId);s.photos.push(d.url);updateStakePopup(s);saveToStorage();}catch(x){alert("Upload failed");}}};r.readAsDataURL(input.files[0]); };
     </script>
 </body>
 </html>
