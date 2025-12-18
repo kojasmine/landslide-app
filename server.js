@@ -22,8 +22,6 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-if (!process.env.CLOUDINARY_CLOUD_NAME) console.error("⚠️ WARNING: Cloudinary Keys Missing!");
-
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key:    process.env.CLOUDINARY_API_KEY,
@@ -35,7 +33,45 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '/index.html')));
 
-// --- HYBRID ADDRESS SEARCH (US CENSUS + PHOTON) ---
+app.get('/api/config', (_req, res) => {
+    res.json({ status: "ok", version: "1.0.8" });
+});
+
+// --- AUTOCOMPLETE SUGGESTIONS (PHOTON ONLY) ---
+// Fast, type-ahead search for dropdowns
+app.get('/api/address/suggestions', async (req, res) => {
+    const { q } = req.query;
+    if (!q || q.length < 3) return res.json([]); 
+
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5`;
+    
+    https.get(url, (resp) => {
+        let data = '';
+        resp.on('data', (chunk) => data += chunk);
+        resp.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                if (json.features) {
+                    const results = json.features.map(f => {
+                        const p = f.properties;
+                        // Format a nice label
+                        const addr = [p.name, p.housenumber, p.street, p.city, p.state, p.country].filter(Boolean).join(', ');
+                        return { 
+                            label: addr, 
+                            lat: f.geometry.coordinates[1], 
+                            lng: f.geometry.coordinates[0] 
+                        };
+                    });
+                    res.json(results);
+                } else {
+                    res.json([]);
+                }
+            } catch(e) { res.json([]); }
+        });
+    }).on('error', (err) => res.json([]));
+});
+
+// --- EXACT ADDRESS SEARCH (US CENSUS + PHOTON) ---
 function fetchJson(url) {
     return new Promise((resolve, reject) => {
         https.get(url, (res) => {
@@ -43,7 +79,7 @@ function fetchJson(url) {
             res.on('data', c => data += c);
             res.on('end', () => {
                 try { resolve(JSON.parse(data)); } 
-                catch (e) { resolve(null); } // Fail silently
+                catch (e) { resolve(null); }
             });
         }).on('error', (err) => resolve(null));
     });
@@ -53,30 +89,25 @@ app.get('/api/address/search', async (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: "No query" });
 
-    // 1. Try US CENSUS (Best for specific house numbers)
-    // Docs: https://geocoding.geo.census.gov/geocoder/Geocoding_Services_API.html
+    // 1. Try US CENSUS (Best for house numbers)
     const censusUrl = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(q)}&benchmark=Public_AR_Current&format=json`;
-    
     try {
         const censusData = await fetchJson(censusUrl);
         if (censusData && censusData.result && censusData.result.addressMatches && censusData.result.addressMatches.length > 0) {
             const match = censusData.result.addressMatches[0];
-            const coords = match.coordinates; // x (lng), y (lat)
-            const addr = match.matchedAddress;
-            return res.json({ lat: coords.y, lng: coords.x, address: addr, source: "US Census" });
+            return res.json({ lat: match.coordinates.y, lng: match.coordinates.x, address: match.matchedAddress, source: "US Census" });
         }
     } catch(e) { console.log("Census Error", e); }
 
-    // 2. Fallback to PHOTON (Best for streets/towns/places)
+    // 2. Fallback to PHOTON
     const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
     try {
         const photonData = await fetchJson(photonUrl);
         if (photonData && photonData.features && photonData.features.length > 0) {
             const feat = photonData.features[0];
-            const coords = feat.geometry.coordinates; // [lon, lat]
             const p = feat.properties;
             const addr = [p.name, p.housenumber, p.street, p.city, p.state].filter(Boolean).join(', ');
-            return res.json({ lat: coords[1], lng: coords[0], address: addr, source: "OpenStreetMap" });
+            return res.json({ lat: feat.geometry.coordinates[1], lng: feat.geometry.coordinates[0], address: addr, source: "OpenStreetMap" });
         }
     } catch(e) { console.log("Photon Error", e); }
 
@@ -91,7 +122,8 @@ app.post('/api/register', async (req, res) => {
         if (check.rows.length > 0) return res.json({success:false, message:"Email exists"});
         const hash = await bcrypt.hash(password, 10);
         await pool.query('INSERT INTO users (email, password) VALUES ($1, $2)', [email, hash]);
-        res.json({ success: true });
+        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        res.json({ success: true, user: user.rows[0] });
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
@@ -106,7 +138,7 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
-// --- IMAGE ---
+// --- IMAGE UPLOAD ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if(!req.file) return res.status(400).json({success:false, message:"No file"});
     const uploadStream = cloudinary.uploader.upload_stream({ folder: "land_survey_app" }, (err, result) => {
