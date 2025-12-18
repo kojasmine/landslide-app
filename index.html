@@ -11,26 +11,24 @@
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
+        
+        /* APP BAR */
         .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; border-bottom: 1px solid #ddd; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { position: relative; flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
         .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
-        
-        #suggestions { 
-            position: absolute; top: 100%; left: 0; right: 0; 
-            background: white; border: 1px solid #ddd; border-top: none; 
-            border-radius: 0 0 8px 8px; z-index: 99999; 
-            max-height: 250px; overflow-y: auto; display: none; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-        }
+        .top-icons { display: flex; gap: 5px; }
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
+        .icon-btn:hover { background: #f0f0f0; }
+
+        /* SUGGESTIONS */
+        #suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; color: #333; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: #f0f0f0; }
 
-        .top-icons { display: flex; gap: 5px; }
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
-        .icon-btn:hover { background: #f0f0f0; }
+        /* PANELS */
         .mode-panel { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 20px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 85%; max-width: 320px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
@@ -47,58 +45,77 @@
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+
+        /* MENU */
         .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding-top: 10px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
-        .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
-        .full-modal.open { display: flex; }
-        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
-        .modal-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .list-item:hover { background: #f5f5f5; }
-        .stake-container { position: relative; }
-        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
-        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
-        .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
-        .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
-        .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
-        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 220px; justify-content:center; }
-        .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-size: 13px; font-weight: 600; }
-        .popup-delete { color: #ff5252; border-color: #ffcdd2; background: #ffebee; }
-        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
-        .measure-box.visible { display: flex; align-items: center; gap: 15px; }
+        
+        /* MODALS */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
         .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .password-wrapper { position: relative; width: 100%; margin: 8px 0; }
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
         .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
+
+        .full-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 30000; display: none; flex-direction: column; }
+        .full-modal.open { display: flex; }
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
+        .modal-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .list-item:hover { background: #f5f5f5; }
+
+        /* MARKERS */
+        .stake-container { position: relative; }
+        .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
+        .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
+        .user-loc-wrapper { position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
+        .user-dot { width: 14px; height: 14px; background: #007bff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 4px rgba(0,123,255,0.3); z-index: 2; position: absolute; }
+        .user-arrow { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 22px solid #007bff; position: absolute; top: -6px; z-index: 1; transform-origin: center 26px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3)); display: block; transition: transform 0.1s linear; }
+        
+        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 220px; justify-content:center; }
+        .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-size: 13px; font-weight: 600; }
+        .popup-delete { color: #ff5252; border-color: #ffcdd2; background: #ffebee; }
+
+        /* MEASURE BOX */
+        .measure-box { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 25px; border-radius: 30px; font-size: 18px; font-weight: bold; z-index: 10001; display: none; white-space: nowrap; border: 2px solid white; cursor:pointer;}
+        .measure-box.visible { display: flex; align-items: center; gap: 15px; }
+
+        /* IMAGE VIEWER */
         #imageModal { position: fixed; inset: 0; z-index: 50000; display: none; }
         .img-backdrop { position: absolute; inset: 0; background: black; }
         .img-content { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .img-content img { max-width: 100%; max-height: 80vh; object-fit: contain; }
         .img-controls { margin-top: 20px; display: flex; gap: 20px; }
         .img-ctrl-btn { color: white; text-decoration: none; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; }
-        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #009688; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
+
+        /* INFO CARD */
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 2px; }
         .prop-sub { font-size: 13px; color: #666; }
         .direction-btn { height: 44px; padding: 0 18px; background: #007bff; border-radius: 25px; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,123,255,0.3); transition: transform 0.1s; }
         .direction-btn:active { transform: scale(0.95); }
+
+        .debug-label { position: fixed; bottom: 5px; left: 5px; background: #009688; color: white; font-weight: bold; padding: 2px 6px; z-index: 99999; font-size: 10px; border:1px solid white; }
     </style>
 </head>
 <body>
-    <div class="debug-label">v126-Nominatim</div>
+    <div class="debug-label">v127-Stable</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
-    <div class="measure-box" id="measureBox"><span style="font-size:14px; margin-right:5px; font-weight:400;">Tap map to measure:</span><span id="distVal" style="color:#4CAF50">0 ft</span><div class="clear-measure" onclick="toggleMeasureMode()">✕</div></div>
+    <div class="measure-box" id="measureBox">
+        <span style="font-size:14px; margin-right:5px; font-weight:400;">Tap map to measure:</span>
+        <span id="distVal" style="color:#4CAF50">0 ft</span>
+        <div class="clear-measure" onclick="toggleMeasureMode()">✕</div>
+    </div>
     
     <!-- PANELS -->
     <div class="mode-panel" id="stakingPanel">
@@ -129,7 +146,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
-    <!-- APP BAR WITH SUGGESTIONS -->
+    <!-- APP BAR -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -173,6 +190,7 @@
             <button style="background:none; border:none; margin-top:15px; text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
     </div>
+
     <div class="full-modal" id="listModal"><div class="modal-header"><span id="listTitle">Saved Items</span><span onclick="document.getElementById('listModal').classList.remove('open')" style="cursor:pointer">✕</span></div><div class="modal-list" id="listContainer"></div></div>
     <div id="imageModal"><div class="img-backdrop" onclick="closeImageModal()"></div><div class="img-content"><img id="modalImage" src=""><div class="img-controls"><a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a><a href="#" class="img-ctrl-btn" style="background:#4CAF50" color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a><a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a></div></div></div>
     
@@ -186,7 +204,7 @@
         loadFromLocalStorage();
         updateMenuLoginText();
         
-        // --- SEARCH AUTOCOMPLETE (UPDATED DEBOUNCE FOR NOMINATIM) ---
+        // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
         let debounceTimer;
@@ -195,7 +213,7 @@
             clearTimeout(debounceTimer);
             const val = this.value;
             if(val.length < 3) { suggestionsBox.style.display = 'none'; return; }
-            debounceTimer = setTimeout(() => fetchSuggestions(val), 600); // 600ms to be polite to Nominatim
+            debounceTimer = setTimeout(() => fetchSuggestions(val), 600);
         });
 
         async function fetchSuggestions(query) {
@@ -212,7 +230,6 @@
                             searchInput.value = item.label;
                             suggestionsBox.style.display = 'none';
                             map.flyTo([item.lat, item.lng], 18);
-                            // Optionally trigger full search to confirm
                         };
                         suggestionsBox.appendChild(div);
                     });
@@ -271,6 +288,7 @@
             else { i.type='password'; ico.innerText='visibility'; }
         }
 
+        // --- STAKING ---
         let isStaking = false;
         function startStakingMode() {
             toggleMenu();
@@ -302,6 +320,7 @@
             } catch(e) { alert("Error"); }
         }
 
+        // --- HIKING ---
         let isHiking=false, isPaused=false, hikePath=[], hikePolyline=null, hikeSeconds=0, hikeInterval=null, hikeStakes=[];
         function openHikePanel() { toggleMenu(); document.getElementById('hikeStartUI').style.display='flex'; document.getElementById('hikeActiveUI').style.display='none'; document.getElementById('hikePanel').classList.add('active'); if(currentLatLng) map.flyTo(currentLatLng, 19); }
         function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
@@ -319,7 +338,7 @@
         }
         function updateHikePosition(ll) {
             if(hikePath.length > 0 && map.distance(ll, hikePath[hikePath.length-1]) < 4) return;
-            hikePath.push(ll); hikePolyline.setLatLngs(hikePath); // map.panTo(ll);
+            hikePath.push(ll); hikePolyline.setLatLngs(hikePath); 
             let d=0; for(let i=0; i<hikePath.length-1; i++) d+=map.distance(hikePath[i], hikePath[i+1]);
             document.getElementById('hikeDist').innerText=(d*0.000621371).toFixed(2);
         }
@@ -329,6 +348,7 @@
             try { const res=await fetch('/api/hikes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,name:n,distance:parseFloat(document.getElementById('hikeDist').innerText)*5280,path:hikePath,stakes:hikeStakes})}); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); }
         }
 
+        // --- CORE UTILS ---
         function createStake(lat, lng, label) { const s={id:Date.now(),lat,lng,label,number:getNextStakeNumber(),photos:[]}; stakes.push(s); addStakeMarker(s); saveToStorage(); if(isHiking) hikeStakes.push(s); }
         function getNextStakeNumber() { return stakes.length+1; }
         function addStakeMarker(s) { const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'ci',html:`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`,iconSize:[40,40],iconAnchor:[20,20]}),draggable:true}).addTo(map); stakeMarkers[s.id]=m; m.bindPopup(()=>generatePopup(s)); m.on('dragend',(e)=>{s.lat=e.target.getLatLng().lat;s.lng=e.target.getLatLng().lng;saveToStorage();}); }
@@ -336,10 +356,28 @@
         function updateStakePopup(s){if(stakeMarkers[s.id])stakeMarkers[s.id].setPopupContent(generatePopup(s));}
         function requestStakePhoto(id){selectedStakeId=id;document.getElementById('stakeCamInput').click();}
         function deleteStake(id){if(confirm("Delete?")){map.removeLayer(stakeMarkers[id]);delete stakeMarkers[id];stakes=stakes.filter(s=>s.id!==id);saveToStorage();}}
-        map.on('click',(e)=>{if(isMeasuring){addMeasurePoint(e.latlng);return;}if(isStaking){createStake(e.latlng.lat,e.latlng.lng,"Stake "+getNextStakeNumber());}else{fetchParcelAt(e.latlng);}});
+        
+        // --- MAP CLICK ---
+        map.on('click',(e)=>{ if(isMeasuring){addMeasurePoint(e.latlng);return;} if(isStaking){let n=getNextStakeNumber();createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);} else {fetchParcelAt(e.latlng);} });
+        
         async function performSearch(){const q=searchInput.value;if(!q)return;suggestionsBox.style.display='none';try{const r=await fetch(`/api/address/search?q=${encodeURIComponent(q)}`);const d=await r.json();if(d.error)alert(d.error);else if(d.lat){map.flyTo([d.lat,d.lng],18);searchInput.blur();}}catch(e){alert("Error");}}
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
+        
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){ isMeasuring=!isMeasuring; document.querySelector('.measure-box').classList.toggle('visible'); if(!isMeasuring) {measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft";} }
+        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let dist = 0; for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft"; } }
+        
+        // --- DATA LOADING ---
+        async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Boundaries", "Loading..."); try { const res = await fetch(`/api/cloud/load/${currentUserId}`); const data = await res.json(); renderList(data, 'project'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
+        async function openHikeList() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Hikes", "Loading..."); try { const res = await fetch(`/api/hikes/list/${currentUserId}`); const data = await res.json(); renderList(data, 'hike'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
+        function showListModal(title, content) { document.getElementById('listTitle').innerText = title; document.getElementById('listContainer').innerHTML = content || ""; document.getElementById('listModal').classList.add('open'); }
+        function renderList(items, type) { const c=document.getElementById('listContainer'); c.innerHTML=""; if(!items.length) c.innerHTML="<div style='padding:20px;text-align:center'>Empty</div>"; items.forEach(i=>{ const d=new Date(i.updated_at||i.start_time).toLocaleDateString(); const div=document.createElement('div'); div.className="list-item"; if(type==='project') div.innerHTML=`<div onclick="loadProject(${i.id})"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>`; else div.innerHTML=`<div><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div><div style="display:flex;gap:10px"><button class="popup-btn" onclick="navToHike(${i.id})">🚗</button><button class="popup-btn" onclick="loadHike(${i.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button></div>`; c.appendChild(div); }); }
+        async function loadProject(id) { const res=await fetch(`/api/cloud/load/${currentUserId}`); const all=await res.json(); const p=all.find(x=>x.id===id); if(p) { const d=JSON.parse(typeof p.data==='string'?p.data:JSON.stringify(p.data)); clearMap(); (d.stakes||[]).forEach(s=>{stakes.push(s);addStakeMarker(s);}); document.getElementById('listModal').classList.remove('open'); if(stakes.length) map.flyTo([stakes[0].lat,stakes[0].lng],19); currentProjectID=p.id; currentProjectName=p.name; } }
+        async function loadHike(id) { document.getElementById('listModal').classList.remove('open'); const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json(); clearMap(); L.polyline(h.path_json,{color:'blue',weight:6}).addTo(map); (h.stakes_json||[]).forEach(s=>{stakes.push(s);addStakeMarker(s);}); if(h.path_json.length) map.fitBounds(L.polyline(h.path_json).getBounds()); }
+        async function navToHike(id) { const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json(); if(h.path_json.length) window.open(`https://www.google.com/maps/dir/?api=1&destination=${h.path_json[0][0]},${h.path_json[0][1]}`); }
+        async function deleteItem(type,id) { if(!confirm("Delete?")) return; await fetch(type==='project'?`/api/cloud/delete/${id}`:`/api/hikes/delete/${id}`,{method:'DELETE'}); if(type==='project') openListCloudProjects(); else openHikeList(); }
+        
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
         function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else openLogin(); }
@@ -353,12 +391,36 @@
         function shareLocation() { toggleMenu(); if(!currentLatLng) return alert("No GPS"); const u=`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`; if(navigator.share) navigator.share({title:'Loc',url:u}); else prompt("Link",u); }
         function inviteFriends() { toggleMenu(); if(navigator.share) navigator.share({title:'App',url:window.location.href}); }
         function clearLocalData() { if(confirm("Clear local data?")) { localStorage.clear(); window.location.reload(); } }
+        
+        // --- HELPER ---
+        function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
         let currImgUrl="", currImgStakeId=null;
         window.openImageModal=(u,s)=>{currImgUrl=u.startsWith('http')?u:localStorage.getItem(u);currImgStakeId=s;document.getElementById('modalImage').src=currImgUrl;document.getElementById('imageModal').style.display='flex';};
         window.closeImageModal=()=>{document.getElementById('imageModal').style.display='none';};
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
         window.deleteCurrentImage=()=>{if(confirm("Delete?")){const s=stakes.find(x=>x.id===currImgStakeId);s.photos=s.photos.filter(p=>!p.includes(currImgUrl));saveToStorage();closeImageModal();updateStakePopup(s);}};
-        function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
+        
+        // --- PHOTO ---
+        window.handleStakePhoto = async function(input) {
+            if(!input.files[0] || !selectedStakeId) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = async () => {
+                    const c = document.createElement('canvas'); const sc = 600/img.width; c.width=600; c.height=img.height*sc; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+                    const base64 = c.toDataURL('image/jpeg', 0.5);
+                    const blob = dataURLtoBlob(base64); const fd = new FormData(); fd.append('image', blob, 'stake.jpg');
+                    try {
+                        const res = await fetch('/api/image/upload', {method:'POST', body:fd});
+                        const d = await res.json();
+                        if(d.success) {
+                            const s = stakes.find(x => x.id === selectedStakeId); s.photos.push(d.url); updateStakePopup(s); saveToStorage();
+                        } else alert("Upload Failed");
+                    } catch(e) { alert("Error uploading"); }
+                };
+            };
+            reader.readAsDataURL(input.files[0]);
+        };
     </script>
 </body>
 </html>
