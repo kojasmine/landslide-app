@@ -83,7 +83,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v115-Overwrite</div>
+    <div class="debug-label">v116-FixSave</div>
     <input type="file" id="stakeCamInput" accept="image/*" capture="environment" style="display:none" onchange="window.handleStakePhoto(this)">
     <div id="map"></div>
     <div class="measure-box" id="measureBox">
@@ -197,7 +197,18 @@
         let isStaking = false;
         function startStakingMode() {
             toggleMenu();
-            if(stakes.length > 0) { if(confirm("Start new staking session? This will clear current stakes.")) clearMap(); }
+            if(stakes.length > 0) { 
+                if(confirm("Start new staking session? This will clear current stakes.")) {
+                    clearMap();
+                    // *** FIX: FORGET OLD PROJECT ID ON NEW SESSION ***
+                    currentProjectID = null;
+                    currentProjectName = null;
+                }
+            } else {
+                // Safe to assume new session even if no stakes, reset to be sure
+                currentProjectID = null;
+                currentProjectName = null;
+            }
             isStaking = true;
             document.getElementById('stakingPanel').classList.add('active');
             if(currentLatLng) map.flyTo(currentLatLng, 20);
@@ -210,15 +221,23 @@
             if(isHiking) { const s = stakes[stakes.length-1]; requestStakePhoto(s.id); }
         }
         
-        // *** FIXED SAVE LOGIC WITH OVERWRITE ***
+        // *** SMART SAVE LOGIC ***
         async function saveStakingProject(forceId = null) {
             if(!currentUserId) return alert("Please login to save.");
             if(stakes.length === 0) return alert("No stakes to save.");
             
             let name = currentProjectName;
-            if(!forceId) { // Only ask if not forcing overwrite
+            
+            // If we are forcing an ID (recursion), skip prompt
+            if(!forceId) {
                 name = prompt("Name this Boundary Project:", currentProjectName || "");
                 if(!name) return;
+            }
+
+            // *** CRITICAL FIX: If user changed the name, treat as NEW file (ID = null)
+            let idToSend = forceId || currentProjectID;
+            if (currentProjectName && name !== currentProjectName) {
+                idToSend = null; // Force check for duplicates instead of overwriting old ID
             }
 
             try {
@@ -227,7 +246,7 @@
                     headers:{'Content-Type':'application/json'}, 
                     body: JSON.stringify({ 
                         userId: currentUserId, 
-                        id: forceId || currentProjectID, // Use forceId if recursive
+                        id: idToSend, // Use smart ID
                         name: name, 
                         data: { properties: savedItems, stakes: stakes } 
                     }) 
@@ -237,14 +256,14 @@
                 if(json.success) { 
                     alert("Boundary Saved Successfully!"); 
                     currentProjectName = name;
-                    currentProjectID = json.newId; // Store ID for future updates
+                    currentProjectID = json.newId; // Remember new ID
                     exitStakingMode(); 
                     clearMap(); 
                 } 
                 else if (json.status === 'EXISTS') {
                     // ASK TO OVERWRITE
                     if(confirm(`"${name}" already exists. Overwrite it?`)) {
-                        saveStakingProject(json.existingId); // Call again with ID
+                        saveStakingProject(json.existingId); // Recursive call with existing ID to force overwrite
                     }
                 }
                 else { alert("Error: " + json.message); }
@@ -379,7 +398,17 @@
         }
         async function loadProject(id) {
             const res = await fetch(`/api/cloud/load/${currentUserId}`); const all = await res.json(); const p = all.find(x => x.id === id);
-            if(p) { const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data; clearMap(); if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); document.getElementById('listModal').classList.remove('open'); if(stakes.length) map.flyTo([stakes[0].lat, stakes[0].lng], 19); }
+            if(p) { 
+                const d = (typeof p.data === 'string') ? JSON.parse(p.data) : p.data; 
+                clearMap(); 
+                if(d.stakes) d.stakes.forEach(s => { stakes.push(s); addStakeMarker(s); }); 
+                document.getElementById('listModal').classList.remove('open'); 
+                if(stakes.length) map.flyTo([stakes[0].lat, stakes[0].lng], 19); 
+                
+                // *** RESTORE STATE ***
+                currentProjectID = p.id;
+                currentProjectName = p.name;
+            }
         }
         async function loadHike(id) {
             document.getElementById('listModal').classList.remove('open'); const res = await fetch(`/api/hikes/get/${id}`); const h = await res.json();
