@@ -32,11 +32,13 @@
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
         .stat-val { font-size: 20px; font-weight: bold; color: #4CAF50; }
         .stat-label { font-size: 10px; color: #ccc; margin-top: 1px; }
+        
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
@@ -125,7 +127,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v136-FixedIcons</div>
+    <div class="debug-label">v137-Rescue</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
@@ -138,12 +140,14 @@
         <div class="clear-measure" onclick="toggleMeasureMode()" style="margin-left:10px; font-size:18px">✕</div>
     </div>
     
+    <!-- STAKING PANEL -->
     <div class="mode-panel" id="stakingPanel">
         <div class="mode-title">📍 Boundary Staking Mode</div>
         <div class="panel-controls"><button class="panel-btn btn-action" onclick="addStakeAtUserLoc()"><span class="material-icons">my_location</span> Stake Here</button></div>
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
 
+    <!-- HIKE PANEL -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
@@ -175,6 +179,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
+    <!-- APP BAR WITH SUGGESTIONS -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -232,191 +237,28 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // *** 1. MAP SETUP ***
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
         const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
-        let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email'), stakes = [], stakeMarkers = {}, savedItems = [], activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null, currentProjectName = null, currentProjectID = null;
+        
+        let currentUserId = localStorage.getItem('landslide_auth_id');
+        let currentUserEmail = localStorage.getItem('landslide_auth_email');
+        let stakes = []; 
+        let stakeMarkers = {}; 
+        let savedItems = []; 
+        let activeLayer = null; 
+        let userMarker = null; 
+        let currentLatLng = null; 
+        let selectedStakeId = null; 
+        let currentProjectName = null; 
+        let currentProjectID = null;
         let isTakingHikePhoto = false;
 
         loadFromLocalStorage();
         updateMenuLoginText();
         
+        // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
         let debounceTimer;
-
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            const val = this.value;
-            if(val.length < 3) { suggestionsBox.style.display = 'none'; return; }
-            debounceTimer = setTimeout(() => fetchSuggestions(val), 600);
-        });
-
-        async function fetchSuggestions(query) {
-            try {
-                const res = await fetch(`/api/address/suggestions?q=${encodeURIComponent(query)}`);
-                const results = await res.json();
-                suggestionsBox.innerHTML = '';
-                if(results.length > 0) {
-                    results.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerText = item.label;
-                        div.onclick = () => {
-                            searchInput.value = item.label;
-                            suggestionsBox.style.display = 'none';
-                            map.flyTo([item.lat, item.lng], 18);
-                        };
-                        suggestionsBox.appendChild(div);
-                    });
-                    suggestionsBox.style.display = 'block';
-                } else {
-                    suggestionsBox.style.display = 'none';
-                }
-            } catch(e) { console.error("Suggest error", e); }
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                suggestionsBox.style.display = 'none';
-            }
-        });
-
-        map.locate({watch:true, enableHighAccuracy:true});
-        map.on('locationfound', (e)=>{
-            currentLatLng = e.latlng;
-            if(!userMarker){
-                const h = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
-                userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:h, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
-            } else { userMarker.setLatLng(e.latlng); }
-            if(isHiking && !isPaused) updateHikePosition(e.latlng);
-        });
-        
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                const el = document.getElementById('gpsArrow');
-                if(el) el.style.transform = `rotate(${e.webkitCompassHeading || Math.abs(e.alpha - 360)}deg)`;
-            });
-        }
-        
-        window.addEventListener('beforeunload', function (e) {
-            if (isHiking || (isStaking && stakes.length > 0)) { e.preventDefault(); e.returnValue = ''; }
-        });
-
-        function goHome() {
-            if((isHiking || isStaking) && !confirm("Discard work?")) return;
-            exitStakingMode(); stopHikeAndClear();
-            document.getElementById('sideMenu').classList.remove('open');
-            document.getElementById('menuOverlay').classList.remove('active');
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('listModal').classList.remove('open');
-            document.getElementById('imageModal').style.display = 'none';
-            document.getElementById('card').classList.remove('active');
-            document.querySelector('.measure-box').classList.remove('visible');
-            isMeasuring = false; measureLayer.clearLayers();
-            if(currentLatLng) map.flyTo(currentLatLng, 18);
-        }
-
-        function togglePassword() {
-            const i = document.getElementById('passInput');
-            const ico = document.querySelector('.password-toggle');
-            if (i.type === 'password') { i.type='text'; ico.innerText='visibility_off'; } 
-            else { i.type='password'; ico.innerText='visibility'; }
-        }
-
-        let isStaking = false;
-        function startStakingMode() {
-            toggleMenu();
-            if(stakes.length > 0 && confirm("Clear current stakes?")) { 
-                clearMap(); 
-                currentProjectID=null; 
-                currentProjectName=null; 
-            }
-            isStaking = true;
-            document.getElementById('stakingPanel').classList.add('active');
-            if(currentLatLng) map.flyTo(currentLatLng, 20);
-        }
-        function exitStakingMode() { isStaking = false; document.getElementById('stakingPanel').classList.remove('active'); }
-        function addStakeAtUserLoc() {
-            if(!currentLatLng) return alert("No GPS");
-            createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + getNextStakeNumber());
-            if(isHiking) requestStakePhoto(stakes[stakes.length-1].id);
-        }
-        
-        async function saveStakingProject(forceId=null) {
-            if(!currentUserId) return alert("Login to save.");
-            if(!stakes.length) return alert("No stakes.");
-            let name = currentProjectName;
-            
-            if(!forceId) { name = prompt("Project Name:", currentProjectName||""); if(!name) return; }
-            
-            let idToSend = forceId || currentProjectID;
-            if (currentProjectName && name !== currentProjectName) idToSend = null;
-
-            try {
-                const res = await fetch('/api/cloud/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: currentUserId, id: idToSend, name, data: { properties: savedItems, stakes: stakes } }) });
-                const json = await res.json();
-                if(json.success) { 
-                    alert("Saved!"); 
-                    currentProjectName=name; 
-                    currentProjectID=json.newId; 
-                    exitStakingMode(); 
-                    clearMap(); 
-                }
-                else if (json.status==='EXISTS') { 
-                    if(confirm(`"${name}" exists. Overwrite?`)) {
-                        saveStakingProject(json.existingId);
-                    } else {
-                        const newName = prompt("Enter different name:");
-                        if(newName) {
-                            currentProjectName = newName;
-                            saveStakingProject(null);
-                        }
-                    }
-                }
-                else alert(json.message);
-            } catch(e) { alert("Error"); }
-        }
-
-        let isHiking=false, isPaused=false, hikePath=[], hikePolyline=null, hikeSeconds=0, hikeInterval=null, hikeStakes=[];
-        function openHikePanel() { toggleMenu(); document.getElementById('hikeStartUI').style.display='flex'; document.getElementById('hikeActiveUI').style.display='none'; document.getElementById('hikePanel').classList.add('active'); if(currentLatLng) map.flyTo(currentLatLng, 19); }
-        function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
-        
-        function startHikeRecording() {
-            document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
-            if(activeLayer) map.removeLayer(activeLayer); 
-            stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
-            stakes = []; 
-            
-            isHiking=true; isPaused=false; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
-            hikePolyline=L.polyline([],{color:'#FF9800',weight:6}).addTo(map);
-            hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000);
-            if(currentLatLng) updateHikePosition(currentLatLng);
-        }
-        
-        function takeHikePhoto() {
-            if(!currentLatLng) return alert("No GPS");
-            document.getElementById('stakeCamInput').click();
-            isTakingHikePhoto = true;
-        }
-
-        function toggleHikePause() {
-            isPaused=!isPaused; const btn=document.getElementById('btnPause'); 
-            if(isPaused) { btn.innerHTML='<span class="material-icons">play_arrow</span>'; btn.style.background='#4CAF50'; btn.style.color='white'; }
-            else { btn.innerHTML='<span class="material-icons">pause</span>'; btn.style.background='#FFC107'; btn.style.color='black'; if(currentLatLng) updateHikePosition(currentLatLng); }
-        }
-        function updateHikePosition(ll) {
-            if(hikePath.length > 0 && map.distance(ll, hikePath[hikePath.length-1]) < 4) return;
-            hikePath.push(ll); hikePolyline.setLatLngs(hikePath); 
-            let d=0; for(let i=0; i<hikePath.length-1; i++) d+=map.distance(hikePath[i], hikePath[i+1]);
-            document.getElementById('hikeDist').innerText=(d*0.000621371).toFixed(2);
-        }
-        function stopHikeAndClear() { if(confirm("Discard hike?")) { isHiking=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); if(hikePolyline) map.removeLayer(hikePolyline); } }
-        async function finishAndSaveHike() {
-            isHiking=false; clearInterval(hikeInterval); const n=prompt("Name Hike:"); if(!n) { isHiking=true; hikeInterval=setInterval(hikeTimerTick,1000); return; }
-            try { const res=await fetch('/api/hikes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,name:n,distance:parseFloat(document.getElementById('hikeDist').innerText)*5280,path:hikePath,stakes:hikeStakes})}); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); }
-        }
-
-        function createStake(lat, lng, label) { const s={id:Date.now(),lat,lng,label,number:getNextStakeNumber(),photos:[]}; stakes.push(s); addStakeMarker(s); saveToStorage(); if(isHiking) hikeStakes.push(s); }
-        function getNextStakeNumber() { return stakes.length+1; }
-        function addStakeMarker(s) { const m=L.marker([s.lat,s.
