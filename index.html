@@ -22,6 +22,15 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
         .icon-btn:hover { background: #f0f0f0; }
 
+        /* WEATHER WIDGET (NEW) */
+        .weather-widget { 
+            position: fixed; top: 70px; left: 10px; z-index: 10002; 
+            background: rgba(255,255,255,0.9); padding: 5px 10px; 
+            border-radius: 20px; display: flex; align-items: center; gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-size: 13px; font-weight: 600;
+            display: none; /* Hidden until loaded */
+        }
+
         /* SUGGESTIONS */
         #suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; color: #333; }
@@ -60,13 +69,21 @@
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
         
-        /* LOGIN */
+        /* LOGIN MODAL (REDESIGNED) */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
         .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
+        
+        /* TABS */
+        .login-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        .login-tab { flex: 1; padding: 10px; cursor: pointer; font-weight: 600; color: #888; }
+        .login-tab.active { color: #5E35B1; border-bottom: 2px solid #5E35B1; }
+
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .password-wrapper { position: relative; width: 100%; margin: 8px 0; }
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
-        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
+        
+        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor: pointer; }
+        .google-btn { width: 100%; padding: 12px; background: white; color: #333; border: 1px solid #ddd; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         /* LISTS (RIGHT DRAWER) */
         .right-drawer { 
@@ -93,10 +110,9 @@
         }
         .measure-box.visible { display: flex; }
         .measure-icon { color: #FF9800; font-size: 20px; }
-        
-        /* MEASURE DOT (Draggable) */
         .measure-dot { background: #FF9800; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; }
 
+        /* MARKERS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
@@ -128,12 +144,19 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v139-PhotoFixed</div>
+    <div class="debug-label">v140-WeatherShare</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
 
+    <!-- NEW WEATHER WIDGET -->
+    <div class="weather-widget" id="weatherWidget">
+        <span id="weatherIcon">☀️</span>
+        <span id="weatherTemp">--°F</span>
+    </div>
+
+    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -180,7 +203,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
-    <!-- APP BAR -->
+    <!-- APP BAR WITH SUGGESTIONS -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -211,16 +234,28 @@
         <div style="height: 50px;"></div>
     </div>
 
+    <!-- NEW LOGICAL LOGIN MODAL -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <h2>Welcome</h2>
+            <div class="login-tabs">
+                <div class="login-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</div>
+                <div class="login-tab" id="tabSignUp" onclick="switchAuthTab('signup')">New Account</div>
+            </div>
+            
             <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
             <div class="password-wrapper">
                 <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
                 <span class="material-icons password-toggle" onclick="togglePassword()">visibility</span>
             </div>
-            <button class="login-btn" onclick="doLogin()">Login</button>
-            <button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button>
+            
+            <button id="authBtn" class="login-btn" onclick="handleAuthAction()">Sign In</button>
+            
+            <!-- GOOGLE PLACEHOLDER -->
+            <button class="google-btn" onclick="alert('Google Login requires API setup in Google Cloud Console.')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18"> 
+                Continue with Google
+            </button>
+
             <button style="background:none; border:none; margin-top:15px; text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
     </div>
@@ -247,6 +282,16 @@
         loadFromLocalStorage();
         updateMenuLoginText();
         
+        // --- SHARE LINK LOGIC ---
+        // Check if user opened a shared link (e.g. ?hike_id=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedHikeId = urlParams.get('hike_id');
+        if (sharedHikeId) {
+            // Auto-load hike on startup
+            setTimeout(() => loadHike(sharedHikeId), 1000);
+            window.history.replaceState({}, document.title, "/"); // Clean URL
+        }
+
         // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
@@ -296,8 +341,31 @@
                 const h = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
                 userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:h, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
             } else { userMarker.setLatLng(e.latlng); }
+            
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
+            
+            // WEATHER FETCH ONCE
+            if(document.getElementById('weatherWidget').style.display === 'none') fetchWeather(e.latlng.lat, e.latlng.lng);
         });
+        
+        // --- WEATHER ---
+        async function fetchWeather(lat, lng) {
+            try {
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&temperature_unit=fahrenheit`);
+                const d = await r.json();
+                if(d.current_weather) {
+                    const t = d.current_weather.temperature;
+                    const c = d.current_weather.weathercode;
+                    let icon = "☀️";
+                    if(c > 3) icon = "☁️";
+                    if(c > 50) icon = "🌧";
+                    if(c > 70) icon = "❄️";
+                    document.getElementById('weatherIcon').innerText = icon;
+                    document.getElementById('weatherTemp').innerText = Math.round(t) + "°F";
+                    document.getElementById('weatherWidget').style.display = 'flex';
+                }
+            } catch(e) {}
+        }
         
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
@@ -324,6 +392,31 @@
             if(currentLatLng) map.flyTo(currentLatLng, 18);
         }
 
+        // --- AUTH & TABS ---
+        let isAuthLoginMode = true;
+        function switchAuthTab(mode) {
+            const btn = document.getElementById('authBtn');
+            const tabIn = document.getElementById('tabSignIn');
+            const tabUp = document.getElementById('tabSignUp');
+            
+            if (mode === 'signin') {
+                isAuthLoginMode = true;
+                tabIn.classList.add('active'); tabUp.classList.remove('active');
+                btn.innerText = "Sign In";
+                btn.style.background = "#5E35B1";
+            } else {
+                isAuthLoginMode = false;
+                tabUp.classList.add('active'); tabIn.classList.remove('active');
+                btn.innerText = "Create Account";
+                btn.style.background = "#4CAF50";
+            }
+        }
+
+        function handleAuthAction() {
+            if (isAuthLoginMode) doLogin();
+            else doRegister();
+        }
+
         function togglePassword() {
             const i = document.getElementById('passInput');
             const ico = document.querySelector('.password-toggle');
@@ -348,7 +441,7 @@
         function addStakeAtUserLoc() {
             if(!currentLatLng) return alert("No GPS");
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + getNextStakeNumber());
-            // Standard stake mode - photo is optional via popup
+            if(isHiking) requestStakePhoto(stakes[stakes.length-1].id);
         }
         
         async function saveStakingProject(forceId=null) {
@@ -460,12 +553,7 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- MEASURE TOOL (UPDATED) ---
-        let isMeasuring=false;
-        let measureMarkers=[];
-        let measurePolyline=null;
-        let measureLayer=L.layerGroup().addTo(map);
-
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
         function toggleMeasureMode(){ 
             isMeasuring=!isMeasuring; 
             const box = document.querySelector('.measure-box');
@@ -473,9 +561,7 @@
                 box.classList.add('visible');
                 document.getElementById('measureText').style.display='inline';
                 document.getElementById('distVal').style.display='none';
-                measureLayer.clearLayers(); 
-                measureMarkers=[];
-                measurePolyline=null;
+                measureLayer.clearLayers(); measurePoints=[]; measurePolyline=null; measureMarkers=[];
                 document.getElementById('card').classList.remove('active'); 
             } else {
                 box.classList.remove('visible');
@@ -483,42 +569,29 @@
             }
         }
 
+        let measureMarkers=[];
+        let measurePolyline=null;
+        
         function addMeasurePoint(ll) { 
-            // Update UI on first click
             document.getElementById('measureText').style.display='none';
             document.getElementById('distVal').style.display='inline';
             
-            // Create DRAGGABLE marker
-            const m = L.marker(ll, {
-                draggable: true,
-                icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] })
-            }).addTo(measureLayer);
-            
-            m.on('drag', updateMeasureCalc); // Recalc while dragging
-            m.on('dragend', updateMeasureCalc); // Final recalc
-            
+            const m = L.marker(ll, { draggable: true, icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] }) }).addTo(measureLayer);
+            m.on('drag', updateMeasureCalc); 
+            m.on('dragend', updateMeasureCalc); 
             measureMarkers.push(m);
             updateMeasureCalc();
         }
 
         function updateMeasureCalc() {
             if(measureMarkers.length < 2) return;
-            
-            // Extract coordinates from markers
             const latlngs = measureMarkers.map(m => m.getLatLng());
             
-            // Update or Create Line
-            if(!measurePolyline) {
-                measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
-            } else {
-                measurePolyline.setLatLngs(latlngs);
-            }
+            if(!measurePolyline) measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
+            else measurePolyline.setLatLngs(latlngs);
             
-            // Calculate Total Distance
             let dist = 0;
-            for(let i=0; i<latlngs.length-1; i++) {
-                dist += latlngs[i].distanceTo(latlngs[i+1]);
-            }
+            for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
             document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
         }
         
@@ -533,23 +606,23 @@
                 const d=new Date(i.updated_at||i.start_time).toLocaleDateString(); 
                 const div=document.createElement('div'); div.className="list-item"; 
                 if(type==='project') {
-                    div.innerHTML=`
-                        <div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div>
-                        <div style="display:flex;gap:10px">
-                            <button class="popup-btn" onclick="loadProject(${i.id})">👁</button>
-                            <button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>
-                        </div>`; 
+                    div.innerHTML=`<div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div><div style="display:flex;gap:10px"><button class="popup-btn" onclick="loadProject(${i.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button></div>`; 
                 } else {
                     const mi = (i.distance_ft / 5280).toFixed(2);
-                    div.innerHTML=`
-                        <div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div>
-                        <div style="display:flex;gap:10px">
-                            <button class="popup-btn" onclick="loadHike(${i.id})">👁</button>
-                            <button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>
-                        </div>`;
+                    // ADDED SHARE BUTTON HERE
+                    div.innerHTML=`<div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div><div style="display:flex;gap:10px"><button class="popup-btn" onclick="shareHike(${i.id})" style="color:#007bff"><span class="material-icons" style="font-size:16px">share</span></button><button class="popup-btn" onclick="loadHike(${i.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button></div>`;
                 }
                 c.appendChild(div); 
             }); 
+        }
+        
+        function shareHike(id) {
+            const url = window.location.origin + "/?hike_id=" + id;
+            if(navigator.share) {
+                navigator.share({ title: "My Hike", url: url });
+            } else {
+                prompt("Copy Hike Link:", url);
+            }
         }
         
         async function loadProject(id) { 
@@ -596,18 +669,15 @@
         
         // --- PHOTO HANDLER ---
         window.handleStakePhoto = async function(input) {
-            // Logic for Hike photos vs Stake photos
             if(!input.files[0]) return;
             const file = input.files[0];
             
-            // If taking photo during hike, create stake NOW
             if(isTakingHikePhoto) {
                 if(!currentLatLng) return alert("No GPS");
                 let n = getNextStakeNumber();
                 createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-                // The newest stake is the one we want
                 selectedStakeId = stakes[stakes.length-1].id;
-                isTakingHikePhoto = false; // Reset flag
+                isTakingHikePhoto = false;
             }
 
             if(!selectedStakeId) return;
@@ -637,8 +707,7 @@
                 s.photos.push(url);
                 updateStakePopup(s);
                 saveToStorage();
-                // FIX: Open the popup immediately to confirm photo was added
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup();
+                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); // FIX: Show popup immediately
             }
         }
     </script>
