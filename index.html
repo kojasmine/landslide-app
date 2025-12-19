@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
@@ -251,10 +253,42 @@
             <button id="authBtn" class="login-btn" onclick="handleAuthAction()">Sign In</button>
             
             <!-- GOOGLE PLACEHOLDER -->
-            <button class="google-btn" onclick="alert('Google Login requires API setup in Google Cloud Console.')">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="18"> 
-                Continue with Google
-            </button>
+            <!-- LOGIN MODAL -->
+    <div class="login-overlay" id="loginModal">
+        <div class="login-card">
+            <h2>Welcome</h2>
+            
+            <!-- GOOGLE BUTTON CONFIGURATION -->
+            <!-- IMPORTANT: Replace YOUR_CLIENT_ID_HERE with the key from Google Cloud -->
+            <div id="g_id_onload"
+                 data-client_id="199740156322-c1sfj6h650af7j45snr2ffie53ia6v2s.apps.googleusercontent.com"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+            
+            <!-- THE ACTUAL BUTTON -->
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left"
+                 data-width="280"> <!-- Width to match your modal -->
+            </div>
+            
+            <div style="margin: 15px 0; font-size: 12px; color: #888;">— OR —</div>
+
+            <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
+            <div class="password-wrapper">
+                <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
+                <span class="material-icons password-toggle" onclick="togglePassword()">visibility</span>
+            </div>
+            <button class="login-btn" onclick="doLogin()">Login</button>
+            <button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button>
+            <button style="background:none; border:none; margin-top:15px; text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
 
             <button style="background:none; border:none; margin-top:15px; text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
@@ -710,6 +744,33 @@
                 if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); // FIX: Show popup immediately
             }
         }
+
+    // --- GOOGLE LOGIN HANDLER ---
+        async function handleGoogleLogin(response) {
+            // Google sends a "Credential" (Token)
+            console.log("Google Token Received");
+            
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: response.credential })
+                });
+                
+                const d = await res.json();
+                
+                if(d.success) {
+                    localStorage.setItem('landslide_auth_id', d.user.id);
+                    localStorage.setItem('landslide_auth_email', d.user.email);
+                    window.location.reload();
+                } else {
+                    alert("Google Login Failed: " + d.message);
+                }
+            } catch(e) {
+                alert("Server connection error");
+            }
+        }
+
     </script>
 </body>
 </html>
