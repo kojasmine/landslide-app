@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
+    
+    <!-- ICONS & FONTS -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- GOOGLE LOGIN LIBRARY -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
@@ -22,16 +28,26 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
         .icon-btn:hover { background: #f0f0f0; }
 
-        /* SUGGESTIONS */
+        /* WEATHER WIDGET */
+        .weather-widget { 
+            position: fixed; top: 70px; left: 10px; z-index: 10002; 
+            background: rgba(255,255,255,0.9); padding: 5px 10px; 
+            border-radius: 20px; display: flex; align-items: center; gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-size: 13px; font-weight: 600;
+            display: none; 
+        }
+
+        /* SEARCH SUGGESTIONS */
         #suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; color: #333; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: #f0f0f0; }
 
-        /* PANELS */
+        /* ACTION PANELS */
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
@@ -40,14 +56,16 @@
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
+        
         .btn-stop { background: #444; color: #ff5252; } 
         .btn-save { background: #2196F3; color: white; }
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+        
         #hikeActiveUI .mode-title { display: none; } #hikeActiveUI { padding-top: 5px; }
 
-        /* MENU */
+        /* SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
@@ -59,16 +77,15 @@
         .menu-overlay.active { display: block; }
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
-        
-        /* LOGIN */
+
+        /* LOGIN & LIST MODALS */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
         .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .password-wrapper { position: relative; width: 100%; margin: 8px 0; }
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
-        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
-
-        /* LISTS (RIGHT DRAWER) */
+        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor:pointer; }
+        
         .right-drawer { 
             position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; 
             background: white; z-index: 20002; 
@@ -93,10 +110,9 @@
         }
         .measure-box.visible { display: flex; }
         .measure-icon { color: #FF9800; font-size: 20px; }
-        
-        /* MEASURE DOT (Draggable) */
         .measure-dot { background: #FF9800; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; }
 
+        /* MARKERS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
@@ -106,6 +122,7 @@
         .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-size: 13px; font-weight: 600; }
         .popup-delete { color: #ff5252; border-color: #ffcdd2; background: #ffebee; }
 
+        /* IMAGE VIEWER */
         #imageModal { position: fixed; inset: 0; z-index: 50000; display: none; }
         .img-backdrop { position: absolute; inset: 0; background: black; }
         .img-content { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -113,6 +130,7 @@
         .img-controls { margin-top: 20px; display: flex; gap: 20px; }
         .img-ctrl-btn { color: white; text-decoration: none; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; }
 
+        /* INFO CARD */
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .info-card.active { transform: translateY(0); }
         .prop-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 2px; }
@@ -128,12 +146,19 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v139-PhotoFixed</div>
+    <div class="debug-label">v141-GoogleReady</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
 
+    <!-- WEATHER WIDGET -->
+    <div class="weather-widget" id="weatherWidget">
+        <span id="weatherIcon">☀️</span>
+        <span id="weatherTemp">--°F</span>
+    </div>
+
+    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -211,9 +236,30 @@
         <div style="height: 50px;"></div>
     </div>
 
+    <!-- LOGIN MODAL WITH GOOGLE PLACEHOLDER -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
             <h2>Welcome</h2>
+            
+            <!-- GOOGLE BUTTON CONTAINER -->
+            <!-- Replace YOUR_GOOGLE_CLIENT_ID with your actual ID from Google Cloud -->
+            <div id="g_id_onload"
+                 data-client_id="199740156322-c1sfj6h650af7j45snr2ffie53ia6v2s.apps.googleusercontent.com"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left"
+                 data-width="280">
+            </div>
+            
+            <div style="margin: 15px 0; font-size: 12px; color: #888;">— OR —</div>
+
             <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
             <div class="password-wrapper">
                 <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
@@ -247,6 +293,29 @@
         loadFromLocalStorage();
         updateMenuLoginText();
         
+        // --- GOOGLE LOGIN HANDLER ---
+        async function handleGoogleLogin(response) {
+            console.log("Google Token Received");
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: response.credential })
+                });
+                const d = await res.json();
+                if(d.success) {
+                    localStorage.setItem('landslide_auth_id', d.user.id);
+                    localStorage.setItem('landslide_auth_email', d.user.email);
+                    window.location.reload();
+                } else {
+                    alert("Google Login Failed: " + d.message);
+                }
+            } catch(e) {
+                // If server endpoint isn't set up yet, warn user
+                alert("Google Login not fully configured on server.");
+            }
+        }
+
         // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
@@ -296,8 +365,30 @@
                 const h = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
                 userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:h, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
             } else { userMarker.setLatLng(e.latlng); }
+            
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
+            
+            // WEATHER
+            if(document.getElementById('weatherWidget').style.display === 'none') fetchWeather(e.latlng.lat, e.latlng.lng);
         });
+        
+        async function fetchWeather(lat, lng) {
+            try {
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&temperature_unit=fahrenheit`);
+                const d = await r.json();
+                if(d.current_weather) {
+                    const t = d.current_weather.temperature;
+                    const c = d.current_weather.weathercode;
+                    let icon = "☀️";
+                    if(c > 3) icon = "☁️";
+                    if(c > 50) icon = "🌧";
+                    if(c > 70) icon = "❄️";
+                    document.getElementById('weatherIcon').innerText = icon;
+                    document.getElementById('weatherTemp').innerText = Math.round(t) + "°F";
+                    document.getElementById('weatherWidget').style.display = 'flex';
+                }
+            } catch(e) {}
+        }
         
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
@@ -503,22 +594,13 @@
 
         function updateMeasureCalc() {
             if(measureMarkers.length < 2) return;
-            
-            // Extract coordinates from markers
             const latlngs = measureMarkers.map(m => m.getLatLng());
             
-            // Update or Create Line
-            if(!measurePolyline) {
-                measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
-            } else {
-                measurePolyline.setLatLngs(latlngs);
-            }
+            if(!measurePolyline) measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
+            else measurePolyline.setLatLngs(latlngs);
             
-            // Calculate Total Distance
             let dist = 0;
-            for(let i=0; i<latlngs.length-1; i++) {
-                dist += latlngs[i].distanceTo(latlngs[i+1]);
-            }
+            for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
             document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
         }
         
@@ -596,18 +678,15 @@
         
         // --- PHOTO HANDLER ---
         window.handleStakePhoto = async function(input) {
-            // Logic for Hike photos vs Stake photos
             if(!input.files[0]) return;
             const file = input.files[0];
             
-            // If taking photo during hike, create stake NOW
             if(isTakingHikePhoto) {
                 if(!currentLatLng) return alert("No GPS");
                 let n = getNextStakeNumber();
                 createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-                // The newest stake is the one we want
                 selectedStakeId = stakes[stakes.length-1].id;
-                isTakingHikePhoto = false; // Reset flag
+                isTakingHikePhoto = false;
             }
 
             if(!selectedStakeId) return;
@@ -637,8 +716,7 @@
                 s.photos.push(url);
                 updateStakePopup(s);
                 saveToStorage();
-                // FIX: Open the popup immediately to confirm photo was added
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup();
+                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); // FIX: Show popup immediately
             }
         }
     </script>
