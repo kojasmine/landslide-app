@@ -111,12 +111,16 @@
         .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-size: 13px; font-weight: 600; }
         .popup-delete { color: #ff5252; border-color: #ffcdd2; background: #ffebee; }
 
+        /* IMAGE VIEWER */
         #imageModal { position: fixed; inset: 0; z-index: 50000; display: none; }
         .img-backdrop { position: absolute; inset: 0; background: black; }
         .img-content { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .img-content img { max-width: 100%; max-height: 80vh; object-fit: contain; }
         .img-controls { margin-top: 20px; display: flex; gap: 20px; }
         .img-ctrl-btn { color: white; text-decoration: none; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; }
+        
+        /* NEW: Geotag Display */
+        .img-geotag { margin-top: 10px; color: #ddd; font-family: monospace; font-size: 13px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; }
 
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .info-card.active { transform: translateY(0); }
@@ -133,7 +137,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v149-HikeFix</div>
+    <div class="debug-label">v149-Geotag</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
@@ -245,7 +249,7 @@
         </div>
     </div>
     
-    <!-- RIGHT SIDE DRAWER -->
+    <!-- RIGHT SIDE DRAWER FOR LISTS -->
     <div class="right-drawer" id="listModal">
         <div class="modal-header">
             <span id="listTitle">Saved Items</span>
@@ -254,7 +258,19 @@
         <div class="modal-list" id="listContainer"></div>
     </div>
 
-    <div id="imageModal"><div class="img-backdrop" onclick="closeImageModal()"></div><div class="img-content"><img id="modalImage" src=""><div class="img-controls"><a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a><a href="#" class="img-ctrl-btn" style="background:#4CAF50" color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a><a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a></div></div></div>
+    <!-- IMAGE PREVIEW WITH GEOTAG -->
+    <div id="imageModal">
+        <div class="img-backdrop" onclick="closeImageModal()"></div>
+        <div class="img-content">
+            <img id="modalImage" src="">
+            <div class="img-controls">
+                <a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a>
+                <a href="#" class="img-ctrl-btn" style="background:#4CAF50" color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a>
+                <a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a>
+            </div>
+            <div id="imgGeoTag" class="img-geotag"></div>
+        </div>
+    </div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -444,7 +460,7 @@
             if(currentLatLng) updateHikePosition(currentLatLng);
         }
         
-        // *** CRITICAL PHOTO FIX: Create Stake FIRST, then Photo ***
+        // *** NEW INSTANT PHOTO LOGIC ***
         function takeHikePhoto() {
             if(!currentLatLng) return alert("No GPS");
             
@@ -509,7 +525,7 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- MEASURE TOOL (FIXED) ---
+        // --- MEASURE TOOL ---
         let isMeasuring=false;
         let measureMarkers=[];
         let measurePolyline=null;
@@ -572,7 +588,6 @@
                 const d=new Date(i.updated_at||i.start_time).toLocaleDateString(); 
                 const div=document.createElement('div'); div.className="list-item"; 
                 if(type==='project') {
-                    // FIX: ADDED EYE ICON FOR BOUNDARIES
                     div.innerHTML=`
                         <div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div>
                         <div style="display:flex;gap:10px">
@@ -581,7 +596,7 @@
                         </div>`; 
                 } else {
                     const mi = (i.distance_ft / 5280).toFixed(2);
-                    // FIX: REMOVED CAR ICON FROM HIKES
+                    // FIXED: REMOVED CAR, KEPT SHARE
                     div.innerHTML=`
                         <div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div>
                         <div style="display:flex;gap:10px">
@@ -654,8 +669,6 @@
             const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value; 
             try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} 
         }
-        
-        // SMART REGISTER FIX
         async function doRegister() { 
             const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value, cp=document.getElementById('regConfirmPass').value; 
             if(p !== cp) return alert("Passwords mismatch");
@@ -681,7 +694,16 @@
         window.handleStakePhoto = async function(input) {
             if(!input.files[0]) return;
             const file = input.files[0];
-            if(!selectedStakeId) return; // Should already be set by takeHikePhoto()
+            
+            if(isTakingHikePhoto) {
+                if(!currentLatLng) return alert("No GPS");
+                let n = getNextStakeNumber();
+                createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
+                selectedStakeId = stakes[stakes.length-1].id;
+                isTakingHikePhoto = false;
+            }
+
+            if(!selectedStakeId) return;
 
             const r=new FileReader(); 
             r.onload=(e)=>{
@@ -708,7 +730,29 @@
                 s.photos.push(url);
                 updateStakePopup(s);
                 saveToStorage();
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); 
+                
+                // *** NEW: SHOW GEOTAG IN MODAL ***
+                if(stakeMarkers[s.id]) {
+                    stakeMarkers[s.id].openPopup();
+                }
+            }
+        }
+        
+        // --- NEW GEOTAG DISPLAY LOGIC ---
+        function openImageModal(url, sid) {
+            currImgUrl = url.startsWith('http') ? url : localStorage.getItem(url);
+            currImgStakeId = sid;
+            document.getElementById('modalImage').src = currImgUrl;
+            document.getElementById('imageModal').style.display = 'flex';
+            
+            // SHOW GEOTAG
+            const s = stakes.find(x => x.id === sid);
+            const tag = document.getElementById('imgGeoTag');
+            if (tag && s) {
+                tag.innerText = `📍 ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`;
+                tag.style.display = 'block';
+            } else if (tag) {
+                tag.style.display = 'none';
             }
         }
     </script>
