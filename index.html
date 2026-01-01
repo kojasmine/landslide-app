@@ -4,10 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Landslide</title>
+    
+    <!-- ICONS & FONTS -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- GOOGLE LOGIN LIBRARY -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <style>
         body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; overflow: hidden; background: #222; }
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
@@ -22,16 +28,26 @@
         .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
         .icon-btn:hover { background: #f0f0f0; }
 
-        /* SUGGESTIONS */
+        /* WEATHER WIDGET */
+        .weather-widget { 
+            position: fixed; top: 70px; left: 10px; z-index: 10002; 
+            background: rgba(255,255,255,0.9); padding: 5px 10px; 
+            border-radius: 20px; display: flex; align-items: center; gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-size: 13px; font-weight: 600;
+            display: none; 
+        }
+
+        /* SEARCH SUGGESTIONS */
         #suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; z-index: 99999; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; color: #333; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: #f0f0f0; }
 
-        /* PANELS */
+        /* ACTION PANELS */
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+        
         .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 15px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 5px 12px; border-radius: 8px; min-width: 70px; }
@@ -40,14 +56,16 @@
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
+        
         .btn-stop { background: #444; color: #ff5252; } 
         .btn-save { background: #2196F3; color: white; }
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+        
         #hikeActiveUI .mode-title { display: none; } #hikeActiveUI { padding-top: 5px; }
 
-        /* MENU */
+        /* SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
@@ -60,13 +78,20 @@
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
         
-        /* LOGIN */
+        /* LOGIN MODAL (REDESIGNED V2) */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
-        .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
+        .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; position: relative; }
+        
+        .login-view, .register-view { width: 100%; transition: opacity 0.3s; }
         .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .password-wrapper { position: relative; width: 100%; margin: 8px 0; }
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
-        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
+        
+        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor: pointer; }
+        .google-btn { width: 100%; padding: 12px; background: white; color: #333; border: 1px solid #ddd; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        .auth-switch { margin-top: 15px; font-size: 13px; color: #666; }
+        .auth-switch span { color: #007bff; cursor: pointer; font-weight: bold; text-decoration: underline; }
 
         /* LISTS (RIGHT DRAWER) */
         .right-drawer { 
@@ -93,10 +118,9 @@
         }
         .measure-box.visible { display: flex; }
         .measure-icon { color: #FF9800; font-size: 20px; }
-        
-        /* MEASURE DOT (Draggable) */
         .measure-dot { background: #FF9800; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; }
 
+        /* MARKERS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; transition: transform 0.1s; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
@@ -128,12 +152,19 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v139-PhotoFixed</div>
+    <div class="debug-label">v142-NewAuth</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
     <div id="map"></div>
 
+    <!-- WEATHER WIDGET -->
+    <div class="weather-widget" id="weatherWidget">
+        <span id="weatherIcon">☀️</span>
+        <span id="weatherTemp">--°F</span>
+    </div>
+
+    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -180,7 +211,7 @@
         <div class="direction-btn" onclick="getDirectionsToSelected()"><span class="material-icons">directions_car</span><span>Direction from here</span></div>
     </div>
 
-    <!-- APP BAR -->
+    <!-- APP BAR WITH SUGGESTIONS -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
@@ -211,17 +242,44 @@
         <div style="height: 50px;"></div>
     </div>
 
+    <!-- NEW LOGICAL LOGIN MODAL -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
-            <h2>Welcome</h2>
-            <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
-            <div class="password-wrapper">
-                <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
-                <span class="material-icons password-toggle" onclick="togglePassword()">visibility</span>
+            
+            <!-- VIEW 1: SIGN IN -->
+            <div id="loginView">
+                <h2>Welcome Back</h2>
+                
+                <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-callback="handleGoogleLogin" data-auto_prompt="false"></div>
+                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left" data-width="280"></div>
+                
+                <div style="margin: 15px 0; font-size: 12px; color: #888;">— OR —</div>
+
+                <input type="email" id="loginEmail" class="login-input" placeholder="Email Address">
+                <div class="password-wrapper">
+                    <input type="password" id="loginPass" class="login-input" placeholder="Password" style="margin:0">
+                </div>
+                
+                <button class="login-btn" onclick="doLogin()">Sign In</button>
+                <div class="auth-switch">Don't have an account? <span onclick="showRegister()">Create one</span></div>
             </div>
-            <button class="login-btn" onclick="doLogin()">Login</button>
-            <button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button>
-            <button style="background:none; border:none; margin-top:15px; text-decoration:underline;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
+
+            <!-- VIEW 2: CREATE ACCOUNT -->
+            <div id="registerView" style="display:none">
+                <h2>Create Account</h2>
+                <input type="email" id="regEmail" class="login-input" placeholder="Email Address">
+                <div class="password-wrapper">
+                    <input type="password" id="regPass" class="login-input" placeholder="Password" style="margin:0">
+                </div>
+                <div class="password-wrapper">
+                    <input type="password" id="regConfirmPass" class="login-input" placeholder="Confirm Password" style="margin:0">
+                </div>
+                
+                <button class="login-btn" style="background:#4CAF50" onclick="doRegister()">Create Account</button>
+                <div class="auth-switch">Already have an account? <span onclick="showLogin()">Sign In</span></div>
+            </div>
+
+            <button style="background:none; border:none; margin-top:15px; text-decoration:underline; color:#666;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
     </div>
     
@@ -247,6 +305,38 @@
         loadFromLocalStorage();
         updateMenuLoginText();
         
+        // --- AUTH UI SWITCHER ---
+        function showRegister() {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('registerView').style.display = 'block';
+        }
+        function showLogin() {
+            document.getElementById('registerView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'block';
+        }
+
+        // --- GOOGLE LOGIN HANDLER ---
+        async function handleGoogleLogin(response) {
+            console.log("Google Token Received");
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: response.credential })
+                });
+                const d = await res.json();
+                if(d.success) {
+                    localStorage.setItem('landslide_auth_id', d.user.id);
+                    localStorage.setItem('landslide_auth_email', d.user.email);
+                    window.location.reload();
+                } else {
+                    alert("Google Login Failed: " + d.message);
+                }
+            } catch(e) {
+                alert("Google Login not fully configured on server.");
+            }
+        }
+
         // --- SEARCH ---
         const searchInput = document.getElementById('searchBox');
         const suggestionsBox = document.getElementById('suggestions');
@@ -296,8 +386,30 @@
                 const h = `<div class="user-loc-wrapper"><div id="gpsArrow" class="user-arrow"></div><div class="user-dot"></div></div>`;
                 userMarker = L.marker(e.latlng, { icon: L.divIcon({className:'cg', html:h, iconSize:[40,40], iconAnchor:[20,20]}), zIndexOffset:1000 }).addTo(map);
             } else { userMarker.setLatLng(e.latlng); }
+            
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
+            
+            // WEATHER
+            if(document.getElementById('weatherWidget').style.display === 'none') fetchWeather(e.latlng.lat, e.latlng.lng);
         });
+        
+        async function fetchWeather(lat, lng) {
+            try {
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&temperature_unit=fahrenheit`);
+                const d = await r.json();
+                if(d.current_weather) {
+                    const t = d.current_weather.temperature;
+                    const c = d.current_weather.weathercode;
+                    let icon = "☀️";
+                    if(c > 3) icon = "☁️";
+                    if(c > 50) icon = "🌧";
+                    if(c > 70) icon = "❄️";
+                    document.getElementById('weatherIcon').innerText = icon;
+                    document.getElementById('weatherTemp').innerText = Math.round(t) + "°F";
+                    document.getElementById('weatherWidget').style.display = 'flex';
+                }
+            } catch(e) {}
+        }
         
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
@@ -324,13 +436,6 @@
             if(currentLatLng) map.flyTo(currentLatLng, 18);
         }
 
-        function togglePassword() {
-            const i = document.getElementById('passInput');
-            const ico = document.querySelector('.password-toggle');
-            if (i.type === 'password') { i.type='text'; ico.innerText='visibility_off'; } 
-            else { i.type='password'; ico.innerText='visibility'; }
-        }
-
         // --- STAKING ---
         let isStaking = false;
         function startStakingMode() {
@@ -348,7 +453,7 @@
         function addStakeAtUserLoc() {
             if(!currentLatLng) return alert("No GPS");
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + getNextStakeNumber());
-            // Standard stake mode - photo is optional via popup
+            if(isHiking) requestStakePhoto(stakes[stakes.length-1].id);
         }
         
         async function saveStakingProject(forceId=null) {
@@ -393,7 +498,6 @@
         
         function startHikeRecording() {
             document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
-            // CLEAN THE MAP FOR HIKE
             if(activeLayer) map.removeLayer(activeLayer); // Remove yellow lines
             stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
             stakes = []; 
@@ -460,67 +564,9 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- MEASURE TOOL (UPDATED) ---
-        let isMeasuring=false;
-        let measureMarkers=[];
-        let measurePolyline=null;
-        let measureLayer=L.layerGroup().addTo(map);
-
-        function toggleMeasureMode(){ 
-            isMeasuring=!isMeasuring; 
-            const box = document.querySelector('.measure-box');
-            if(isMeasuring) {
-                box.classList.add('visible');
-                document.getElementById('measureText').style.display='inline';
-                document.getElementById('distVal').style.display='none';
-                measureLayer.clearLayers(); 
-                measureMarkers=[];
-                measurePolyline=null;
-                document.getElementById('card').classList.remove('active'); 
-            } else {
-                box.classList.remove('visible');
-                measureLayer.clearLayers();
-            }
-        }
-
-        function addMeasurePoint(ll) { 
-            // Update UI on first click
-            document.getElementById('measureText').style.display='none';
-            document.getElementById('distVal').style.display='inline';
-            
-            // Create DRAGGABLE marker
-            const m = L.marker(ll, {
-                draggable: true,
-                icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] })
-            }).addTo(measureLayer);
-            
-            m.on('drag', updateMeasureCalc); // Recalc while dragging
-            m.on('dragend', updateMeasureCalc); // Final recalc
-            
-            measureMarkers.push(m);
-            updateMeasureCalc();
-        }
-
-        function updateMeasureCalc() {
-            if(measureMarkers.length < 2) return;
-            
-            // Extract coordinates from markers
-            const latlngs = measureMarkers.map(m => m.getLatLng());
-            
-            // Update or Create Line
-            if(!measurePolyline) {
-                measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
-            } else {
-                measurePolyline.setLatLngs(latlngs);
-            }
-            
-            // Calculate Total Distance
-            let dist = 0;
-            for(let i=0; i<latlngs.length-1; i++) {
-                dist += latlngs[i].distanceTo(latlngs[i+1]);
-            }
-            document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
-        }
+        let isMeasuring=false, measurePoints=[], measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode(){ isMeasuring=!isMeasuring; document.querySelector('.measure-box').classList.toggle('visible'); if(!isMeasuring) {measureLayer.clearLayers(); measurePoints=[]; document.getElementById('distVal').innerText="0 ft";} }
+        function addMeasurePoint(ll) { L.circleMarker(ll, {radius:5, color:'orange', fillColor:'white', fillOpacity:1}).addTo(measureLayer); measurePoints.push(ll); if(measurePoints.length>1) { L.polyline(measurePoints, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer); let dist = 0; for(let i=0; i<measurePoints.length-1; i++) dist += measurePoints[i].distanceTo(measurePoints[i+1]); document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft"; } }
         
         async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Boundaries", "Loading..."); try { const res = await fetch(`/api/cloud/load/${currentUserId}`); const data = await res.json(); renderList(data, 'project'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
         async function openHikeList() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Hikes", "Loading..."); try { const res = await fetch(`/api/hikes/list/${currentUserId}`); const data = await res.json(); renderList(data, 'hike'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
@@ -544,12 +590,22 @@
                     div.innerHTML=`
                         <div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div>
                         <div style="display:flex;gap:10px">
+                            <button class="popup-btn" onclick="shareHike(${i.id})" style="color:#007bff"><span class="material-icons" style="font-size:16px">share</span></button>
                             <button class="popup-btn" onclick="loadHike(${i.id})">👁</button>
                             <button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>
                         </div>`;
                 }
                 c.appendChild(div); 
             }); 
+        }
+        
+        function shareHike(id) {
+            const url = window.location.origin + "/?hike_id=" + id;
+            if(navigator.share) {
+                navigator.share({ title: "My Hike", url: url });
+            } else {
+                prompt("Copy Hike Link:", url);
+            }
         }
         
         async function loadProject(id) { 
@@ -576,9 +632,21 @@
         async function deleteItem(type,id) { if(!confirm("Delete?")) return; await fetch(type==='project'?`/api/cloud/delete/${id}`:`/api/hikes/delete/${id}`,{method:'DELETE'}); if(type==='project') openListCloudProjects(); else openHikeList(); }
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
+        
         function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else openLogin(); }
-        async function doLogin() { const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value; try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} }
-        async function doRegister() { const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value; try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success)alert("Done! Login.");else alert(d.message);}catch(e){alert("Error");} }
+        
+        // --- NEW AUTH LOGIC (WITH CONFIRM) ---
+        async function doLogin() { 
+            const e=document.getElementById('loginEmail').value,p=document.getElementById('loginPass').value; 
+            try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} 
+        }
+        
+        async function doRegister() { 
+            const e=document.getElementById('regEmail').value, p=document.getElementById('regPass').value, cp=document.getElementById('regConfirmPass').value; 
+            if(p !== cp) return alert("Passwords do not match!");
+            try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success)alert("Done! Login.");else alert(d.message);}catch(e){alert("Error");} 
+        }
+
         function updateMenuLoginText() { if(currentUserEmail) { document.getElementById('loginText').innerText="Logout ("+currentUserEmail.split('@')[0]+")"; document.getElementById('userIcon').style.color="#4CAF50"; } }
         function loadFromLocalStorage() { try{const s=localStorage.getItem('landslide_saves');if(s){const d=JSON.parse(s);if(Array.isArray(d))d.forEach(i=>{if(i.type==='stake'){stakes.push(i);addStakeMarker(i);}});}}catch(e){localStorage.removeItem('landslide_saves');}}
         function saveToStorage() { localStorage.setItem('landslide_saves',JSON.stringify(stakes)); }
@@ -596,18 +664,15 @@
         
         // --- PHOTO HANDLER ---
         window.handleStakePhoto = async function(input) {
-            // Logic for Hike photos vs Stake photos
             if(!input.files[0]) return;
             const file = input.files[0];
             
-            // If taking photo during hike, create stake NOW
             if(isTakingHikePhoto) {
                 if(!currentLatLng) return alert("No GPS");
                 let n = getNextStakeNumber();
                 createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-                // The newest stake is the one we want
                 selectedStakeId = stakes[stakes.length-1].id;
-                isTakingHikePhoto = false; // Reset flag
+                isTakingHikePhoto = false;
             }
 
             if(!selectedStakeId) return;
@@ -637,8 +702,7 @@
                 s.photos.push(url);
                 updateStakePopup(s);
                 saveToStorage();
-                // FIX: Open the popup immediately to confirm photo was added
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup();
+                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); // FIX: Show popup immediately
             }
         }
     </script>
