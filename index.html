@@ -42,14 +42,16 @@
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
+        
         .btn-stop { background: #444; color: #ff5252; } 
         .btn-save { background: #2196F3; color: white; }
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
         .btn-action { background: #FF9800; color: black; }
         .btn-pause { background: #FFC107; color: black; } 
+        
         #hikeActiveUI .mode-title { display: none; } #hikeActiveUI { padding-top: 5px; }
 
-        /* MENU */
+        /* SIDE MENU */
         .side-menu { 
             position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; 
             transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); 
@@ -121,6 +123,8 @@
         
         /* NEW: Geotag Display */
         .img-geotag { margin-top: 15px; color: #fff; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 20px; font-weight: bold; display:none; }
+        .img-geotag a { color: #fff; text-decoration: none; }
+        .img-geotag a:hover { text-decoration: underline; }
 
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s; z-index: 10000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .info-card.active { transform: translateY(0); }
@@ -137,7 +141,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v150-GeotagAdded</div>
+    <div class="debug-label">v151-Geolink</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
@@ -148,7 +152,6 @@
         <span id="weatherTemp">--°F</span>
     </div>
 
-    <!-- MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons measure-icon">straighten</span>
         <span id="measureText" style="font-weight:400">Tap map to start</span>
@@ -156,14 +159,12 @@
         <div class="clear-measure" onclick="toggleMeasureMode()" style="margin-left:10px; font-size:18px">✕</div>
     </div>
     
-    <!-- STAKING PANEL -->
     <div class="mode-panel" id="stakingPanel">
         <div class="mode-title">📍 Boundary Staking Mode</div>
         <div class="panel-controls"><button class="panel-btn btn-action" onclick="addStakeAtUserLoc()"><span class="material-icons">my_location</span> Stake Here</button></div>
         <div class="panel-controls" style="margin-top:10px;"><button class="panel-btn btn-stop" onclick="exitStakingMode()">Cancel</button><button class="panel-btn btn-save" onclick="saveStakingProject()">Finish & Save</button></div>
     </div>
 
-    <!-- HIKE PANEL -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
             <div class="mode-title">🥾 Start New Hike</div>
@@ -226,21 +227,23 @@
         <div style="height: 50px;"></div>
     </div>
 
-    <!-- LOGIN MODAL -->
     <div class="login-overlay" id="loginModal">
         <div class="login-card">
             <div class="login-tabs">
                 <div class="login-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</div>
                 <div class="login-tab" id="tabSignUp" onclick="switchAuthTab('signup')">New Account</div>
             </div>
+            
             <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
             <div class="password-wrapper">
                 <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
                 <span class="material-icons password-toggle" onclick="togglePassword()">visibility</span>
             </div>
+            
             <div class="password-wrapper" id="confPassGroup" style="display:none">
                 <input type="password" id="regConfirmPass" class="login-input" placeholder="Confirm Password" style="margin:0">
             </div>
+
             <button id="authBtn" class="login-btn" onclick="handleAuthAction()">Sign In</button>
             <button style="background:none; border:none; margin-top:15px; text-decoration:underline; color:#666;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
@@ -265,7 +268,7 @@
                 <a href="#" class="img-ctrl-btn" style="background:#4CAF50" color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a>
                 <a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a>
             </div>
-            <div id="imgGeoTag" class="img-geotag"></div>
+            <div id="imgGeoTag" class="img-geotag"></div> <!-- Geotag will be inserted here -->
         </div>
     </div>
     
@@ -536,11 +539,9 @@
         }
 
         function addMeasurePoint(ll) { 
-            // Update UI on first click
             document.getElementById('measureText').style.display='none';
             document.getElementById('distVal').style.display='inline';
             
-            // Create DRAGGABLE marker
             const m = L.marker(ll, {
                 draggable: true,
                 icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] })
@@ -655,8 +656,6 @@
             const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value; 
             try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} 
         }
-        
-        // SMART REGISTER FIX
         async function doRegister() { 
             const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value, cp=document.getElementById('regConfirmPass').value; 
             if(p !== cp) return alert("Passwords mismatch");
@@ -672,11 +671,24 @@
         function inviteFriends() { toggleMenu(); if(navigator.share) navigator.share({title:'App',url:window.location.href}); }
         function clearLocalData() { if(confirm("Clear local data?")) { localStorage.clear(); window.location.reload(); } }
         let currImgUrl="", currImgStakeId=null;
-        window.openImageModal=(u,s)=>{currImgUrl=u.startsWith('http')?u:localStorage.getItem(u);currImgStakeId=s;document.getElementById('modalImage').src=currImgUrl;document.getElementById('imageModal').style.display='flex';
+        window.openImageModal=(u,s)=>{
+            currImgUrl=u.startsWith('http')?u:localStorage.getItem(u);
+            currImgStakeId=s;
+            document.getElementById('modalImage').src=currImgUrl;
+            document.getElementById('imageModal').style.display='flex';
+            
             const sObj = stakes.find(x => x.id === s);
             const tag = document.getElementById('imgGeoTag');
-            if (tag && sObj) { tag.innerText = `📍 ${sObj.lat.toFixed(5)}, ${sObj.lng.toFixed(5)}`; tag.style.display = 'block'; }
-            else if (tag) tag.style.display = 'none';
+            if (tag && sObj) {
+                // FIX: Added clickable link
+                const lat = sObj.lat.toFixed(5);
+                const lng = sObj.lng.toFixed(5);
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                tag.innerHTML = `📍 <a href="${googleMapsUrl}" target="_blank" style="color: white; text-decoration: underline;">${lat}, ${lng}</a>`;
+                tag.style.display = 'block';
+            } else if (tag) {
+                tag.style.display = 'none';
+            }
         };
         window.closeImageModal=()=>{document.getElementById('imageModal').style.display='none';};
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
@@ -723,7 +735,7 @@
                 s.photos.push(url);
                 updateStakePopup(s);
                 saveToStorage();
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); 
+                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup();
             }
         }
     </script>
