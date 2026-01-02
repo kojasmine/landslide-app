@@ -88,6 +88,40 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
+// --- USER ACCOUNT MANAGEMENT ---
+app.put('/api/user/update-profile', async (req, res) => {
+    const { userId, newEmail } = req.body;
+    try {
+        const check = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [newEmail, userId]);
+        if (check.rows.length > 0) return res.json({ success: false, message: "Email already in use" });
+        await pool.query('UPDATE users SET email = $1 WHERE id = $2', [newEmail, userId]);
+        res.json({ success: true, message: "Profile updated" });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.put('/api/user/change-password', async (req, res) => {
+    const { userId, oldPassword, newPassword } = req.body;
+    try {
+        const result = await pool.query('SELECT password FROM users WHERE id = $1', [userId]);
+        if (result.rows.length === 0) return res.json({ success: false, message: "User not found" });
+        const match = await bcrypt.compare(oldPassword, result.rows[0].password);
+        if (!match) return res.json({ success: false, message: "Current password incorrect" });
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newHash, userId]);
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.delete('/api/user/delete-account/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        await pool.query('DELETE FROM user_hikes WHERE user_id = $1', [userId]);
+        await pool.query('DELETE FROM user_projects WHERE user_id = $1', [userId]);
+        await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 // --- IMAGE UPLOAD ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if(!req.file) return res.status(400).json({success:false, message:"No file"});
@@ -111,7 +145,7 @@ app.post('/api/ai/analyze', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- CLOUD SAVE (BOUNDARIES) ---
+// --- CLOUD SAVE ---
 app.post('/api/cloud/save', async (req, res) => {
     const { id, userId, name, data } = req.body;
     try {
@@ -133,19 +167,16 @@ app.get('/api/cloud/load/:userId', async (req, res) => {
 });
 app.delete('/api/cloud/delete/:projectId', async (req, res) => { await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]); res.json({ success: true }); });
 
-// --- HIKES (UPDATED FOR DUPLICATE CHECK) ---
+// --- HIKES ---
 app.post('/api/hikes/save', async (req, res) => {
     const { id, userId, name, distance, path, stakes } = req.body;
     try {
         if (!id) {
-            // Check Duplicates
             const check = await pool.query('SELECT id FROM user_hikes WHERE user_id = $1 AND name = $2', [userId, name]);
             if (check.rows.length > 0) return res.json({ success: false, status: 'EXISTS', existingId: check.rows[0].id });
-            
             const result = await pool.query('INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5) RETURNING id', [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]);
             res.json({ success: true, newId: result.rows[0].id });
         } else {
-            // Update Existing Hike
             await pool.query('UPDATE user_hikes SET name=$1, distance_ft=$2, path_json=$3, stakes_json=$4 WHERE id=$5 AND user_id=$6', [name, distance, JSON.stringify(path), JSON.stringify(stakes), id, userId]);
             res.json({ success: true, newId: id });
         }
