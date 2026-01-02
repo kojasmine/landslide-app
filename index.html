@@ -76,7 +76,7 @@
         .password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #666; cursor: pointer; }
         .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor: pointer; }
 
-        /* LISTS */
+        /* LISTS & DRAWERS */
         .right-drawer { 
             position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; 
             background: white; z-index: 20002; 
@@ -88,6 +88,13 @@
         .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; color: #333; }
         .modal-list { flex: 1; overflow-y: auto; padding: 0; }
         .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+
+        /* ACCOUNT SETTINGS */
+        .account-section { padding: 20px; overflow-y: auto; flex: 1; }
+        .account-group { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .account-group h3 { font-size: 13px; color: #888; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; }
+        .danger-zone { margin-top: 30px; padding: 15px; border: 1px solid #ffcdd2; border-radius: 8px; background: #fffbfa; text-align: center; }
+        .danger-zone p { font-size: 12px; color: #666; margin-bottom: 15px; }
 
         /* MEASURE BOX */
         .measure-box { 
@@ -140,7 +147,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v156-HikeOnly</div>
+    <div class="debug-label">v157-Account</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
@@ -212,18 +219,25 @@
     </div>
 
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    
+    <!-- SIDE MENU -->
     <div class="side-menu" id="sideMenu">
-        <div class="menu-item" id="loginItem" onclick="handleUserMenuClick()"><span class="material-icons" id="userIcon" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
+        <!-- New Auth/Account Wrapper -->
+        <div id="loggedOutMenu">
+            <div class="menu-item" onclick="openLogin()"><span class="material-icons" style="color:#5E35B1">person</span> Login / Register</div>
+        </div>
+        <div id="loggedInMenu" style="display:none">
+            <div class="menu-item" onclick="openAccountSettings()"><span class="material-icons" style="color:#4CAF50">account_circle</span> My Account</div>
+            <div class="menu-item" onclick="handleLogout()"><span class="material-icons" style="color:#f44336">logout</span> Log Out</div>
+        </div>
         
         <div class="menu-section-title">Tools</div>
-        <!-- HIDDEN FOR REGULAR USERS -->
         <div id="menuStake" class="menu-item admin-only" onclick="startStakingMode()"><span class="material-icons" style="color:#E91E63">flag</span> Stake Boundary</div>
         
         <div class="menu-item" onclick="openHikePanel()"><span class="material-icons" style="color:#FF9800">hiking</span> Track My Hike</div>
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         
         <div class="menu-section-title">Saved Data</div>
-        <!-- HIDDEN FOR REGULAR USERS -->
         <div id="menuSavedBoundaries" class="menu-item admin-only" onclick="openListCloudProjects()"><span class="material-icons" style="color:#E91E63">folder_open</span> Saved Boundaries</div>
         
         <div class="menu-item" onclick="openHikeList()"><span class="material-icons" style="color:#FF9800">history</span> Saved Hikes</div>
@@ -255,7 +269,7 @@
         </div>
     </div>
     
-    <!-- RIGHT SIDE DRAWER FOR LISTS -->
+    <!-- LIST DRAWER -->
     <div class="right-drawer" id="listModal">
         <div class="modal-header">
             <span id="listTitle">Saved Items</span>
@@ -264,12 +278,41 @@
         <div class="modal-list" id="listContainer"></div>
     </div>
 
-    <div id="imageModal"><div class="img-backdrop" onclick="closeImageModal()"></div><div class="img-content"><img id="modalImage" src=""><div class="img-controls"><a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a><a href="#" class="img-ctrl-btn" style="background:#4CAF50" color:white;" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a><a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a></div><div id="imgGeoTag" class="img-geotag"></div></div></div>
+    <!-- MY ACCOUNT DRAWER -->
+    <div class="right-drawer" id="accountDrawer">
+        <div class="modal-header">
+            <span>My Account</span>
+            <span onclick="closeAccountSettings()" style="cursor:pointer; padding:10px;">✕</span>
+        </div>
+        <div class="account-section">
+            <div class="account-group">
+                <h3>Profile Information</h3>
+                <label style="font-size: 11px; color: #777;">Email Address</label>
+                <input type="email" id="accEmail" class="login-input" placeholder="Email">
+                <button class="login-btn" onclick="updateProfile()" style="background:#444">Update Email</button>
+            </div>
+
+            <div class="account-group">
+                <h3>Change Password</h3>
+                <input type="password" id="accOldPass" class="login-input" placeholder="Current Password">
+                <input type="password" id="accNewPass" class="login-input" placeholder="New Password">
+                <button class="login-btn" onclick="changePassword()">Save New Password</button>
+            </div>
+
+            <div class="danger-zone">
+                <h3 style="color: #d32f2f;">Danger Zone</h3>
+                <p>Deleting your account is permanent. All saved hikes and property boundaries will be lost.</p>
+                <button class="login-btn" onclick="deleteAccount()" style="background:#d32f2f">Delete My Account</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageModal"><div class="img-backdrop" onclick="closeImageModal()"></div><div class="img-content"><img id="modalImage" src=""><div class="img-controls"><a href="#" class="img-ctrl-btn" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a><a href="#" class="img-ctrl-btn" style="background:#4CAF50" onclick="analyzeCurrentImage(event)"><span class="material-icons">smart_toy</span> Analyze</a><a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a></div><div id="imgGeoTag" class="img-geotag"></div></div></div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // --- CONFIG ---
-        const ADMIN_EMAILS = ["admin@landscout.com", "928928@gmail.com"]; // ADD YOUR EMAIL HERE
+        const ADMIN_EMAILS = ["admin@landscout.com", "928928@gmail.com"]; 
 
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
@@ -331,8 +374,6 @@
             } else { userMarker.setLatLng(e.latlng); }
             
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
-            
-            // WEATHER
             if(document.getElementById('weatherWidget').style.display === 'none') fetchWeather(e.latlng.lat, e.latlng.lng);
         });
         
@@ -370,6 +411,7 @@
             document.getElementById('menuOverlay').classList.remove('active');
             document.getElementById('loginModal').style.display = 'none';
             document.getElementById('listModal').classList.remove('open');
+            document.getElementById('accountDrawer').classList.remove('open');
             document.getElementById('imageModal').style.display = 'none';
             document.getElementById('card').classList.remove('active');
             document.querySelector('.measure-box').classList.remove('visible');
@@ -408,9 +450,7 @@
             if(!currentUserId) return alert("Login to save.");
             if(!stakes.length) return alert("No stakes.");
             let name = currentProjectName;
-            
             if(!forceId) { name = prompt("Project Name:", currentProjectName||""); if(!name) return; }
-            
             let idToSend = forceId || currentProjectID;
             if (currentProjectName && name !== currentProjectName) idToSend = null;
 
@@ -425,15 +465,8 @@
                     clearMap(); 
                 }
                 else if (json.status==='EXISTS') { 
-                    if(confirm(`"${name}" exists. Overwrite?`)) {
-                        saveStakingProject(json.existingId);
-                    } else {
-                        const newName = prompt("Enter different name:");
-                        if(newName) {
-                            currentProjectName = newName;
-                            saveStakingProject(null);
-                        }
-                    }
+                    if(confirm(`"${name}" exists. Overwrite?`)) saveStakingProject(json.existingId);
+                    else { const n=prompt("New name:"); if(n){currentProjectName=n; saveStakingProject(null);} }
                 }
                 else alert(json.message);
             } catch(e) { alert("Error"); }
@@ -446,29 +479,20 @@
         
         function startHikeRecording() {
             document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
-            // CLEAN THE MAP FOR HIKE
-            if(activeLayer) map.removeLayer(activeLayer); // Remove yellow lines
+            if(activeLayer) map.removeLayer(activeLayer);
             stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
             stakes = []; 
-            
             isHiking=true; isPaused=false; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
             hikePolyline=L.polyline([],{color:'#FF9800',weight:6}).addTo(map);
             hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000);
             if(currentLatLng) updateHikePosition(currentLatLng);
         }
         
-        // *** NEW INSTANT PHOTO LOGIC ***
         function takeHikePhoto() {
             if(!currentLatLng) return alert("No GPS");
-            
-            // 1. Create a stake immediately where the user is
             let n = getNextStakeNumber();
             createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-            
-            // 2. Select this new stake as the target for the photo
             selectedStakeId = stakes[stakes.length-1].id;
-            
-            // 3. Open Camera
             document.getElementById('stakeCamInput').click();
         }
 
@@ -485,7 +509,7 @@
         }
         function stopHikeAndClear() { if(confirm("Discard hike?")) { isHiking=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); if(hikePolyline) map.removeLayer(hikePolyline); } }
         async function finishAndSaveHike() {
-            isHiking=false; clearInterval(hikeInterval); const n=prompt("Name Hike:"); if(!n) { isHiking=true; hikeInterval=setInterval(hikeTimerTick,1000); return; }
+            isHiking=false; clearInterval(hikeInterval); const n=prompt("Name Hike:"); if(!n) { isHiking=true; hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000); return; }
             try { const res=await fetch('/api/hikes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,name:n,distance:parseFloat(document.getElementById('hikeDist').innerText)*5280,path:hikePath,stakes:hikeStakes})}); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); }
         }
 
@@ -497,83 +521,47 @@
         function updateStakePopup(s){if(stakeMarkers[s.id])stakeMarkers[s.id].setPopupContent(generatePopup(s));}
         
         function requestStakePhoto(id) { 
-            if(!currentUserId) {
-                if(!confirm("You are not logged in. Photos will not be saved to cloud. Continue?")) return;
-            }
+            if(!currentUserId) if(!confirm("Login to save photos to cloud. Continue?")) return;
             selectedStakeId=id; 
             document.getElementById('stakeCamInput').click(); 
         }
-
         function deleteStake(id){if(confirm("Delete?")){map.removeLayer(stakeMarkers[id]);delete stakeMarkers[id];stakes=stakes.filter(s=>s.id!==id);saveToStorage();}}
         
         // --- MAP CLICK LOGIC ---
         map.on('click',(e)=>{ 
             if(isMeasuring){addMeasurePoint(e.latlng);return;} 
-            if(isStaking){
-                let n=getNextStakeNumber();
-                createStake(e.latlng.lat,e.latlng.lng,"Stake "+n);
-                fetchParcelAt(e.latlng); 
-            } 
-            else if(isHiking) { return; } 
-            else {fetchParcelAt(e.latlng);} 
+            if(isStaking){ let n=getNextStakeNumber(); createStake(e.latlng.lat,e.latlng.lng,"Stake "+n); fetchParcelAt(e.latlng); } 
+            else if(isHiking) return;
+            else fetchParcelAt(e.latlng); 
         });
         
         async function performSearch(){const q=searchInput.value;if(!q)return;suggestionsBox.style.display='none';try{const r=await fetch(`/api/address/search?q=${encodeURIComponent(q)}`);const d=await r.json();if(d.error)alert(d.error);else if(d.lat){map.flyTo([d.lat,d.lng],18);searchInput.blur();}}catch(e){alert("Error");}}
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- MEASURE TOOL (FIXED) ---
-        let isMeasuring=false;
-        let measureMarkers=[];
-        let measurePolyline=null;
-        let measureLayer=L.layerGroup().addTo(map);
-
+        // --- MEASURE TOOL ---
+        let isMeasuring=false, measureMarkers=[], measurePolyline=null, measureLayer=L.layerGroup().addTo(map);
         function toggleMeasureMode(){ 
             isMeasuring=!isMeasuring; 
             const box = document.querySelector('.measure-box');
-            if(isMeasuring) {
-                box.classList.add('visible');
-                document.getElementById('measureText').style.display='inline';
-                document.getElementById('distVal').style.display='none';
-                measureLayer.clearLayers(); 
-                measureMarkers=[];
-                measurePolyline=null;
-                document.getElementById('card').classList.remove('active'); 
-            } else {
-                box.classList.remove('visible');
-                measureLayer.clearLayers();
-            }
+            if(isMeasuring) { box.classList.add('visible'); document.getElementById('measureText').style.display='inline'; document.getElementById('distVal').style.display='none'; measureLayer.clearLayers(); measureMarkers=[]; measurePolyline=null; document.getElementById('card').classList.remove('active'); } 
+            else { box.classList.remove('visible'); measureLayer.clearLayers(); }
         }
-
         function addMeasurePoint(ll) { 
-            // Update UI on first click
-            document.getElementById('measureText').style.display='none';
-            document.getElementById('distVal').style.display='inline';
-            
-            // Create DRAGGABLE marker
-            const m = L.marker(ll, {
-                draggable: true,
-                icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] })
-            }).addTo(measureLayer);
-            
-            m.on('drag', updateMeasureCalc); 
-            m.on('dragend', updateMeasureCalc); 
-            measureMarkers.push(m);
-            updateMeasureCalc();
+            document.getElementById('measureText').style.display='none'; document.getElementById('distVal').style.display='inline';
+            const m = L.marker(ll, { draggable: true, icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] }) }).addTo(measureLayer);
+            m.on('drag', updateMeasureCalc); m.on('dragend', updateMeasureCalc); measureMarkers.push(m); updateMeasureCalc();
         }
-
         function updateMeasureCalc() {
             if(measureMarkers.length < 2) return;
             const latlngs = measureMarkers.map(m => m.getLatLng());
-            
             if(!measurePolyline) measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
             else measurePolyline.setLatLngs(latlngs);
-            
-            let dist = 0;
-            for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
+            let dist = 0; for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
             document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
         }
         
+        // --- DRAWERS & LISTS ---
         async function openListCloudProjects() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Boundaries", "Loading..."); try { const res = await fetch(`/api/cloud/load/${currentUserId}`); const data = await res.json(); renderList(data, 'project'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
         async function openHikeList() { toggleMenu(); if(!currentUserId) return alert("Login First"); showListModal("Saved Hikes", "Loading..."); try { const res = await fetch(`/api/hikes/list/${currentUserId}`); const data = await res.json(); renderList(data, 'hike'); } catch(e) { document.getElementById('listContainer').innerHTML = "Error loading."; } }
         function showListModal(title, content) { document.getElementById('listTitle').innerText = title; document.getElementById('listContainer').innerHTML = content || ""; document.getElementById('listModal').classList.add('open'); }
@@ -585,34 +573,16 @@
                 const d=new Date(i.updated_at||i.start_time).toLocaleDateString(); 
                 const div=document.createElement('div'); div.className="list-item"; 
                 if(type==='project') {
-                    // FIXED: EYE ICON FOR BOUNDARIES
-                    div.innerHTML=`
-                        <div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div>
-                        <div style="display:flex;gap:10px">
-                            <button class="popup-btn" onclick="loadProject(${i.id})">👁</button>
-                            <button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>
-                        </div>`; 
+                    div.innerHTML=`<div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div><div style="display:flex;gap:10px"><button class="popup-btn" onclick="loadProject(${i.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button></div>`; 
                 } else {
                     const mi = (i.distance_ft / 5280).toFixed(2);
-                    // FIXED: SHARE BUTTON, NO CAR
-                    div.innerHTML=`
-                        <div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div>
-                        <div style="display:flex;gap:10px">
-                            <button class="popup-btn" onclick="shareHike(${i.id})" style="color:#007bff"><span class="material-icons" style="font-size:16px">share</span></button>
-                            <button class="popup-btn" onclick="loadHike(${i.id})">👁</button>
-                            <button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button>
-                        </div>`;
+                    div.innerHTML=`<div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} mi</div></div><div style="display:flex;gap:10px"><button class="popup-btn" onclick="shareHike(${i.id})" style="color:#007bff"><span class="material-icons" style="font-size:16px">share</span></button><button class="popup-btn" onclick="loadHike(${i.id})">👁</button><button class="popup-btn popup-delete" onclick="deleteItem('${type}',${i.id})">🗑</button></div>`;
                 }
                 c.appendChild(div); 
             }); 
         }
         
-        function shareHike(id) {
-            const url = window.location.origin + "/?hike_id=" + id;
-            if(navigator.share) { navigator.share({ title: "My Hike", url: url }); } 
-            else { prompt("Copy Hike Link:", url); }
-        }
-        
+        function shareHike(id) { const u = window.location.origin + "/?hike_id=" + id; if(navigator.share) navigator.share({ title: "My Hike", url: u }); else prompt("Copy Hike Link:", u); }
         async function loadProject(id) { 
             const res=await fetch(`/api/cloud/load/${currentUserId}`); const all=await res.json(); const p=all.find(x=>x.id===id); 
             if(p) { 
@@ -624,69 +594,71 @@
                     activeLayer = L.geoJSON(JSON.parse(d.properties[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);
                     document.getElementById('owner').innerText = d.properties[0].owner_name;
                     document.getElementById('address').innerText = d.properties[0].address;
-                    document.getElementById('card').classList.add('active');
-                    savedItems = d.properties;
+                    document.getElementById('card').classList.add('active'); savedItems = d.properties;
                 }
                 document.getElementById('listModal').classList.remove('open'); 
-                if(stakes.length) map.flyTo([stakes[0].lat,stakes[0].lng],19); 
-                currentProjectID=p.id; currentProjectName=p.name; 
+                if(stakes.length) map.flyTo([stakes[0].lat,stakes[0].lng],19); currentProjectID=p.id; currentProjectName=p.name; 
             } 
         }
-
         async function loadHike(id) { document.getElementById('listModal').classList.remove('open'); const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json(); clearMap(); L.polyline(h.path_json,{color:'blue',weight:6}).addTo(map); (h.stakes_json||[]).forEach(s=>{stakes.push(s);addStakeMarker(s);}); if(h.path_json.length) map.fitBounds(L.polyline(h.path_json).getBounds()); }
         async function deleteItem(type,id) { if(!confirm("Delete?")) return; await fetch(type==='project'?`/api/cloud/delete/${id}`:`/api/hikes/delete/${id}`,{method:'DELETE'}); if(type==='project') openListCloudProjects(); else openHikeList(); }
+        
+        // --- ACCOUNT MANAGEMENT ---
+        function openAccountSettings() { toggleMenu(); document.getElementById('accEmail').value = currentUserEmail; document.getElementById('accountDrawer').classList.add('open'); }
+        function closeAccountSettings() { document.getElementById('accountDrawer').classList.remove('open'); }
+        function handleLogout() { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } }
+        async function updateProfile() {
+            const e = document.getElementById('accEmail').value; if(!e) return;
+            const res = await fetch('/api/user/update-profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, newEmail:e }) });
+            const d = await res.json(); alert(d.message); if(d.success) { localStorage.setItem('landslide_auth_email', e); currentUserEmail=e; updateMenuLoginText(); }
+        }
+        async function changePassword() {
+            const op = document.getElementById('accOldPass').value, np = document.getElementById('accNewPass').value;
+            if(!op || !np) return alert("Fill both fields");
+            const res = await fetch('/api/user/change-password', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, oldPassword:op, newPassword:np }) });
+            const d = await res.json(); alert(d.message); if(d.success) { document.getElementById('accOldPass').value=''; document.getElementById('accNewPass').value=''; }
+        }
+        async function deleteAccount() {
+            if(!confirm("Permanently delete account and all data?")) return;
+            const res = await fetch(`/api/user/delete-account/${currentUserId}`, { method:'DELETE' });
+            if((await res.json()).success) { alert("Account Deleted."); localStorage.clear(); window.location.reload(); }
+        }
+
+        // --- AUTH ---
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
-        function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else openLogin(); }
         
-        // --- AUTH TABS ---
         let isAuthLoginMode = true;
         function switchAuthTab(mode) {
-            const btn = document.getElementById('authBtn');
-            const tabIn = document.getElementById('tabSignIn');
-            const tabUp = document.getElementById('tabSignUp');
-            const confPassGroup = document.getElementById('confPassGroup');
-            
-            if (mode === 'signin') {
-                isAuthLoginMode = true;
-                tabIn.classList.add('active'); tabUp.classList.remove('active');
-                btn.innerText = "Sign In";
-                btn.style.background = "#5E35B1";
-                confPassGroup.style.display = 'none';
-            } else {
-                isAuthLoginMode = false;
-                tabUp.classList.add('active'); tabIn.classList.remove('active');
-                btn.innerText = "Create Account";
-                btn.style.background = "#4CAF50";
-                confPassGroup.style.display = 'block';
-            }
+            const btn = document.getElementById('authBtn'), tabIn = document.getElementById('tabSignIn'), tabUp = document.getElementById('tabSignUp'), confPassGroup = document.getElementById('confPassGroup');
+            if (mode === 'signin') { isAuthLoginMode=true; tabIn.classList.add('active'); tabUp.classList.remove('active'); btn.innerText="Sign In"; btn.style.background="#5E35B1"; confPassGroup.style.display='none'; } 
+            else { isAuthLoginMode=false; tabUp.classList.add('active'); tabIn.classList.remove('active'); btn.innerText="Create Account"; btn.style.background="#4CAF50"; confPassGroup.style.display='block'; }
         }
         function handleAuthAction() { if (isAuthLoginMode) doLogin(); else doRegister(); }
-
         async function doLogin() { 
-            const e=document.getElementById('emailInput').value,p=document.getElementById('passInput').value; 
-            try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} 
+            const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value; 
+            try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}); const d=await r.json(); if(d.success){localStorage.setItem('landslide_auth_id',d.user.id); localStorage.setItem('landslide_auth_email',d.user.email); window.location.reload();} else alert(d.message);}catch(e){alert("Error");} 
         }
-        
-        // SMART REGISTER FIX
         async function doRegister() { 
             const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value, cp=document.getElementById('regConfirmPass').value; 
             if(p !== cp) return alert("Passwords mismatch");
-            try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success)alert("Done! Login."); else if(d.message==="Email exists"){ alert("Account exists. Switching to Login..."); switchAuthTab('signin'); } else alert(d.message);}catch(e){alert("Error");} 
+            try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})}); const d=await r.json(); if(d.success)alert("Done! Login."); else if(d.message==="Email exists"){ alert("Account exists. Switching to Login..."); switchAuthTab('signin'); } else alert(d.message);}catch(e){alert("Error");} 
         }
 
         function updateMenuLoginText() { 
             if(currentUserEmail) { 
-                document.getElementById('loginText').innerText="Logout ("+currentUserEmail.split('@')[0]+")"; 
-                document.getElementById('userIcon').style.color="#4CAF50"; 
-                // CHECK ADMIN
+                document.getElementById('loggedInMenu').style.display = 'block';
+                document.getElementById('loggedOutMenu').style.display = 'none';
                 if(ADMIN_EMAILS.includes(currentUserEmail)) {
-                    document.getElementById('menuStake').style.display='flex';
-                    document.getElementById('menuSavedBoundaries').style.display='flex';
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
                 }
-            } 
+            } else {
+                document.getElementById('loggedInMenu').style.display = 'none';
+                document.getElementById('loggedOutMenu').style.display = 'block';
+            }
         }
         
+        // --- STORAGE & MISC ---
         function loadFromLocalStorage() { try{const s=localStorage.getItem('landslide_saves');if(s){const d=JSON.parse(s);if(Array.isArray(d))d.forEach(i=>{if(i.type==='stake'){stakes.push(i);addStakeMarker(i);}});}}catch(e){localStorage.removeItem('landslide_saves');}}
         function saveToStorage() { localStorage.setItem('landslide_saves',JSON.stringify(stakes)); }
         function clearMap() { stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); stakes=[]; stakeMarkers={}; if(hikePolyline) map.removeLayer(hikePolyline); }
@@ -694,72 +666,41 @@
         function shareLocation() { toggleMenu(); if(!currentLatLng) return alert("No GPS"); const u=`https://www.google.com/maps/search/?api=1&query=${currentLatLng.lat},${currentLatLng.lng}`; if(navigator.share) navigator.share({title:'Loc',url:u}); else prompt("Link",u); }
         function inviteFriends() { toggleMenu(); if(navigator.share) navigator.share({title:'App',url:window.location.href}); }
         function clearLocalData() { if(confirm("Clear local data?")) { localStorage.clear(); window.location.reload(); } }
+        
+        // --- IMAGE HANDLING ---
         let currImgUrl="", currImgStakeId=null;
         window.openImageModal=(u,s)=>{
-            currImgUrl=u.startsWith('http')?u:localStorage.getItem(u);
-            currImgStakeId=s;
-            document.getElementById('modalImage').src=currImgUrl;
-            document.getElementById('imageModal').style.display='flex';
-            
-            const sObj = stakes.find(x => x.id === s);
-            const tag = document.getElementById('imgGeoTag');
+            currImgUrl=u.startsWith('http')?u:localStorage.getItem(u); currImgStakeId=s;
+            document.getElementById('modalImage').src=currImgUrl; document.getElementById('imageModal').style.display='flex';
+            const sObj = stakes.find(x => x.id === s); const tag = document.getElementById('imgGeoTag');
             if (tag && sObj) {
-                const lat = sObj.lat.toFixed(5);
-                const lng = sObj.lng.toFixed(5);
-                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-                tag.innerHTML = `📍 <a href="${googleMapsUrl}" target="_blank" style="color: white; text-decoration: underline;">${lat}, ${lng}</a>`;
-                tag.style.display = 'block';
-            } else if (tag) {
-                tag.style.display = 'none';
-            }
+                const lat = sObj.lat.toFixed(5), lng = sObj.lng.toFixed(5), gm = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+                tag.innerHTML = `📍 <a href="${gm}" target="_blank" style="color: white; text-decoration: underline;">${lat}, ${lng}</a>`; tag.style.display = 'block';
+            } else if (tag) tag.style.display = 'none';
         };
         window.closeImageModal=()=>{document.getElementById('imageModal').style.display='none';};
         window.analyzeCurrentImage=async(e)=>{e.preventDefault();const fn=currImgUrl.split('/').pop();e.target.innerText="Thinking...";try{const r=await fetch('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})});const d=await r.json();alert(d.analysis||d.error);}catch(x){alert("Error");}e.target.innerText="Analyze";};
         window.deleteCurrentImage=()=>{if(confirm("Delete?")){const s=stakes.find(x=>x.id===currImgStakeId);s.photos=s.photos.filter(p=>!p.includes(currImgUrl));saveToStorage();closeImageModal();updateStakePopup(s);}};
         function dataURLtoBlob(d){var a=d.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u=new Uint8Array(n);while(n--)u[n]=b.charCodeAt(n);return new Blob([u],{type:m});}
         
-        // --- PHOTO HANDLER ---
         window.handleStakePhoto = async function(input) {
             if(!input.files[0]) return;
             const file = input.files[0];
-            
-            if(isTakingHikePhoto) {
-                if(!currentLatLng) return alert("No GPS");
-                let n = getNextStakeNumber();
-                createStake(currentLatLng.lat, currentLatLng.lng, "Stake " + n);
-                selectedStakeId = stakes[stakes.length-1].id;
-                isTakingHikePhoto = false;
-            }
-
             if(!selectedStakeId) return;
-
             const r=new FileReader(); 
             r.onload=(e)=>{
                 const i=new Image(); i.src=e.target.result;
                 i.onload=async()=>{
                     const c=document.createElement('canvas'); const sc=600/i.width; c.width=600; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
                     const b64=c.toDataURL('image/jpeg',0.5); const b=dataURLtoBlob(b64); const fd=new FormData(); fd.append('image',b,'stake.jpg');
-                    try{
-                        const res=await fetch('/api/image/upload',{method:'POST',body:fd});
-                        const d=await res.json();
-                        if(d.success) {
-                            attachPhotoToStake(d.url);
-                        } else alert("Upload Failed: " + d.message);
-                    } catch(x){ alert("Upload failed"); }
+                    try{ const res=await fetch('/api/image/upload',{method:'POST',body:fd}); const d=await res.json(); if(d.success) attachPhotoToStake(d.url); else alert("Upload Failed: " + d.message); } catch(x){ alert("Upload failed"); }
                 }
             };
             r.readAsDataURL(file); 
         };
-
         function attachPhotoToStake(url) {
             const s = stakes.find(x => x.id === selectedStakeId);
-            if(s) {
-                if(!s.photos) s.photos=[];
-                s.photos.push(url);
-                updateStakePopup(s);
-                saveToStorage();
-                if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); 
-            }
+            if(s) { if(!s.photos) s.photos=[]; s.photos.push(url); updateStakePopup(s); saveToStorage(); if(stakeMarkers[s.id]) stakeMarkers[s.id].openPopup(); }
         }
     </script>
 </body>
