@@ -22,6 +22,8 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
+if (!process.env.CLOUDINARY_CLOUD_NAME) console.error("⚠️ WARNING: Cloudinary Keys Missing!");
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key:    process.env.CLOUDINARY_API_KEY,
@@ -32,43 +34,12 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '/index.html')));
+app.get('/api/config', (_req, res) => res.json({ status: "ok", version: "1.1.1" }));
 
-app.get('/api/config', (_req, res) => {
-    res.json({ status: "ok", version: "1.1.0" });
-});
-
-// --- CLOUD SAVE (DUPLICATE CHECK) ---
-app.post('/api/cloud/save', async (req, res) => {
-    const { id, userId, name, data } = req.body;
-    try {
-        if (!id) {
-            // 1. Check if name exists for this user
-            const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
-            
-            if (check.rows.length > 0) {
-                // 2. Return EXISTS status + the ID of the old file
-                return res.json({ 
-                    success: false, 
-                    status: 'EXISTS', 
-                    existingId: check.rows[0].id, 
-                    message: "Name exists" 
-                });
-            }
-            
-            // 3. If unique, Insert new
-            const result = await pool.query('INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id', [userId, name, JSON.stringify(data)]);
-            return res.json({ success: true, mode: 'create', newId: result.rows[0].id });
-        } else {
-            // 4. Overwrite (Update)
-            await pool.query('UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(data), name, id, userId]);
-            return res.json({ success: true, mode: 'update', newId: id });
-        }
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
-});
-
-// --- OTHER ROUTES (UNCHANGED) ---
+// --- AUTOCOMPLETE ---
 app.get('/api/address/suggestions', async (req, res) => {
-    const { q } = req.query; if (!q || q.length < 3) return res.json([]); 
+    const { q } = req.query;
+    if (!q || q.length < 3) return res.json([]); 
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5&countrycodes=us`;
     const data = await fetchJson(url);
     if (Array.isArray(data)) res.json(data.map(i => ({ label: i.display_name, lat: parseFloat(i.lat), lng: parseFloat(i.lon) })));
@@ -94,6 +65,7 @@ app.get('/api/address/search', async (req, res) => {
     res.json({ error: "Address not found" });
 });
 
+// --- AUTH ---
 app.post('/api/register', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -116,6 +88,7 @@ app.post('/api/login', async (req, res) => {
     } catch (e) { res.status(500).json({success:false, message: e.message}); }
 });
 
+// --- IMAGE UPLOAD ---
 app.post('/api/image/upload', upload.single('image'), (req, res) => {
     if(!req.file) return res.status(400).json({success:false, message:"No file"});
     const uploadStream = cloudinary.uploader.upload_stream({ folder: "land_survey_app" }, (err, result) => {
@@ -138,20 +111,52 @@ app.post('/api/ai/analyze', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// --- CLOUD SAVE (BOUNDARIES) ---
+app.post('/api/cloud/save', async (req, res) => {
+    const { id, userId, name, data } = req.body;
+    try {
+        if (!id) {
+            const check = await pool.query('SELECT id FROM user_projects WHERE user_id = $1 AND name = $2', [userId, name]);
+            if (check.rows.length > 0) return res.json({ success: false, status: 'EXISTS', existingId: check.rows[0].id });
+            const result = await pool.query('INSERT INTO user_projects (user_id, name, data) VALUES ($1, $2, $3) RETURNING id', [userId, name, JSON.stringify(data)]);
+            res.json({ success: true, newId: result.rows[0].id });
+        } else {
+            await pool.query('UPDATE user_projects SET data = $1, name = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4', [JSON.stringify(data), name, id, userId]);
+            res.json({ success: true, newId: id });
+        }
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 app.get('/api/cloud/load/:userId', async (req, res) => {
     const r = await pool.query('SELECT * FROM user_projects WHERE user_id = $1 ORDER BY updated_at DESC', [req.params.userId]);
     res.json(r.rows);
 });
 app.delete('/api/cloud/delete/:projectId', async (req, res) => { await pool.query('DELETE FROM user_projects WHERE id = $1', [req.params.projectId]); res.json({ success: true }); });
 
+// --- HIKES (UPDATED FOR DUPLICATE CHECK) ---
 app.post('/api/hikes/save', async (req, res) => {
-    const { userId, name, distance, path, stakes } = req.body;
-    await pool.query('INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5)', [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]);
-    res.json({ success: true });
+    const { id, userId, name, distance, path, stakes } = req.body;
+    try {
+        if (!id) {
+            // Check Duplicates
+            const check = await pool.query('SELECT id FROM user_hikes WHERE user_id = $1 AND name = $2', [userId, name]);
+            if (check.rows.length > 0) return res.json({ success: false, status: 'EXISTS', existingId: check.rows[0].id });
+            
+            const result = await pool.query('INSERT INTO user_hikes (user_id, name, distance_ft, path_json, stakes_json) VALUES ($1, $2, $3, $4, $5) RETURNING id', [userId, name, distance, JSON.stringify(path), JSON.stringify(stakes)]);
+            res.json({ success: true, newId: result.rows[0].id });
+        } else {
+            // Update Existing Hike
+            await pool.query('UPDATE user_hikes SET name=$1, distance_ft=$2, path_json=$3, stakes_json=$4 WHERE id=$5 AND user_id=$6', [name, distance, JSON.stringify(path), JSON.stringify(stakes), id, userId]);
+            res.json({ success: true, newId: id });
+        }
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
+
 app.get('/api/hikes/list/:userId', async (req, res) => { const r = await pool.query('SELECT id, name, distance_ft, start_time FROM user_hikes WHERE user_id = $1 ORDER BY start_time DESC', [req.params.userId]); res.json(r.rows); });
 app.get('/api/hikes/get/:id', async (req, res) => { const r = await pool.query('SELECT * FROM user_hikes WHERE id = $1', [req.params.id]); res.json(r.rows[0]); });
 app.delete('/api/hikes/delete/:id', async (req, res) => { await pool.query('DELETE FROM user_hikes WHERE id = $1', [req.params.id]); res.json({ success: true }); });
+
+// --- PARCELS ---
 app.get('/api/parcels', async (req, res) => {
     const { lat, lng } = req.query;
     const query = `SELECT p.id, t."PARID" as owner_name, CONCAT(t."ADRNO", ' ', t."ADRSTR") as address, ST_AsGeoJSON(p.geom) as geometry FROM "Parcels_real" p LEFT JOIN taxdata t ON REPLACE(p."PIN", ' ', '') = REPLACE(t."PARID", ' ', '') ORDER BY p.geom <-> ST_SetSRID(ST_Point($1, $2), 4326) LIMIT 1;`;
