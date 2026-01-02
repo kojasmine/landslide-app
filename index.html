@@ -508,10 +508,75 @@
             document.getElementById('hikeDist').innerText=(d*0.000621371).toFixed(2);
         }
         function stopHikeAndClear() { if(confirm("Discard hike?")) { isHiking=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); if(hikePolyline) map.removeLayer(hikePolyline); } }
-        async function finishAndSaveHike() {
-            isHiking=false; clearInterval(hikeInterval); const n=prompt("Name Hike:"); if(!n) { isHiking=true; hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000); return; }
-            try { const res=await fetch('/api/hikes/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUserId,name:n,distance:parseFloat(document.getElementById('hikeDist').innerText)*5280,path:hikePath,stakes:hikeStakes})}); if((await res.json()).success) { alert("Saved!"); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } } catch(e){ alert("Save failed"); }
+        async function finishAndSaveHike(forceId = null, pName = null) {
+    // Stop recording state
+    isHiking = false; 
+    clearInterval(hikeInterval); 
+
+    // Get name: use the one passed in (recursive call) or prompt user
+    let n = pName || prompt("Name your hike:", ""); 
+    
+    // If user cancelled prompt
+    if (!n) { 
+        // Resume hike recording so they don't lose data
+        isHiking = true; 
+        hikeInterval = setInterval(() => { 
+            if (!isPaused) { 
+                hikeSeconds++; 
+                const m = Math.floor(hikeSeconds/60), s = hikeSeconds%60; 
+                document.getElementById('hikeTime').innerText = `${m}:${s<10?'0'+s:s}`; 
+            } 
+        }, 1000); 
+        return; 
+    }
+
+    try {
+        const payload = {
+            userId: currentUserId,
+            id: forceId, // Pass the ID if we are overwriting
+            name: n,
+            distance: parseFloat(document.getElementById('hikeDist').innerText) * 5280,
+            path: hikePath,
+            stakes: hikeStakes
+        };
+
+        const res = await fetch('/api/hikes/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+            alert("Hike saved successfully!");
+            document.getElementById('hikePanel').classList.remove('active');
+            clearMap();
+        } 
+        else if (json.status === 'EXISTS') {
+            // Duplicate detected
+            if (confirm(`A hike named "${n}" already exists. Do you want to overwrite it?`)) {
+                // Overwrite: call function again with the existing ID
+                finishAndSaveHike(json.existingId, n);
+            } else {
+                // Different name: prompt again
+                const newName = prompt("Enter a different name for this hike:");
+                if (newName) {
+                    finishAndSaveHike(null, newName);
+                } else {
+                    // User gave up, resume recording
+                    isHiking = true;
+                    hikeInterval = setInterval(/* ... existing interval logic ... */); 
+                }
+            }
+        } else {
+            alert("Error: " + json.message);
         }
+    } catch (e) {
+        console.error(e);
+        alert("Network error while saving hike.");
+    }
+}
 
         // --- CORE UTILS ---
         function createStake(lat, lng, label) { const s={id:Date.now(),lat,lng,label,number:getNextStakeNumber(),photos:[]}; stakes.push(s); addStakeMarker(s); saveToStorage(); if(isHiking) hikeStakes.push(s); }
