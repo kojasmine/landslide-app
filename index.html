@@ -42,7 +42,6 @@
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
         .panel-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
         .panel-btn:active { transform: scale(0.95); }
-        
         .btn-stop { background: #444; color: #ff5252; } 
         .btn-save { background: #2196F3; color: white; }
         .btn-start { background: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
@@ -63,8 +62,8 @@
         .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; flex-shrink: 0; }
         .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0; }
         
-        /* ADMIN HIDING CLASS */
-        .admin-only { display: none !important; }
+        /* ADMIN ONLY ITEMS (HIDDEN BY DEFAULT) */
+        .admin-only { display: none; }
 
         /* LOGIN */
         .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
@@ -141,7 +140,7 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v158-StableAdmin</div>
+    <div class="debug-label">v156-HikeOnly</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
     
@@ -215,15 +214,16 @@
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
         <div class="menu-item" id="loginItem" onclick="handleUserMenuClick()"><span class="material-icons" id="userIcon" style="color:#5E35B1">person</span> <span id="loginText">Login / Register</span></div>
+        
         <div class="menu-section-title">Tools</div>
-        <!-- ADMIN ONLY TOOLS -->
+        <!-- HIDDEN FOR REGULAR USERS -->
         <div id="menuStake" class="menu-item admin-only" onclick="startStakingMode()"><span class="material-icons" style="color:#E91E63">flag</span> Stake Boundary</div>
         
         <div class="menu-item" onclick="openHikePanel()"><span class="material-icons" style="color:#FF9800">hiking</span> Track My Hike</div>
         <div class="menu-item" onclick="toggleMeasureMode(); toggleMenu();"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
         
         <div class="menu-section-title">Saved Data</div>
-        <!-- ADMIN ONLY DATA -->
+        <!-- HIDDEN FOR REGULAR USERS -->
         <div id="menuSavedBoundaries" class="menu-item admin-only" onclick="openListCloudProjects()"><span class="material-icons" style="color:#E91E63">folder_open</span> Saved Boundaries</div>
         
         <div class="menu-item" onclick="openHikeList()"><span class="material-icons" style="color:#FF9800">history</span> Saved Hikes</div>
@@ -242,7 +242,6 @@
                 <div class="login-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</div>
                 <div class="login-tab" id="tabSignUp" onclick="switchAuthTab('signup')">New Account</div>
             </div>
-            
             <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
             <div class="password-wrapper">
                 <input type="password" id="passInput" class="login-input" placeholder="Password" style="margin:0">
@@ -269,24 +268,13 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // *** CONFIGURATION ***
-        // ADD YOUR EMAIL HERE TO SEE STAKING TOOLS
-        const ADMIN_EMAILS = ["admin@landscout.com", "928928@gmail.com"]; 
+        // --- CONFIG ---
+        const ADMIN_EMAILS = ["admin@landscout.com", "928928@gmail.com"]; // ADD YOUR EMAIL HERE
 
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
         const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
         const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
-        let currentUserId = localStorage.getItem('landslide_auth_id');
-        let currentUserEmail = localStorage.getItem('landslide_auth_email');
-        let stakes = []; 
-        let stakeMarkers = {}; 
-        let savedItems = []; 
-        let activeLayer = null; 
-        let userMarker = null; 
-        let currentLatLng = null; 
-        let selectedStakeId = null; 
-        let currentProjectName = null; 
-        let currentProjectID = null;
+        let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email'), stakes = [], stakeMarkers = {}, savedItems = [], activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null, currentProjectName = null, currentProjectID = null;
         let isTakingHikePhoto = false;
 
         loadFromLocalStorage();
@@ -458,7 +446,8 @@
         
         function startHikeRecording() {
             document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
-            if(activeLayer) map.removeLayer(activeLayer); 
+            // CLEAN THE MAP FOR HIKE
+            if(activeLayer) map.removeLayer(activeLayer); // Remove yellow lines
             stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); 
             stakes = []; 
             
@@ -468,6 +457,7 @@
             if(currentLatLng) updateHikePosition(currentLatLng);
         }
         
+        // *** NEW INSTANT PHOTO LOGIC ***
         function takeHikePhoto() {
             if(!currentLatLng) return alert("No GPS");
             
@@ -532,7 +522,7 @@
         async function fetchParcelAt(ll){const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`);const d=await r.json();if(d.length){document.getElementById('owner').innerText=d[0].owner_name;document.getElementById('address').innerText=d[0].address;document.getElementById('card').classList.add('active');if(activeLayer)map.removeLayer(activeLayer);if(d[0].geometry)activeLayer=L.geoJSON(JSON.parse(d[0].geometry),{style:{color:"#ffcc00",weight:4,fillOpacity:0.1}}).addTo(map);}else{document.getElementById('card').classList.remove('active');}}
         function getDirectionsToSelected(){if(activeLayer&&activeLayer.getBounds()){const c=activeLayer.getBounds().getCenter();window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}&travelmode=driving`);}}
         
-        // --- MEASURE TOOL ---
+        // --- MEASURE TOOL (FIXED) ---
         let isMeasuring=false;
         let measureMarkers=[];
         let measurePolyline=null;
@@ -595,7 +585,7 @@
                 const d=new Date(i.updated_at||i.start_time).toLocaleDateString(); 
                 const div=document.createElement('div'); div.className="list-item"; 
                 if(type==='project') {
-                    // FIXED: EYE ICON
+                    // FIXED: EYE ICON FOR BOUNDARIES
                     div.innerHTML=`
                         <div onclick="loadProject(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d}</div></div>
                         <div style="display:flex;gap:10px">
@@ -604,7 +594,7 @@
                         </div>`; 
                 } else {
                     const mi = (i.distance_ft / 5280).toFixed(2);
-                    // FIXED: REMOVED CAR ICON
+                    // FIXED: SHARE BUTTON, NO CAR
                     div.innerHTML=`
                         <div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${d} • ${mi} miles</div></div>
                         <div style="display:flex;gap:10px">
@@ -649,6 +639,7 @@
         function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
         function handleUserMenuClick() { if(currentUserId) { if(confirm("Logout?")) { localStorage.clear(); window.location.reload(); } } else openLogin(); }
         
+        // --- AUTH TABS ---
         let isAuthLoginMode = true;
         function switchAuthTab(mode) {
             const btn = document.getElementById('authBtn');
@@ -677,27 +668,21 @@
             try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success){localStorage.setItem('landslide_auth_id',d.user.id);localStorage.setItem('landslide_auth_email',d.user.email);window.location.reload();}else alert(d.message);}catch(e){alert("Error");} 
         }
         
+        // SMART REGISTER FIX
         async function doRegister() { 
             const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value, cp=document.getElementById('regConfirmPass').value; 
             if(p !== cp) return alert("Passwords mismatch");
-            
-            // Password Validation (Length 6, Upper, Lower, Number)
-            const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
-            if (!strongPasswordRegex.test(p)) {
-                return alert("Password must have:\n- At least 6 characters\n- One Uppercase (A-Z)\n- One Lowercase (a-z)\n- One Number (0-9)");
-            }
-
-            try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success)alert("Done! Login."); else if(d.message==="Email exists"){ alert("Account exists. Switching to Login..."); switchAuthTab('signin'); document.getElementById('emailInput').value = e; } else alert(d.message);}catch(e){alert("Error");} 
+            try{const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p})});const d=await r.json();if(d.success)alert("Done! Login."); else if(d.message==="Email exists"){ alert("Account exists. Switching to Login..."); switchAuthTab('signin'); } else alert(d.message);}catch(e){alert("Error");} 
         }
 
-        // *** ADMIN LOGIC ***
-        const ADMIN_EMAILS = ["admin@landscout.com", "928928@gmail.com"]; // REPLACE WITH YOUR EMAIL!
         function updateMenuLoginText() { 
             if(currentUserEmail) { 
                 document.getElementById('loginText').innerText="Logout ("+currentUserEmail.split('@')[0]+")"; 
                 document.getElementById('userIcon').style.color="#4CAF50"; 
+                // CHECK ADMIN
                 if(ADMIN_EMAILS.includes(currentUserEmail)) {
-                    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='flex');
+                    document.getElementById('menuStake').style.display='flex';
+                    document.getElementById('menuSavedBoundaries').style.display='flex';
                 }
             } 
         }
@@ -738,7 +723,6 @@
             if(!input.files[0]) return;
             const file = input.files[0];
             
-            // 1. Create Stake FIRST if hiking
             if(isTakingHikePhoto) {
                 if(!currentLatLng) return alert("No GPS");
                 let n = getNextStakeNumber();
@@ -747,10 +731,8 @@
                 isTakingHikePhoto = false;
             }
 
-            // 2. Validate
             if(!selectedStakeId) return;
 
-            // 3. Process & Upload
             const r=new FileReader(); 
             r.onload=(e)=>{
                 const i=new Image(); i.src=e.target.result;
