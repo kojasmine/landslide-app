@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>LandScout</title>
     
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📍</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -15,77 +14,53 @@
         #map { position: fixed; top: 60px; bottom: 0; left: 0; right: 0; z-index: 1; background:#202020; }
         
         /* APP BAR */
-        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; border-bottom: 1px solid #ddd; }
+        .app-bar { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; display: flex; align-items: center; padding: 0 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 20000; }
         .menu-btn { font-size: 24px; padding: 10px; cursor: pointer; color: #555; }
         .search-wrapper { position: relative; flex: 1; margin: 0 10px; background: #f5f5f5; border-radius: 4px; padding: 5px 10px; display: flex; align-items: center; border: 1px solid #ddd; }
         .search-input { border: none; background: transparent; outline: none; width: 100%; font-size: 16px; color: #333; }
-        .search-go-btn { background: #007bff; color: white; border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-left: 5px; border: none; }
         .top-icons { display: flex; gap: 5px; }
-        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
-        .icon-btn:hover { background: #f0f0f0; }
+        .icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; color: #444; }
 
         /* PANELS */
         .mode-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(26, 26, 26, 0.95); backdrop-filter: blur(5px); color: white; padding: 15px; border-radius: 16px; z-index: 10005; display: none; flex-direction: column; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,0.6); width: 90%; max-width: 340px; border: 1px solid #333; }
         .mode-panel.active { display: flex; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
-        .mode-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .hike-stats { display: flex; gap: 12px; margin-bottom: 10px; width: 100%; justify-content: center; }
         .stat-box { text-align: center; background: #333; padding: 6px 10px; border-radius: 8px; min-width: 80px; }
         .stat-val { font-size: 20px; font-weight: bold; color: #4CAF50; }
-        .stat-label { font-size: 10px; color: #ccc; margin-top: 1px; }
+        .stat-label { font-size: 10px; color: #ccc; }
         .panel-controls { display: flex; gap: 8px; width: 100%; margin-top: 5px; }
-        .panel-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; transition: transform 0.1s; text-transform: uppercase; }
-        .panel-btn:active { transform: scale(0.96); }
-        .btn-stop { background: #444; color: #ff5252; } 
-        .btn-save { background: #2196F3; color: white; }
-        .btn-start { background: #4CAF50; color: white; }
-        .btn-action { background: #FF9800; color: black; }
-        .btn-pause { background: #FFC107; color: black; }
+        .panel-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; text-transform: uppercase; }
 
         /* MENU & DRAWERS */
-        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .side-menu { position: fixed; top: 60px; left: 0; bottom: 0; width: 280px; background: white; z-index: 20001; transform: translateX(-100%); transition: transform 0.3s ease-out; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
         .side-menu.open { transform: translateX(0); }
         .menu-overlay { position: fixed; inset: 60px 0 0 0; background: rgba(0,0,0,0.5); z-index: 20000; display: none; }
         .menu-overlay.active { display: block; }
-        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; font-size: 15px; }
-        .menu-section-title { padding: 20px 20px 5px 20px; font-size: 11px; text-transform: uppercase; color: #999; font-weight: bold; letter-spacing: 0.5px; }
-        .admin-only { display: none; }
+        .menu-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #444; cursor: pointer; display: flex; align-items: center; gap: 15px; }
 
         .right-drawer { position: fixed; top: 60px; right: 0; bottom: 0; width: 85%; max-width: 320px; background: white; z-index: 20002; transform: translateX(100%); transition: transform 0.3s ease-out; box-shadow: -2px 0 10px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
         .right-drawer.open { transform: translateX(0); }
-        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; }
-        .modal-list { flex: 1; overflow-y: auto; padding: 0; }
-        .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
 
-        /* MODALS */
-        .login-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.8); z-index:40000; display:none; align-items:center; justify-content:center; }
-        .login-card { background:white; width:85%; max-width:320px; padding:25px; border-radius:12px; text-align:center; }
-        .login-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
-        .login-tab { flex: 1; padding: 10px; cursor: pointer; font-weight: 600; color: #888; }
-        .login-tab.active { color: #5E35B1; border-bottom: 2px solid #5E35B1; }
-        .login-input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 12px; background: #5E35B1; color: white; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; cursor: pointer; }
-
-        /* MEASURE BOX */
-        .measure-box { position: fixed; top: 75px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); color: white; padding: 12px 25px; border-radius: 30px; z-index: 10001; display: none; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2); }
+        /* V157 MEASURE BOX */
+        .measure-box { position: fixed; top: 75px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); color: white; padding: 12px 25px; border-radius: 30px; z-index: 10001; display: none; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .measure-box.visible { display: flex; }
 
-        /* STAKES & POPUPS */
+        /* STAKES & PHOTOS */
         .stake-container { position: relative; }
         .stake-emoji { font-size: 35px; text-shadow: 2px 2px 0px rgba(255,255,255,0.8); cursor: pointer; }
         .stake-number { position: absolute; bottom: 0; right: 0; background: black; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
-        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; max-width: 220px; justify-content:center; }
+        .popup-photos { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; justify-content:center; }
         .popup-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        .popup-btn { display: inline-flex; align-items: center; gap: 4px; background: #f0f0f0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-size: 13px; font-weight: 600; }
 
-        /* IMAGE VIEWER */
+        /* IMAGE MODAL */
         #imageModal { position: fixed; inset: 0; z-index: 50000; display: none; }
         .img-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.95); }
         .img-content { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .img-content img { max-width: 95%; max-height: 75vh; border: 2px solid #444; }
-        .img-controls { margin-top: 20px; display: flex; gap: 15px; }
-        .img-ctrl-btn { color: white; text-decoration: none; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 10px 20px; border-radius: 30px; font-weight: 600; }
-        .img-geotag { margin-top: 15px; color: #fff; font-size: 14px; background: rgba(0,0,0,0.7); padding: 8px 15px; border-radius: 20px; display:none; }
+        .img-content img { max-width: 95%; max-height: 70vh; }
+        .img-controls { margin-top: 20px; display: flex; gap: 10px; }
+        .img-ctrl-btn { color: white; background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; text-decoration: none; }
 
         .info-card { position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; padding: 15px 20px; transform: translateY(150%); transition: transform 0.3s; z-index: 10000; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         .info-card.active { transform: translateY(0); }
@@ -98,12 +73,12 @@
     </style>
 </head>
 <body>
-    <div class="debug-label">v160-HikeFix</div>
+    <div class="debug-label">v161-Restore</div>
 
     <input type="file" id="stakeCamInput" accept="image/*" style="display:none" onchange="window.handleStakePhoto(this)">
-    
     <div id="map"></div>
 
+    <!-- V157 RESTORED MEASURE BOX -->
     <div class="measure-box" id="measureBox">
         <span class="material-icons" style="color:#FF9800">straighten</span>
         <span id="measureText">Tap map to start</span>
@@ -111,12 +86,11 @@
         <div onclick="toggleMeasureMode()" style="margin-left:10px; font-size:18px; cursor:pointer">✕</div>
     </div>
     
-    <!-- TRACK HIKE PANEL -->
+    <!-- HIKE PANELS -->
     <div class="mode-panel" id="hikePanel">
         <div id="hikeStartUI" style="width:100%; display:flex; flex-direction:column; align-items:center;">
-            <div class="mode-title">🥾 Track New Hike</div>
-            <button class="panel-btn btn-start" style="width:100%" onclick="startHikeRecording()"><span class="material-icons">play_arrow</span> START TRACKING</button>
-            <button class="panel-btn btn-stop" style="margin-top:10px; width:100%; background:transparent; border:1px solid #444;" onclick="closeHikePanel()">Cancel</button>
+            <button class="panel-btn" style="background:#4CAF50; color:white; width:100%" onclick="startHikeRecording()">START TRACKING</button>
+            <button class="panel-btn" style="margin-top:10px; background:transparent; border:1px solid #444; color:white; width:100%" onclick="closeHikePanel()">Cancel</button>
         </div>
         <div id="hikeActiveUI" style="display:none; width:100%; flex-direction:column;">
             <div class="hike-stats">
@@ -124,41 +98,27 @@
                 <div class="stat-box"><div class="stat-val" id="hikeTime">00:00</div><div class="stat-label">TIME</div></div>
             </div>
             <div class="panel-controls">
-                <button class="panel-btn btn-action" style="flex:1.5" onclick="takeHikePhoto()"><span class="material-icons">camera_alt</span> Photo</button>
-                <button class="panel-btn btn-pause" id="btnPause" onclick="toggleHikePause()"><span class="material-icons">pause</span></button>
+                <button class="panel-btn" style="background:#FF9800; color:black" onclick="takeHikePhoto()"><span class="material-icons">camera_alt</span> Photo</button>
+                <button class="panel-btn" id="btnPause" style="background:#FFC107; color:black" onclick="toggleHikePause()"><span class="material-icons">pause</span></button>
             </div>
             <div class="panel-controls">
-                <button class="panel-btn btn-save" style="flex:2" onclick="finishAndSaveHike()">Finish & Save</button>
-                <button class="panel-btn btn-stop" onclick="stopHikeAndClear()">✕</button>
+                <button class="panel-btn" style="background:#2196F3; color:white; flex:2" onclick="finishAndSaveHike()">Finish & Save</button>
+                <button class="panel-btn" style="background:#444; color:#ff5252" onclick="stopHikeAndClear()">✕</button>
             </div>
         </div>
-    </div>
-
-    <div class="mode-panel" id="hikeViewPanel">
-        <div class="mode-title" id="hikeViewName">Viewing Hike</div>
-        <div class="hike-stats">
-            <div class="stat-box"><div class="stat-val" id="hvDist">0.00</div><div class="stat-label">MILES</div></div>
-            <div class="stat-box"><div class="stat-val" id="hvDate">--/--</div><div class="stat-label">DATE</div></div>
-        </div>
-        <div class="panel-controls">
-            <button class="panel-btn btn-action" style="background:#007bff; color:white;" onclick="shareCurrentHike()"><span class="material-icons">share</span> Share</button>
-            <button class="panel-btn btn-stop" onclick="closeHikeView()">Close File</button>
-        </div>
-    </div>
-
-    <div class="info-card" id="card">
-        <div class="prop-info"><div class="prop-val" id="owner" style="font-weight:800">...</div><div id="address" style="font-size:13px; color:#666">...</div></div>
-        <div class="direction-btn" onclick="getDirectionsToSelected()" style="background:#007bff; color:white; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-icons">directions</span></div>
     </div>
 
     <!-- APP BAR -->
     <div class="app-bar">
         <div class="menu-btn" onclick="toggleMenu()"><span class="material-icons">menu</span></div>
         <div class="search-wrapper">
-            <input type="text" class="search-input" id="searchBox" placeholder="Search address..." autocomplete="off">
-            <div class="search-go-btn" onclick="performSearch()">GO</div>
+            <input type="text" class="search-input" id="searchBox" placeholder="Search address..." onkeydown="if(event.key==='Enter')performSearch()">
         </div>
-        <div class="top-icons"><div class="icon-btn" onclick="goHome()"><span class="material-icons">my_location</span></div></div>
+        <div class="top-icons">
+            <div class="icon-btn" onclick="goHome()"><span class="material-icons">my_location</span></div>
+            <!-- V157 RESTORED LAYERS BUTTON -->
+            <div class="icon-btn" onclick="toggleLayer()"><span class="material-icons">layers</span></div>
+        </div>
     </div>
 
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
@@ -168,62 +128,87 @@
             <div class="menu-item" onclick="openAccountSettings()"><span class="material-icons" style="color:#4CAF50">account_circle</span> My Account</div>
             <div class="menu-item" onclick="handleLogout()"><span class="material-icons" style="color:#f44336">logout</span> Log Out</div>
         </div>
-        <div class="menu-section-title">Tools</div>
         <div class="menu-item" onclick="openHikePanel()"><span class="material-icons" style="color:#FF9800">hiking</span> Track My Hike</div>
         <div class="menu-item" onclick="toggleMeasureMode()"><span class="material-icons" style="color:#666">straighten</span> Measure Distance</div>
-        <div class="menu-section-title">Library</div>
         <div class="menu-item" onclick="openHikeList()"><span class="material-icons" style="color:#FF9800">history</span> Saved Hikes</div>
-        <div class="menu-item" onclick="clearLocalData()"><span class="material-icons" style="color:#ff4400">delete_sweep</span> Clear Storage</div>
     </div>
 
-    <!-- MODALS -->
-    <div class="login-overlay" id="loginModal">
-        <div class="login-card">
-            <div class="login-tabs">
-                <div class="login-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</div>
-                <div class="login-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Register</div>
-            </div>
-            <input type="email" id="emailInput" class="login-input" placeholder="Email">
-            <input type="password" id="passInput" class="login-input" placeholder="Password">
-            <div id="confPassGroup" style="display:none"><input type="password" id="regConfirmPass" class="login-input" placeholder="Confirm Password"></div>
-            <button id="authBtn" class="login-btn" onclick="handleAuthAction()">Sign In</button>
-            <button style="background:none; border:none; margin-top:15px; text-decoration:underline; color:#666;" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
-        </div>
-    </div>
-    
-    <div class="right-drawer" id="listModal">
-        <div class="modal-header"><span id="listTitle">Saved Hikes</span><span onclick="document.getElementById('listModal').classList.remove('open')" style="cursor:pointer; padding:10px;">✕</span></div>
-        <div class="modal-list" id="listContainer"></div>
-    </div>
-
+    <!-- ACCOUNT DRAWER -->
     <div class="right-drawer" id="accountDrawer">
-        <div class="modal-header"><span>My Account</span><span onclick="closeAccountSettings()" style="cursor:pointer; padding:10px;">✕</span></div>
-        <div class="account-section" style="padding:20px;">
-            <div class="account-group"><h3>Profile</h3><input type="email" id="accEmail" class="login-input"><button class="login-btn" onclick="updateProfile()" style="background:#444">Update Email</button></div>
-            <div class="account-group"><h3>Security</h3><input type="password" id="accOldPass" class="login-input" placeholder="Current"><input type="password" id="accNewPass" class="login-input" placeholder="New"><button class="login-btn" onclick="changePassword()">Change Password</button></div>
-            <div style="margin-top:30px;"><button class="login-btn" onclick="deleteAccount()" style="background:#d32f2f">Delete Account Permanently</button></div>
+        <div class="modal-header"><span>My Account</span><span onclick="closeAccountSettings()" style="cursor:pointer">✕</span></div>
+        <div style="padding:20px">
+            <div style="margin-bottom:20px">
+                <label style="font-size:12px; color:#888">Email</label>
+                <input type="email" id="accEmail" class="search-input" style="width:100%; display:block; margin-top:5px; background:#f5f5f5; border:1px solid #ddd; padding:10px; box-sizing:border-box">
+                <button onclick="updateProfile()" style="margin-top:10px; padding:10px; width:100%; background:#444; color:white; border:none; border-radius:4px">Update Email</button>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="font-size:12px; color:#888">Change Password</label>
+                <input type="password" id="accOldPass" placeholder="Current Password" style="width:100%; margin-top:5px; background:#f5f5f5; border:1px solid #ddd; padding:10px; box-sizing:border-box">
+                <input type="password" id="accNewPass" placeholder="New Password" style="width:100%; margin-top:5px; background:#f5f5f5; border:1px solid #ddd; padding:10px; box-sizing:border-box">
+                <button onclick="changePassword()" style="margin-top:10px; padding:10px; width:100%; background:#5E35B1; color:white; border:none; border-radius:4px">Save Password</button>
+            </div>
+            <button onclick="deleteAccount()" style="margin-top:40px; padding:10px; width:100%; background:#d32f2f; color:white; border:none; border-radius:4px">Delete Account</button>
         </div>
     </div>
 
+    <!-- IMAGE MODAL WITH AI RESTORED -->
     <div id="imageModal">
         <div class="img-backdrop" onclick="closeImageModal()"></div>
         <div class="img-content">
             <img id="modalImage" src="">
             <div class="img-controls">
-                <a href="#" class="img-ctrl-btn" style="background:#ff5252" onclick="deleteCurrentImage(event)"><span class="material-icons">delete</span></a>
-                <a href="#" class="img-ctrl-btn" onclick="closeImageModal()"><span class="material-icons">close</span></a>
+                <!-- V157 RESTORED AI ANALYZE -->
+                <div class="img-ctrl-btn" style="background:#4CAF50" onclick="analyzeCurrentImage()">
+                    <span class="material-icons">smart_toy</span> Analyze
+                </div>
+                <div class="img-ctrl-btn" style="background:#ff5252" onclick="deleteCurrentImage()">
+                    <span class="material-icons">delete</span>
+                </div>
+                <div class="img-ctrl-btn" onclick="closeImageModal()">✕ Close</div>
             </div>
             <div id="imgGeoTag" class="img-geotag"></div>
         </div>
     </div>
-    
+
+    <!-- LOGIN MODAL -->
+    <div class="login-overlay" id="loginModal">
+        <div class="login-card">
+            <input type="email" id="emailInput" class="login-input" placeholder="Email">
+            <input type="password" id="passInput" class="login-input" placeholder="Password">
+            <div id="confPassGroup" style="display:none"><input type="password" id="regConfirmPass" class="login-input" placeholder="Confirm Password"></div>
+            <button id="authBtn" class="login-btn" onclick="handleAuthAction()">Sign In</button>
+            <p onclick="switchAuthTab()" id="authSwitch" style="font-size:13px; color:#5E35B1; cursor:pointer; margin-top:15px">No account? Register</p>
+            <p onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:10px; cursor:pointer; color:#888">Cancel</p>
+        </div>
+    </div>
+
+    <div class="right-drawer" id="listModal">
+        <div class="modal-header"><span>Saved Hikes</span><span onclick="document.getElementById('listModal').classList.remove('open')" style="cursor:pointer">✕</span></div>
+        <div class="modal-list" id="listContainer"></div>
+    </div>
+
+    <div class="info-card" id="card">
+        <div class="prop-info"><div id="owner" style="font-weight:800">...</div><div id="address" style="font-size:13px; color:#666">...</div></div>
+        <div onclick="getDirectionsToSelected()" style="background:#007bff; color:white; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-icons">directions</span></div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 })], zoomControl: false });
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 19, maxZoom: 23 });
+        const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 23 });
+        const map = L.map('map', { center: [40.7, -74.0], zoom: 12, layers: [satellite], zoomControl: false });
+        
         let currentUserId = localStorage.getItem('landslide_auth_id'), currentUserEmail = localStorage.getItem('landslide_auth_email');
         let stakes = [], stakeMarkers = {}, activeLayer = null, userMarker = null, currentLatLng = null, selectedStakeId = null;
         let isHiking = false, isPaused = false, hikePath = [], hikePolyline = null, hikeSeconds = 0, hikeInterval = null, hikeStakes = [];
-        let viewingHikeId = null;
+        let currImgUrl = "";
+
+        // --- V157 RESTORED LAYERS TOGGLE ---
+        function toggleLayer() {
+            if(map.hasLayer(satellite)) { map.removeLayer(satellite); map.addLayer(street); } 
+            else { map.removeLayer(street); map.addLayer(satellite); }
+        }
 
         updateMenuLoginText();
         map.locate({watch:true, enableHighAccuracy:true});
@@ -234,114 +219,59 @@
             if(isHiking && !isPaused) updateHikePosition(e.latlng);
         });
 
-        // --- TRACKING ---
-        function openHikePanel() { toggleMenu(); closeHikeView(); document.getElementById('hikeStartUI').style.display='flex'; document.getElementById('hikeActiveUI').style.display='none'; document.getElementById('hikePanel').classList.add('active'); }
+        // --- HIKE TOOLS ---
+        function openHikePanel() { toggleMenu(); document.getElementById('hikePanel').classList.add('active'); }
         function closeHikePanel() { document.getElementById('hikePanel').classList.remove('active'); }
-
         function startHikeRecording() {
-            clearMap(); 
-            if(activeLayer) map.removeLayer(activeLayer);
-            document.getElementById('card').classList.remove('active');
-            document.getElementById('hikeStartUI').style.display='none'; 
-            document.getElementById('hikeActiveUI').style.display='flex';
-            
-            // RESET PAUSE BUTTON UI
-            isPaused = false;
-            const btn = document.getElementById('btnPause');
-            btn.innerHTML = '<span class="material-icons">pause</span>';
-            btn.style.background = '#FFC107';
-            
-            isHiking=true; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
-            document.getElementById('hikeTime').innerText = "00:00";
-            document.getElementById('hikeDist').innerText = "0.00";
-            
+            clearMap(); document.getElementById('hikeStartUI').style.display='none'; document.getElementById('hikeActiveUI').style.display='flex';
+            isHiking=true; isPaused=false; hikePath=[]; hikeStakes=[]; hikeSeconds=0;
             hikePolyline=L.polyline([],{color:'#FF9800',weight:6}).addTo(map);
-            if(hikeInterval) clearInterval(hikeInterval);
-            hikeInterval=setInterval(()=>{ 
-                if(!isPaused) { 
-                    hikeSeconds++; 
-                    const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; 
-                    document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; 
-                } 
-            },1000);
+            hikeInterval=setInterval(()=>{ if(!isPaused) { hikeSeconds++; const m=Math.floor(hikeSeconds/60), s=hikeSeconds%60; document.getElementById('hikeTime').innerText=`${m}:${s<10?'0'+s:s}`; } },1000);
         }
-
-        function toggleHikePause() { 
-            isPaused = !isPaused; 
-            const btn = document.getElementById('btnPause');
-            if(isPaused) {
-                btn.innerHTML = '<span class="material-icons">play_arrow</span>';
-                btn.style.background = '#4CAF50'; // Green for resume
-                btn.style.color = 'white';
-            } else {
-                btn.innerHTML = '<span class="material-icons">pause</span>';
-                btn.style.background = '#FFC107'; // Yellow for pause
-                btn.style.color = 'black';
-            }
-        }
-
         function updateHikePosition(ll) {
             if(hikePath.length > 0 && map.distance(ll, hikePath[hikePath.length-1]) < 4) return;
             hikePath.push(ll); hikePolyline.setLatLngs(hikePath); 
             let d=0; for(let i=0; i<hikePath.length-1; i++) d+=map.distance(hikePath[i], hikePath[i+1]);
             document.getElementById('hikeDist').innerText=(d*0.000621371).toFixed(2);
         }
+        function toggleHikePause() { isPaused=!isPaused; document.getElementById('btnPause').innerHTML = isPaused ? '<span class="material-icons">play_arrow</span>' : '<span class="material-icons">pause</span>'; }
+        async function finishAndSaveHike() {
+            let n = prompt("Name hike:"); if(!n) return;
+            const res = await fetch('/api/hikes/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:currentUserId, name:n, distance:parseFloat(document.getElementById('hikeDist').innerText)*5280, path:hikePath, stakes:hikeStakes})});
+            if((await res.json()).success) { isHiking=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); clearMap(); }
+        }
+        function stopHikeAndClear() { if(confirm("Discard?")) { isHiking=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } }
 
-        async function finishAndSaveHike(forceId = null, pName = null) {
-            const wasPaused = isPaused;
-            isPaused = true; // Stay paused while naming
-            let n = pName || prompt("Name hike:", ""); 
-            if(!n) { isPaused = wasPaused; return; }
-            
-            try {
-                const res = await fetch('/api/hikes/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userId:currentUserId, id:forceId, name:n, distance:parseFloat(document.getElementById('hikeDist').innerText)*5280, path:hikePath, stakes:hikeStakes})});
-                const json = await res.json();
-                if(json.success) { 
-                    isHiking = false; clearInterval(hikeInterval); 
-                    alert("Hike Saved!"); 
-                    document.getElementById('hikePanel').classList.remove('active'); 
-                    clearMap(); 
-                } else if(json.status === 'EXISTS') { 
-                    if(confirm(`"${n}" exists. Overwrite?`)) finishAndSaveHike(json.existingId, n); 
-                    else isPaused = wasPaused;
-                }
-            } catch(e) { alert("Error saving"); isPaused = wasPaused; }
+        // --- V157 RESTORED MEASURE TOOLS ---
+        let isMeasuring=false, measureMarkers=[], measurePolyline=null, measureLayer=L.layerGroup().addTo(map);
+        function toggleMeasureMode() { isMeasuring = !isMeasuring; document.getElementById('measureBox').classList.toggle('visible', isMeasuring); if(!isMeasuring) { measureLayer.clearLayers(); measureMarkers=[]; measurePolyline=null; } }
+        function addMeasurePoint(ll) { 
+            document.getElementById('measureText').style.display='none'; document.getElementById('distVal').style.display='inline';
+            const m = L.marker(ll, { draggable: true, icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12], html: '<div style="background:orange; width:12px; height:12px; border:2px solid white; border-radius:50%"></div>' }) }).addTo(measureLayer);
+            measureMarkers.push(m); m.on('drag', updateMeasureCalc); updateMeasureCalc();
+        }
+        function updateMeasureCalc() {
+            const latlngs = measureMarkers.map(m => m.getLatLng());
+            if(!measurePolyline) measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
+            else measurePolyline.setLatLngs(latlngs);
+            let dist = 0; for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
+            document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
         }
 
-        function stopHikeAndClear() { if(confirm("Discard this hike?")) { isHiking=false; isPaused=false; clearInterval(hikeInterval); document.getElementById('hikePanel').classList.remove('active'); clearMap(); } }
-
-        // --- VIEW SAVED ---
-        async function loadHike(id) { 
-            document.getElementById('listModal').classList.remove('open'); 
-            clearMap(); 
-            const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json();
-            viewingHikeId = id;
-            hikePolyline = L.polyline(h.path_json,{color:'blue',weight:6}).addTo(map);
-            (h.stakes_json||[]).forEach(s=>{stakes.push(s); addStakeMarker(s);});
-            if(h.path_json.length) map.fitBounds(hikePolyline.getBounds());
-            document.getElementById('hikeViewName').innerText = h.name;
-            document.getElementById('hvDist').innerText = (h.distance_ft / 5280).toFixed(2);
-            document.getElementById('hvDate').innerText = new Date(h.start_time).toLocaleDateString();
-            document.getElementById('hikeViewPanel').classList.add('active');
-        }
-
-        function closeHikeView() { document.getElementById('hikeViewPanel').classList.remove('active'); clearMap(); viewingHikeId = null; }
-        function shareCurrentHike() { const u = window.location.origin + "/?hike_id=" + viewingHikeId; if(navigator.share) navigator.share({ title: "My Hike", url: u }); else prompt("Hike Link:", u); }
-
-        // --- STAKES & PHOTOS ---
+        // --- IMAGE & AI ---
         function addStakeMarker(s) { 
             const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'ci',html:`<div class="stake-container"><div class="stake-emoji">🚩</div><div class="stake-number">${s.number}</div></div>`,iconSize:[40,40],iconAnchor:[20,20]})}).addTo(map); 
             stakeMarkers[s.id]=m; m.bindPopup(()=>generatePopup(s)); 
         }
         function generatePopup(s) { 
             let ph=""; (s.photos||[]).forEach(p=> ph += `<img src="${p}" class="popup-img" onclick="openImageModal('${p}',${s.id})">`); 
-            return `<div style="text-align:center"><b>Stake ${s.number}</b><div class="popup-photos">${ph}</div><button class="popup-btn" onclick="requestStakePhoto(${s.id})">📷 Photo</button></div>`; 
+            return `<div style="text-align:center"><b>Stake ${s.number}</b><div class="popup-photos">${ph}</div><button class="panel-btn" onclick="requestStakePhoto(${s.id})">📷 Photo</button></div>`; 
         }
         function requestStakePhoto(id) { selectedStakeId=id; document.getElementById('stakeCamInput').click(); }
         function takeHikePhoto() { if(!currentLatLng) return; const s={id:Date.now(),lat:currentLatLng.lat,lng:currentLatLng.lng,number:stakes.length+1,photos:[]}; stakes.push(s); addStakeMarker(s); hikeStakes.push(s); selectedStakeId=s.id; document.getElementById('stakeCamInput').click(); }
 
         window.handleStakePhoto = async function(input) {
-            const file = input.files[0]; if(!file || !selectedStakeId) return;
+            const file = input.files[0]; if(!file) return;
             const fd = new FormData(); fd.append('image', file);
             const res = await fetch('/api/image/upload', { method:'POST', body:fd });
             const d = await res.json();
@@ -352,7 +282,8 @@
             }
         };
 
-        window.openImageModal=(u,sId)=>{
+        window.openImageModal=(u, sId)=>{
+            currImgUrl = u;
             document.getElementById('modalImage').src=u;
             const s = stakes.find(x=>x.id===sId);
             if(s) { document.getElementById('imgGeoTag').innerText = `📍 ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}`; document.getElementById('imgGeoTag').style.display='block'; }
@@ -360,27 +291,59 @@
         };
         window.closeImageModal=()=>{document.getElementById('imageModal').style.display='none';};
 
+        // --- RESTORED AI ANALYZE ---
+        async function analyzeCurrentImage() {
+            const btn = document.querySelector('[onclick="analyzeCurrentImage()"]');
+            const oldText = btn.innerHTML;
+            btn.innerHTML = "Thinking...";
+            const fn = currImgUrl.split('/').pop();
+            try {
+                const r = await fetch('/api/ai/analyze', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ filename: fn }) });
+                const d = await r.json();
+                alert(d.analysis || "Analysis error");
+            } catch(e) { alert("Error"); }
+            btn.innerHTML = oldText;
+        }
+
+        // --- ACCOUNT ---
+        function openAccountSettings() { toggleMenu(); document.getElementById('accEmail').value = currentUserEmail; document.getElementById('accountDrawer').classList.add('open'); }
+        function closeAccountSettings() { document.getElementById('accountDrawer').classList.remove('open'); }
+        async function updateProfile() {
+            const res = await fetch('/api/user/update-profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, newEmail:document.getElementById('accEmail').value })});
+            alert((await res.json()).message);
+        }
+        async function changePassword() {
+            const res = await fetch('/api/user/change-password', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, oldPassword:document.getElementById('accOldPass').value, newPassword:document.getElementById('accNewPass').value })});
+            alert((await res.json()).message);
+        }
+        async function deleteAccount() { if(confirm("Delete permanently?")) { await fetch(`/api/user/delete-account/${currentUserId}`, { method:'DELETE' }); localStorage.clear(); window.location.reload(); } }
+
         // --- UTILS ---
         function clearMap() { if(hikePolyline) map.removeLayer(hikePolyline); stakes.forEach(s=>map.removeLayer(stakeMarkers[s.id])); stakes=[]; stakeMarkers={}; }
-        function goHome() { closeHikeView(); closeHikePanel(); toggleMeasureMode(false); if(currentLatLng) map.flyTo(currentLatLng, 18); }
+        function goHome() { if(currentLatLng) map.flyTo(currentLatLng, 18); }
         function toggleMenu() { document.getElementById('sideMenu').classList.toggle('open'); document.getElementById('menuOverlay').classList.toggle('active'); }
+        function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
+        function handleLogout() { localStorage.clear(); window.location.reload(); }
         async function openHikeList() { 
-            toggleMenu(); document.getElementById('listContainer').innerHTML="Loading..."; 
-            document.getElementById('listModal').classList.add('open');
+            toggleMenu(); document.getElementById('listModal').classList.add('open');
             const r=await fetch(`/api/hikes/list/${currentUserId}`); const items=await r.json();
             const c=document.getElementById('listContainer'); c.innerHTML="";
             items.forEach(i=>{
                 const div=document.createElement('div'); div.className="list-item";
-                div.innerHTML=`<div onclick="loadHike(${i.id})" style="flex:1"><b>${i.name}</b><div style="font-size:12px;color:#666">${(i.distance_ft/5280).toFixed(2)} mi • ${new Date(i.start_time).toLocaleDateString()}</div></div>
-                               <div style="display:flex; gap:10px;"><button class="popup-btn" onclick="loadHike(${i.id})">👁</button>
-                               <button class="popup-btn popup-delete" onclick="deleteHike(${i.id})">🗑</button></div>`;
+                div.innerHTML=`<div onclick="loadHike(${i.id})"><b>${i.name}</b></div><button class="panel-btn" onclick="deleteHike(${i.id})" style="background:#ff5252; color:white">🗑</button>`;
                 c.appendChild(div);
             });
         }
-        async function deleteHike(id) { if(confirm("Delete permanently?")) { await fetch(`/api/hikes/delete/${id}`, { method:'DELETE' }); openHikeList(); } }
+        async function loadHike(id) { 
+            document.getElementById('listModal').classList.remove('open'); clearMap();
+            const res=await fetch(`/api/hikes/get/${id}`); const h=await res.json();
+            hikePolyline = L.polyline(h.path_json,{color:'blue',weight:6}).addTo(map);
+            (h.stakes_json||[]).forEach(s=>{stakes.push(s); addStakeMarker(s);});
+            map.fitBounds(hikePolyline.getBounds());
+        }
+        async function deleteHike(id) { if(confirm("Delete?")) { await fetch(`/api/hikes/delete/${id}`, { method:'DELETE' }); openHikeList(); } }
 
-        // --- PARCELS & SEARCH ---
-        map.on('click',(e)=>{ if(isMeasuring) addMeasurePoint(e.latlng); else if(!isHiking) fetchParcelAt(e.latlng); });
+        map.on('click',(e)=>{ if(isMeasuring) addMeasurePoint(e.latlng); else fetchParcelAt(e.latlng); });
         async function fetchParcelAt(ll){
             const r=await fetch(`/api/parcels?lat=${ll.lat}&lng=${ll.lng}`); const d=await r.json();
             if(d.length){
@@ -395,57 +358,24 @@
         }
         function getDirectionsToSelected(){if(activeLayer){const c=activeLayer.getBounds().getCenter(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`);}}
 
-        // --- AUTH ---
         function updateMenuLoginText() { 
-            const loggedIn = !!currentUserId;
-            document.getElementById('loggedInMenu').style.display = loggedIn ? 'block' : 'none';
-            document.getElementById('loggedOutMenu').style.display = loggedIn ? 'none' : 'block';
+            document.getElementById('loggedInMenu').style.display = currentUserId ? 'block' : 'none';
+            document.getElementById('loggedOutMenu').style.display = currentUserId ? 'none' : 'block';
         }
-        function openLogin() { toggleMenu(); document.getElementById('loginModal').style.display='flex'; }
-        function handleLogout() { localStorage.clear(); window.location.reload(); }
         async function handleAuthAction() {
             const e=document.getElementById('emailInput').value, p=document.getElementById('passInput').value;
             const mode = document.getElementById('authBtn').innerText === "Sign In" ? "login" : "register";
             const res = await fetch('/api/'+mode, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:e,password:p})});
             const d = await res.json();
             if(d.success && mode === 'login') { localStorage.setItem('landslide_auth_id',d.user.id); localStorage.setItem('landslide_auth_email',d.user.email); window.location.reload(); }
-            else alert(d.message || "Account created! Now Sign In.");
+            else alert(d.message || "Success! Now login.");
         }
-        function switchAuthTab(m) { document.getElementById('authBtn').innerText = m==='signin'?"Sign In":"Register"; document.getElementById('confPassGroup').style.display = m==='signin'?"none":"block"; }
-
-        // --- ACCOUNT ---
-        function openAccountSettings() { toggleMenu(); document.getElementById('accEmail').value = currentUserEmail; document.getElementById('accountDrawer').classList.add('open'); }
-        function closeAccountSettings() { document.getElementById('accountDrawer').classList.remove('open'); }
-        async function updateProfile() {
-            const e = document.getElementById('accEmail').value; if(!e) return;
-            const res = await fetch('/api/user/update-profile', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, newEmail:e }) });
-            const d = await res.json(); alert(d.message); if(d.success) { localStorage.setItem('landslide_auth_email', e); currentUserEmail=e; updateMenuLoginText(); }
+        function switchAuthTab() { 
+            const isLogin = document.getElementById('authBtn').innerText === "Sign In";
+            document.getElementById('authBtn').innerText = isLogin ? "Register" : "Sign In";
+            document.getElementById('authSwitch').innerText = isLogin ? "Back to Sign In" : "No account? Register";
+            document.getElementById('confPassGroup').style.display = isLogin ? "block" : "none";
         }
-        async function changePassword() {
-            const op = document.getElementById('accOldPass').value, np = document.getElementById('accNewPass').value;
-            if(!op || !np) return alert("Fill both fields");
-            const res = await fetch('/api/user/change-password', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:currentUserId, oldPassword:op, newPassword:np }) });
-            const d = await res.json(); alert(d.message);
-        }
-        async function deleteAccount() { if(confirm("Permanently delete account?")) { await fetch(`/api/user/delete-account/${currentUserId}`, { method:'DELETE' }); localStorage.clear(); window.location.reload(); } }
-
-        // --- MEASURE ---
-        let isMeasuring=false, measureMarkers=[], measurePolyline=null, measureLayer=L.layerGroup().addTo(map);
-        function toggleMeasureMode() { isMeasuring = !isMeasuring; toggleMenu(); document.getElementById('measureBox').classList.toggle('visible', isMeasuring); if(!isMeasuring) measureLayer.clearLayers(); }
-        function addMeasurePoint(ll) { 
-            document.getElementById('measureText').style.display='none'; document.getElementById('distVal').style.display='inline';
-            const m = L.marker(ll, { draggable: true, icon: L.divIcon({ className: 'measure-dot', iconSize: [12, 12] }) }).addTo(measureLayer);
-            measureMarkers.push(m); m.on('drag', updateMeasureCalc); updateMeasureCalc();
-        }
-        function updateMeasureCalc() {
-            const latlngs = measureMarkers.map(m => m.getLatLng());
-            if(!measurePolyline) measurePolyline = L.polyline(latlngs, {color:'orange', weight:3, dashArray:'10, 10'}).addTo(measureLayer);
-            else measurePolyline.setLatLngs(latlngs);
-            let dist = 0; for(let i=0; i<latlngs.length-1; i++) dist += latlngs[i].distanceTo(latlngs[i+1]);
-            document.getElementById('distVal').innerText = (dist * 3.28084).toFixed(1) + " ft";
-        }
-
-        function clearLocalData() { if(confirm("Clear storage?")) { localStorage.clear(); window.location.reload(); } }
     </script>
 </body>
 </html>
